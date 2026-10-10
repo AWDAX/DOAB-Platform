@@ -1,7 +1,15 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+}
+
 @layer base {
   :root {
+    --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
     /* FLOOD THEME: Sea Porcelain Blur (Light Mode) */
     --bg-main: #F4F6F8;         /* Sea Porcelain Canvas */
     --bg-card: #FFFFFF;         /* Pure Porcelain Card */
@@ -71,14 +79,28 @@
     scrollbar-color: rgba(212, 212, 212, 0.22) transparent;
   }
 
+  /* Acclaimed Heading Typography from SWATVA & SAHNIRMAAN */
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.032em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
   body {
+    font-family: var(--font-family);
     background-color: var(--bg-main);
     color: var(--text-main);
     min-height: 100dvh;
+    letter-spacing: -0.011em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior-y: none;
+  }
+
+  code, kbd, samp, pre {
+    font-family: var(--font-mono);
   }
 
   button, a, input, select, textarea, [role="button"], [role="switch"] {
