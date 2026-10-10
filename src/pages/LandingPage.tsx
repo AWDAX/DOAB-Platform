@@ -431,7 +431,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
       {/* ── SECTION: THE DOAB 4-STAGE LOOP ── */}
       <section id="loop" className="py-14 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
         <div className="mb-10 text-center max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[10px] mono-badge text-[var(--text-muted)] dark:text-neutral-300 mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
             <span>Operating Framework</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
@@ -476,7 +476,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
       {/* ── SECTION: CLIMATE MODES COMPARISON ── */}
       <section id="modes" className="py-14 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
         <div className="mb-8 text-center max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[10px] mono-badge text-[var(--text-muted)] dark:text-neutral-300 mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
             <span>Dual Crisis Engine</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
@@ -587,7 +587,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
       <section id="telemetry" className="py-14 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-3">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[10px] mono-badge text-[var(--text-muted)] dark:text-neutral-300 mb-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
               <span>Ranchi Ward Incidents</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
@@ -680,7 +680,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
       {/* ── SECTION: FREQUENTLY ASKED QUESTIONS ── */}
       <section id="faq" className="py-14 px-4 sm:px-6 max-w-[900px] mx-auto border-t border-[var(--border-color)]">
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[10px] mono-badge text-[var(--text-muted)] dark:text-neutral-300 mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
             <span>System FAQ</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">

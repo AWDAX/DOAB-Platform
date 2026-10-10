@@ -118,6 +118,20 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  color: #0f172a;
+}
+
+.dark .mono-badge {
+  color: #f1f5f9;
+}
+
+.theme-drought .mono-badge {
+  color: #451a03;
+}
+
+.dark.theme-drought .mono-badge,
+.dark .theme-drought .mono-badge {
+  color: #fef3c7;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
