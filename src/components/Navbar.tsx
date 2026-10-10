@@ -378,7 +378,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                       <Bell className="h-4 w-4 text-[var(--color-brand-accent)]" />
                       <span>Civic Alerts</span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-brand-accent)]/15 text-[var(--color-brand-accent)] border border-[var(--color-brand-accent)]/20">
+                    <span className="mono-badge text-[9px] px-1.5 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)]">
                       3
                     </span>
                   </Link>

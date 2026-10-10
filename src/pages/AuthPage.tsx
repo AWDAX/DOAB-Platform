@@ -227,7 +227,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                 {lastGoogleAccount.email}
               </span>
             ) : (
-              <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full hidden sm:inline shrink-0">
+              <span className="mono-badge text-[10px] text-[var(--text-main)] dark:text-neutral-200 bg-[var(--bg-card)] dark:bg-white/10 border border-[var(--border-color)] dark:border-white/20 px-2.5 py-0.5 rounded-full hidden sm:inline shrink-0">
                 1-Click OAuth
               </span>
             )}

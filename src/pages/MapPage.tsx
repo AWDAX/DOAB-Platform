@@ -216,7 +216,7 @@ export default function MapPage() {
               </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/20">
+              <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200">
                 Live
               </span>
               <button

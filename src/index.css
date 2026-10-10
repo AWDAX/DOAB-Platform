@@ -110,6 +110,17 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SWATVA Monochromatic Status Badge Standard
+   ══════════════════════════════════════════════════════════════════════════ */
+.mono-badge {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    Zero-Jerk Route Transition (SAHNIRMAAN & SWATVA Standard)
    ══════════════════════════════════════════════════════════════════════════ */
 @keyframes route-enter {

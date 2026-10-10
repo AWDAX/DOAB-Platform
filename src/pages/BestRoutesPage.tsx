@@ -45,7 +45,7 @@ export default function BestRoutesPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span>Via Outer Bypass Corridor</span>
-                      <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)]">Optimal</span>
+                      <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)]">Optimal</span>
                     </div>
                     <span className="text-[11px] text-[var(--text-muted)] font-normal block mt-0.5">Dashed line focus on telemetry layer</span>
                   </div>
@@ -53,7 +53,7 @@ export default function BestRoutesPage() {
                 <td className="py-4.5 px-6 tabular-nums font-mono text-[var(--text-main)] text-center">12.5 km</td>
                 <td className="py-4.5 px-6 tabular-nums font-mono text-[var(--text-main)] text-center">32 mins</td>
                 <td className="py-4.5 px-6 text-center">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full font-mono text-[10px] font-bold border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)]">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full mono-badge text-[10px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)]">
                     Low Risk (4.2%)
                   </span>
                 </td>
@@ -71,7 +71,7 @@ export default function BestRoutesPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span>Via Central Ring Express</span>
-                      <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">Alternate</span>
+                      <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">Alternate</span>
                     </div>
                     <span className="text-[11px] text-[var(--text-muted)] font-normal block mt-0.5">Stroked faded line overlay</span>
                   </div>
@@ -79,7 +79,7 @@ export default function BestRoutesPage() {
                 <td className="py-4.5 px-6 tabular-nums font-mono text-[var(--text-main)] text-center">9.8 km</td>
                 <td className="py-4.5 px-6 tabular-nums font-mono text-[var(--text-main)] text-center">44 mins</td>
                 <td className="py-4.5 px-6 text-center">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full font-mono text-[10px] font-bold border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)]">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full mono-badge text-[10px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)]">
                     Moderate Risk (48.0%)
                   </span>
                 </td>
@@ -104,7 +104,7 @@ export default function BestRoutesPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="font-semibold text-sm text-[var(--text-main)]">Via Outer Bypass Corridor</h2>
-                  <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)]">Optimal</span>
+                  <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)]">Optimal</span>
                 </div>
                 <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Dashed line focus on telemetry layer</p>
               </div>
@@ -139,7 +139,7 @@ export default function BestRoutesPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="font-semibold text-sm text-[var(--text-main)]">Via Central Ring Express</h2>
-                  <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">Alternate</span>
+                  <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">Alternate</span>
                 </div>
                 <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Stroked faded line overlay</p>
               </div>

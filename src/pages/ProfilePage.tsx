@@ -221,7 +221,7 @@ export default function ProfilePage() {
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
               <span className="text-xs font-bold text-[var(--text-main)]">GPS Location</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <span className="mono-badge text-[10px] px-2 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200">
                 Granted
               </span>
             </button>
@@ -231,7 +231,7 @@ export default function ProfilePage() {
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
               <span className="text-xs font-bold text-[var(--text-main)]">Civic Notifications</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <span className="mono-badge text-[10px] px-2 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200">
                 Enabled
               </span>
             </button>
@@ -241,7 +241,7 @@ export default function ProfilePage() {
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
               <span className="text-xs font-bold text-[var(--text-main)]">Commuter Geofencing</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <span className="mono-badge text-[10px] px-2 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200">
                 Enabled
               </span>
             </button>
@@ -251,7 +251,7 @@ export default function ProfilePage() {
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
               <span className="text-xs font-bold text-[var(--text-main)]">DND / SOS Broadcast</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <span className="mono-badge text-[10px] px-2 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200">
                 Enabled
               </span>
             </button>
