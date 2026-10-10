@@ -69,7 +69,7 @@ export default function MinimalBrandHeader({
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-3.5 sm:px-8 md:px-12 py-3 sm:py-3.5 border-b border-[var(--border-color)] bg-[var(--bg-card)]/80 dark:bg-[var(--bg-card)]/80 backdrop-blur-xl transition-all pt-[max(0.75rem,env(safe-area-inset-top))] ${className}`}
+      className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-3.5 sm:px-8 md:px-12 py-3 sm:py-3.5 border-b border-[var(--border-color)] bg-white dark:bg-[#0A1118] transition-all pt-[max(0.75rem,env(safe-area-inset-top))] ${className}`}
     >
       {/* Left: Back Button */}
       <div className="flex items-center z-10 min-w-0">

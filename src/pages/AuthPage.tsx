@@ -295,8 +295,8 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
         </div>
       </main>
 
-      {/* SWATVA Platform Fixed Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 px-4 sm:px-12 py-2.5 sm:py-3 border-t border-[var(--border-color)] bg-[var(--bg-card)]/90 backdrop-blur-xl flex items-center justify-between gap-2 sm:gap-3 shadow-xs pb-[calc(0.6rem+env(safe-area-inset-bottom))]">
+      {/* SWATVA Platform Fixed Footer with Solid Seamless Blended Background */}
+      <footer className="fixed bottom-0 left-0 right-0 z-40 px-4 sm:px-12 py-2.5 sm:py-3 border-t border-[var(--border-color)] bg-white dark:bg-[#0A1118] flex items-center justify-between gap-2 sm:gap-3 shadow-xs pb-[calc(0.6rem+env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-2.5 min-w-0">
           <BrandLogo size="sm" animateOnHover={false} />
           <span className="text-xs font-bold tracking-tight text-[var(--text-main)]">
