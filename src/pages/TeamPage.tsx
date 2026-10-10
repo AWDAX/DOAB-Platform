@@ -10,8 +10,7 @@ import {
   ShieldCheck,
   Radio,
   ChevronRight,
-  ChevronLeft,
-  ArrowUp
+  ChevronLeft
 } from 'lucide-react';
 import { TEAM_MEMBERS, PLATFORM_STATS, CORE_PILLARS, type TeamMember } from '../data/team';
 import { playClick } from '../utils/soundFx';
@@ -442,18 +441,30 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
 
       {/* Footer */}
       <footer className="relative border-t border-[var(--border-color)] bg-[var(--bg-card)]/90 pt-8 pb-10 px-4 sm:px-6">
-        {/* Absolute Centered Top-Border Scroll-to-Top Button */}
+        {/* Absolute Centered Top-Border Scroll-to-Top Button (SWATVA Standard) */}
         <button 
           type="button" 
           onClick={() => {
             playClick();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.dispatchEvent(new CustomEvent('doab-trigger-particle-dissolve'));
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 300);
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('doab-reset-particles'));
+            }, 1600);
           }} 
-          className="footer-scroll-top group"
-          aria-label="Scroll to Top"
-          title="Scroll to Top"
+          className="footer-scroll-top"
+          aria-label="Scroll to top"
+          title="Scroll to top"
         >
-          <ArrowUp className="h-4 w-4 stroke-[2.2] transition-transform duration-300 group-hover:-translate-y-0.5" />
+          <img
+            src="/cursors/scroll-up.svg"
+            className="scroll-up-img pointer-events-none"
+            alt="Scroll to top"
+            width="17"
+            height="17"
+          />
         </button>
 
         <div className="max-w-[1400px] mx-auto flex flex-col items-center">
