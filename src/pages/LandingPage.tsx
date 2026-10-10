@@ -17,12 +17,10 @@ import {
   X, 
   Layers, 
   HelpCircle,
-  Settings,
   ArrowUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '../components/ThemeToggle';
-import EnvToggle from '../components/EnvToggle';
 import Tooltip from '../components/Tooltip';
 import BrandLogo from '../components/BrandLogo';
 import KineticRollingHeadline from '../components/KineticRollingHeadline';
@@ -101,13 +99,13 @@ const FAQS = [
 interface LandingPageProps {
   isDarkMode: boolean;
   toggleTheme: () => void;
-  envMode: 'flood' | 'drought';
-  toggleEnvMode: () => void;
+  envMode?: 'flood' | 'drought';
+  toggleEnvMode?: () => void;
   user?: any;
   onOpenPreferences?: () => void;
 }
 
-export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEnvMode, user, onOpenPreferences }: LandingPageProps) {
+export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', user }: LandingPageProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
@@ -254,23 +252,6 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
 
         {/* Right: Controls & Clean Sign In CTA */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {onOpenPreferences && (
-            <Tooltip content="Preferences" shortcut="Shift+S" position="bottom">
-              <button
-                type="button"
-                onClick={() => { playClick(); onOpenPreferences(); }}
-                className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 text-[var(--color-brand-accent)] hover:bg-[var(--color-brand-accent)]/10 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
-                aria-label="Preferences"
-              >
-                <Settings className="h-4 w-4 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-90" />
-              </button>
-            </Tooltip>
-          )}
-
-          <Tooltip content={envMode === 'flood' ? "Drought" : "Flood"} shortcut="Shift+E" position="bottom">
-            <EnvToggle envMode={envMode} toggleEnvMode={toggleEnvMode} />
-          </Tooltip>
-
           <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
             <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
           </Tooltip>

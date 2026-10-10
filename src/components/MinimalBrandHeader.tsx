@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import ThemeToggle from './ThemeToggle';
-import EnvToggle from './EnvToggle';
 
 interface MinimalBrandHeaderProps {
   onBack?: () => void;
@@ -25,8 +24,6 @@ export default function MinimalBrandHeader({
   isLoader = false,
   isDarkMode: propDarkMode,
   toggleTheme: propToggleTheme,
-  envMode: propEnvMode,
-  toggleEnvMode: propToggleEnvMode,
 }: MinimalBrandHeaderProps) {
   const navigate = useNavigate();
 
@@ -35,14 +32,9 @@ export default function MinimalBrandHeader({
     return document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
   });
 
-  const [internalEnvMode, setInternalEnvMode] = useState<'flood' | 'drought'>(() => {
-    return (localStorage.getItem('doab_env_mode') as 'flood' | 'drought') || 'flood';
-  });
-
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setInternalDarkMode(document.documentElement.classList.contains('dark'));
-      setInternalEnvMode(document.documentElement.classList.contains('theme-drought') ? 'drought' : 'flood');
     });
 
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -50,7 +42,6 @@ export default function MinimalBrandHeader({
   }, []);
 
   const activeDarkMode = propDarkMode !== undefined ? propDarkMode : internalDarkMode;
-  const activeEnvMode = propEnvMode !== undefined ? propEnvMode : internalEnvMode;
 
   const handleToggleTheme = () => {
     if (propToggleTheme) {
@@ -64,22 +55,6 @@ export default function MinimalBrandHeader({
       } else {
         document.documentElement.classList.remove('dark');
         localStorage.setItem('theme', 'light');
-      }
-    }
-  };
-
-  const handleToggleEnv = () => {
-    if (propToggleEnvMode) {
-      propToggleEnvMode();
-    } else {
-      const nextEnv = activeEnvMode === 'flood' ? 'drought' : 'flood';
-      setInternalEnvMode(nextEnv);
-      if (nextEnv === 'drought') {
-        document.documentElement.classList.add('theme-drought');
-        localStorage.setItem('doab_env_mode', 'drought');
-      } else {
-        document.documentElement.classList.remove('theme-drought');
-        localStorage.setItem('doab_env_mode', 'flood');
       }
     }
   };
@@ -125,9 +100,8 @@ export default function MinimalBrandHeader({
         </Link>
       </div>
 
-      {/* Right: Environment & Theme Controls */}
+      {/* Right: Theme Controls */}
       <div className="flex items-center gap-2 z-10 my-0.5 mr-0.5 sm:mr-0 flex-shrink-0">
-        <EnvToggle envMode={activeEnvMode} toggleEnvMode={handleToggleEnv} />
         <ThemeToggle darkMode={activeDarkMode} toggleTheme={handleToggleTheme} />
       </div>
     </header>
