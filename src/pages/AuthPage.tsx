@@ -136,7 +136,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
       <main className="relative flex-1 flex flex-col items-center justify-center w-full max-w-[540px] z-10 pt-16 pb-14 my-auto">
         <div className="w-full p-6 sm:p-8 md:p-9 login-form-card neo-glass-card shadow-2xl relative overflow-hidden transition-all duration-300">
           
-          <h1 className="h-7 sm:h-8 flex items-center justify-center gap-2 text-base sm:text-lg font-bold text-[var(--text-main)] text-center mb-5 sm:mb-6 whitespace-nowrap tracking-tight">
+          <h1 className="h-7 sm:h-8 flex items-center justify-center gap-2 text-base sm:text-lg font-bold text-neutral-950 dark:text-white text-center mb-5 sm:mb-6 whitespace-nowrap tracking-tight font-sans">
             {mode === 'login' ? (
               <>
                 <LogIn size={16} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
@@ -151,19 +151,19 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
           </h1>
 
           {/* Clean Segmented Control / Pill Mode Switcher from SWATVA */}
-          <div className="mb-5 sm:mb-6 p-1 rounded-full neo-glass-card border border-[var(--border-color)]">
+          <div className="mb-5 sm:mb-6 p-1 rounded-full neo-glass-card border border-neutral-200/80 dark:border-white/10">
             <div className="relative grid grid-cols-2 gap-1">
               <span
                 aria-hidden="true"
-                className={`absolute inset-y-0 left-0 w-[calc(50%-2px)] rounded-full bg-[var(--text-main)] transition-transform duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                className={`absolute inset-y-0 left-0 w-[calc(50%-2px)] rounded-full bg-neutral-950 dark:bg-white transition-transform duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
                   mode === 'register' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
                 }`}
               />
               <button
                 type="button"
                 onClick={() => { setMode('login'); setError(null); }}
-                className={`relative z-10 inline-flex items-center justify-center gap-1.5 h-8.5 rounded-full text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                  mode === 'login' ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                className={`relative z-10 inline-flex items-center justify-center gap-1.5 h-8.5 rounded-full text-xs font-semibold tracking-tight transition-colors cursor-pointer font-sans ${
+                  mode === 'login' ? 'text-white dark:text-neutral-950 font-bold' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                 }`}
               >
                 <LogIn size={13} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
@@ -172,8 +172,8 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
               <button
                 type="button"
                 onClick={() => { setMode('register'); setError(null); }}
-                className={`relative z-10 inline-flex items-center justify-center gap-1.5 h-8.5 rounded-full text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                  mode === 'register' ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                className={`relative z-10 inline-flex items-center justify-center gap-1.5 h-8.5 rounded-full text-xs font-semibold tracking-tight transition-colors cursor-pointer font-sans ${
+                  mode === 'register' ? 'text-white dark:text-neutral-950 font-bold' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                 }`}
               >
                 <UserPlus size={13} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
@@ -183,7 +183,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
           </div>
 
           {error && (
-            <div className="mb-5 sm:mb-6 p-3 sm:p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs sm:text-sm flex items-start gap-2.5">
+            <div className="mb-5 sm:mb-6 p-3 sm:p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs sm:text-sm flex items-start gap-2.5 font-sans">
               <AlertTriangle size={15} className="shrink-0 mt-0.5 text-red-500" />
               <span className="leading-relaxed font-medium">{error}</span>
             </div>
@@ -194,17 +194,17 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             type="button"
             onClick={() => handleGoogleSignIn(mode === 'login' && lastGoogleAccount?.email ? lastGoogleAccount.email : null)}
             disabled={loading || googleLoading}
-            className="w-full h-11.5 sm:h-12 mb-5 sm:mb-6 flex items-center justify-between px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-tight border border-[var(--border-color)] bg-[var(--bg-main)]/90 backdrop-blur-md hover:bg-[var(--bg-main)] text-[var(--text-main)] transition-all duration-200 shadow-xs active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
+            className="w-full h-11.5 sm:h-12 mb-5 sm:mb-6 flex items-center justify-between px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-tight border border-neutral-200/80 dark:border-white/10 bg-white/90 dark:bg-white/[0.05] hover:bg-neutral-50 dark:hover:bg-white/[0.08] text-neutral-900 dark:text-neutral-100 transition-all duration-200 shadow-xs active:scale-[0.99] disabled:opacity-50 cursor-pointer group font-sans"
           >
             <div className="flex items-center gap-3 min-w-0">
               {googleLoading ? (
-                <div className="w-4 h-4 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin shrink-0" />
+                <div className="w-4 h-4 border-2 border-neutral-400 border-t-transparent rounded-full animate-spin shrink-0" />
               ) : mode === 'login' && lastGoogleAccount?.photoURL ? (
                 <img
                   src={lastGoogleAccount.photoURL}
                   alt=""
                   referrerPolicy="no-referrer"
-                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-[var(--border-color)] shadow-2xs"
+                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-white/15 shadow-2xs"
                 />
               ) : (
                 <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24">
@@ -214,7 +214,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
               )}
-              <span className="truncate">
+              <span className="truncate font-semibold text-neutral-900 dark:text-white">
                 {mode === 'login'
                   ? (lastGoogleAccount ? `Continue as ${lastGoogleAccount.fullName?.split(' ')[0] || 'User'}` : 'Continue with Google')
                   : 'Sign up with Google'}
@@ -222,7 +222,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             </div>
 
             {mode === 'login' && lastGoogleAccount ? (
-              <span className="text-[11px] font-mono text-[var(--text-muted)] group-hover:text-[var(--text-main)] truncate max-w-[170px] hidden sm:inline">
+              <span className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white truncate max-w-[170px] hidden sm:inline">
                 {lastGoogleAccount.email}
               </span>
             ) : (
@@ -233,21 +233,21 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
           </button>
 
           <div className="relative flex items-center justify-center my-5 sm:my-6">
-            <div className="border-t border-[var(--border-color)] w-full" />
-            <span className="bg-[var(--bg-card)] px-3 text-[10px] sm:text-[11px] uppercase font-mono tracking-widest text-[var(--text-muted)] shrink-0 font-medium">
+            <div className="border-t border-neutral-200/80 dark:border-white/10 w-full" />
+            <span className="bg-[var(--bg-card)] px-3 text-[10px] sm:text-[11px] uppercase font-mono tracking-widest text-neutral-500 dark:text-neutral-400 shrink-0 font-semibold">
               or continue with email
             </span>
-            <div className="border-t border-[var(--border-color)] w-full" />
+            <div className="border-t border-neutral-200/80 dark:border-white/10 w-full" />
           </div>
 
           {/* Email/Password Form matching SWATVA */}
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-4.5">
             <div>
-              <label className="block text-[10px] sm:text-[11px] uppercase tracking-widest font-mono text-[var(--text-muted)] mb-1.5 font-semibold">
+              <label className="block text-[10px] sm:text-[11px] uppercase tracking-widest font-mono text-neutral-500 dark:text-neutral-400 mb-1.5 font-semibold">
                 Email address
               </label>
-              <div className="relative flex items-center h-11.5 sm:h-12 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/80 focus-within:border-[var(--text-main)] transition-colors">
-                <div className="w-11 sm:w-12 shrink-0 border-r border-[var(--border-color)] h-full flex items-center justify-center text-[var(--text-muted)]">
+              <div className="relative flex items-center h-11.5 sm:h-12 w-full rounded-xl border border-neutral-200/80 dark:border-white/10 bg-neutral-50/80 dark:bg-white/[0.04] focus-within:border-neutral-900 dark:focus-within:border-neutral-300 transition-colors">
+                <div className="w-11 sm:w-12 shrink-0 border-r border-neutral-200/80 dark:border-white/10 h-full flex items-center justify-center text-neutral-400 dark:text-neutral-500">
                   <Mail size={16} />
                 </div>
                 <input
@@ -256,17 +256,17 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="h-full flex-1 w-full bg-transparent border-none outline-none px-3.5 text-xs sm:text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)] font-normal"
+                  className="h-full flex-1 w-full bg-transparent border-none outline-none px-3.5 text-xs sm:text-sm text-neutral-950 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 font-normal font-sans"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] sm:text-[11px] uppercase tracking-widest font-mono text-[var(--text-muted)] mb-1.5 font-semibold">
+              <label className="block text-[10px] sm:text-[11px] uppercase tracking-widest font-mono text-neutral-500 dark:text-neutral-400 mb-1.5 font-semibold">
                 Password
               </label>
-              <div className="relative flex items-center h-11.5 sm:h-12 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/80 focus-within:border-[var(--text-main)] transition-colors">
-                <div className="w-11 sm:w-12 shrink-0 border-r border-[var(--border-color)] h-full flex items-center justify-center text-[var(--text-muted)]">
+              <div className="relative flex items-center h-11.5 sm:h-12 w-full rounded-xl border border-neutral-200/80 dark:border-white/10 bg-neutral-50/80 dark:bg-white/[0.04] focus-within:border-neutral-900 dark:focus-within:border-neutral-300 transition-colors">
+                <div className="w-11 sm:w-12 shrink-0 border-r border-neutral-200/80 dark:border-white/10 h-full flex items-center justify-center text-neutral-400 dark:text-neutral-500">
                   <Lock size={16} />
                 </div>
                 <input
@@ -275,7 +275,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="h-full flex-1 w-full bg-transparent border-none outline-none px-3.5 text-xs sm:text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)] font-normal"
+                  className="h-full flex-1 w-full bg-transparent border-none outline-none px-3.5 text-xs sm:text-sm text-neutral-950 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 font-normal font-sans"
                 />
               </div>
             </div>
@@ -283,9 +283,9 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11.5 sm:h-12 mt-3 flex items-center justify-center gap-2 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-tight text-[var(--bg-card)] bg-[var(--text-main)] hover:opacity-90 active:scale-[0.99] disabled:opacity-50 transition-all shadow-md cursor-pointer"
+              className="w-full h-11.5 sm:h-12 mt-3 flex items-center justify-center gap-2 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-tight text-white bg-neutral-950 hover:bg-neutral-800 active:scale-[0.99] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-100 disabled:opacity-50 transition-all shadow-md cursor-pointer font-sans"
             >
-              <span className="whitespace-nowrap">
+              <span className="whitespace-nowrap font-bold">
                 {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
               </span>
               <ArrowRight size={14} className="stroke-[2.2] flex-shrink-0" />
