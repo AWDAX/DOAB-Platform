@@ -121,6 +121,36 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SWATVA Authentication Glass Card
+   ══════════════════════════════════════════════════════════════════════════ */
+.auth-glass-card,
+.login-form-card {
+  position: relative;
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border-radius: 1.5rem;
+  border: 1px solid var(--border-color);
+  outline: none !important;
+  background: var(--bg-card);
+  box-shadow: 0 16px 45px -8px rgba(0, 0, 0, 0.08);
+  transition: background 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease, border-color 0.35s ease;
+}
+
+.auth-glass-card:hover,
+.login-form-card:hover {
+  border-color: var(--border-color);
+  box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.12);
+}
+
+.dark .auth-glass-card,
+.dark .login-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color) !important;
+  outline: none !important;
+  box-shadow: 0 16px 45px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    Zero-Jerk Route Transition (SAHNIRMAAN & SWATVA Standard)
    ══════════════════════════════════════════════════════════════════════════ */
 @keyframes route-enter {
