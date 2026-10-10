@@ -1,0 +1,8 @@
+step 1: historical waterlogging labels. Strong labels are geolocated Bengaluru complaints. The curated national table is kept as weak text-only labels, with Bihar variable rows and Telangana inventory rows excluded. National rows are not used for training because they have no coordinates.
+step 2: precipitation before each complaint, from Open-Meteo ERA5, with lags of 1, 3, 6, 12, 24, 72 hours and 7 days. The complaint hour itself is not used as an input.
+step 3: elevation and a local relief index from Open-Meteo (Copernicus DEM, SRTM-class). GAUL 2024 polygons are used when GAUL_GEOJSON points at a GeoJSON file. Otherwise the map shows the labelled Bengaluru box only. GAUL is an administrative boundary, not a contour.
+step 4: a calibrated gradient-boosted model plus a hotspot term predicts waterlogging probability one hour ahead inside that box. Elsewhere the API returns insufficient_data and does not invent a risk number.
+
+Routes: a Google Maps directions link. If GOOGLE_ROUTES_API_KEY is set on the server, alternatives are ranked by estimated risk first and travel time second. Without the key the link is labelled unscored.
+
+This is a model estimate, not a municipal sensor reading and not an official warning.

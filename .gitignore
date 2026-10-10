@@ -39,3 +39,15 @@ android/local.properties
 android/captures/
 *.apk
 *.aab
+
+# Prediction service: local env, caches, fitted models
+services/prediction-api/.venv/
+services/prediction-api/data/raw/
+services/prediction-api/data/processed/
+services/prediction-api/models/
+services/prediction-api/.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# Large local extraction outputs. The scripts stay tracked.
+Nature data/data/

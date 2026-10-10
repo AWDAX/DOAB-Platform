@@ -20,7 +20,7 @@ const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 
 const DOAB_SYSTEM_PROMPT = `You are DOAB Assistant, an intelligent operational voice and text assistant for civic water emergency response in Indian cities.
 Your core mission is the DOAB Loop:
-- Detect: Analyze ward-level sensors, waterlogging telemetry, and weather forecasts.
+- Detect: Explain the one-hour waterlogging model estimate. Say clearly that it is not a live sensor and not an official warning. Outside the Bengaluru labelled area, say there is not enough data.
 - Order: Facilitate emergency work orders (dispatch tankers for drought, plumbers for drainage).
 - Alert: Provide citizens and delivery partners (Swiggy, Zomato, Zepto) with low-risk rerouting.
 - Back-check: Process ground-truth verification from citizen photo submissions and trust scores.
@@ -188,13 +188,13 @@ export function useDOABChat() {
         await new Promise(r => setTimeout(r, 600));
         const lower = userText.toLowerCase();
         if (lower.includes('route') || lower.includes('safe') || lower.includes('path')) {
-          assistantReply = 'Computed safe corridor: Outer Bypass Corridor (12.5 km, 32 mins). Avoid MG Road (2.4ft standing water detected in Ward 14).';
+          assistantReply = 'Open Safe Routes for a Google Maps link. If a route key is configured, alternatives are ranked by the model estimate and then travel time. This is not a live depth reading.';
         } else if (lower.includes('tanker') || lower.includes('drought') || lower.includes('plumber')) {
-          assistantReply = 'Drought bounty alert active for Ward 08. 1 Emergency Water Tanker dispatched. Registered partners can accept dispatch in Entity Profile.';
+          assistantReply = 'This model estimates waterlogging only. It does not dispatch tankers or predict drought demand.';
         } else if (lower.includes('back-check') || lower.includes('verify') || lower.includes('photo')) {
           assistantReply = 'Citizen back-check verified: 5 photos confirmed Ring Road North drainage cleared. Risk score reduced to 4.2%.';
         } else {
-          assistantReply = `Understood. Analyzing telemetry for "${userText}". No critical road blockages detected on your default route.`;
+          assistantReply = `The one-hour estimate covers the Bengaluru labelled area only. "${userText}" is not a live sensor check.`;
         }
       }
 

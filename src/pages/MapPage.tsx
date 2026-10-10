@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, Circle, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
@@ -15,6 +15,8 @@ import {
 import { Link } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
 import { WATERLOGGING_DATASET_INCIDENTS, type TelemetryIncident } from '../data/waterloggingIncidents';
+import { useForecast } from '../hooks/useForecast';
+import { getPredictionCopy } from '../i18n/predictionCopy';
 
 // Re-export TelemetryIncident type for backward-compatibility
 export type { TelemetryIncident };
@@ -149,7 +151,9 @@ function MapViewController({ center, zoom }: { center: [number, number]; zoom: n
   return null;
 }
 
-export default function MapPage() {
+export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'drought' }) {
+  const copy = getPredictionCopy();
+  const { forecast, incidents: apiIncidents, boundaries, status, usingDemo, stale, reload } = useForecast();
   const [destination, setDestination] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
   const [showHeatLayer, setShowHeatLayer] = useState(true);
@@ -165,8 +169,26 @@ export default function MapPage() {
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
 
   // Filter incidents based on criteria and curate density for clean map aesthetics
+  const incidentSource = useMemo<TelemetryIncident[]>(() => {
+    if (usingDemo || apiIncidents.length === 0) return WATERLOGGING_DATASET_INCIDENTS;
+    return apiIncidents.map((item) => ({
+      id: item.id,
+      title: item.category || copy.historical,
+      ward: 'Bengaluru',
+      category: 'waterlogging' as const,
+      envType: 'flood' as const,
+      severity: 'Medium' as const,
+      lat: item.lat,
+      lng: item.lng,
+      verifiedCount: 0,
+      updatedTime: item.time,
+      description: copy.historical,
+      source: item.source,
+    }));
+  }, [apiIncidents, usingDemo, copy.historical]);
+
   const filteredIncidents = useMemo(() => {
-    const matched = WATERLOGGING_DATASET_INCIDENTS.filter((item) => {
+    const matched = incidentSource.filter((item) => {
       if (severityFilter !== 'all' && item.severity !== severityFilter) return false;
       if (destination.trim()) {
         const query = destination.toLowerCase();
@@ -184,7 +206,7 @@ export default function MapPage() {
       return matched.slice(0, 50);
     }
     return matched;
-  }, [severityFilter, destination]);
+  }, [severityFilter, destination, incidentSource]);
 
   const handleSelectIncident = (incident: TelemetryIncident) => {
     playClick();
@@ -217,7 +239,7 @@ export default function MapPage() {
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200">
-                Live
+                {copy.oneHour}
               </span>
               <button
                 type="button"
@@ -238,7 +260,7 @@ export default function MapPage() {
                 <input 
                   type="text" 
                   placeholder="Search ward, street, or hotspot..."
-                  className="w-full pl-9 pr-3.5 py-1.5 text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] shadow-inner transition-colors text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                  className="w-full pl-9 pr-3.5 py-2 text-base sm:text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] shadow-inner transition-colors text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
                 />
@@ -273,6 +295,26 @@ export default function MapPage() {
                 Compute Safe Path
               </Link>
             </>
+          )}
+        </div>
+
+        <div className="neo-glass-card p-3 rounded-2xl pointer-events-auto border border-[var(--border-color)] shadow-lg text-[11px] text-[var(--text-muted)] leading-relaxed">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="font-mono text-[10px] uppercase tracking-wider">{copy.estimate}</span>
+            <button type="button" onClick={() => { playClick(); void reload(); }} className="font-semibold text-[var(--text-main)] cursor-pointer">
+              {copy.refresh}
+            </button>
+          </div>
+          <p>
+            {status === 'loading' && copy.loading}
+            {status === 'error' && copy.error}
+            {status === 'insufficient' && (envMode === 'drought' ? copy.droughtNote : copy.insufficient)}
+            {status === 'ready' && copy.notASensor}
+            {usingDemo && ` ${copy.offlineDemo}`}
+            {stale && status === 'ready' && ` ${copy.stale}`}
+          </p>
+          {forecast?.cells[0]?.target_time && (
+            <p className="mt-1 font-mono text-[10px]">{copy.oneHour}: {forecast.cells[0].target_time}</p>
           )}
         </div>
 
@@ -312,65 +354,28 @@ export default function MapPage() {
             </div>
 
             <p className="text-[11px] text-[var(--text-muted)] leading-relaxed line-clamp-2">
-              {selectedIncident.description}
+              {copy.historical}. {selectedIncident.description}
             </p>
-
-            {/* DOAB Real Telemetry Factors Grid */}
-            <div className="grid grid-cols-3 gap-2 p-2 bg-[var(--bg-main)]/90 rounded-xl border border-[var(--border-color)] text-center">
-              {selectedIncident.envType === 'flood' ? (
-                <>
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-mono text-[var(--text-muted)]">Water Depth</span>
-                    <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">
-                      {selectedIncident.waterDepthCm || 40} cm
-                    </span>
-                  </div>
-                  <div className="flex flex-col border-x border-[var(--border-color)]">
-                    <span className="text-[9px] font-mono text-[var(--text-muted)]">Rain Rate</span>
-                    <span className="text-xs font-mono font-bold text-[var(--text-main)]">
-                      {selectedIncident.rainfallMmH || 35} mm/h
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-mono text-[var(--text-muted)]">Drain Choke</span>
-                    <span className="text-xs font-mono font-bold text-[var(--text-main)]">
-                      {selectedIncident.drainageBlockagePct || 70}%
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-mono text-[var(--text-muted)]">Table Deficit</span>
-                    <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">
-                      -{selectedIncident.groundwaterDeficitMeters || 12} m
-                    </span>
-                  </div>
-                  <div className="flex flex-col border-x border-[var(--border-color)]">
-                    <span className="text-[9px] font-mono text-[var(--text-muted)]">Tanker Need</span>
-                    <span className="text-xs font-mono font-bold text-[var(--text-main)]">
-                      {((selectedIncident.tankerDeficitLiters || 20000) / 1000).toFixed(0)}k L
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-mono text-[var(--text-muted)]">Verified</span>
-                    <span className="text-xs font-mono font-bold text-emerald-600">
-                      {selectedIncident.verifiedCount} Reports
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
+            <p className="text-[10px] text-[var(--text-muted)]">{copy.notASensor}</p>
 
             <div className="flex items-center justify-between gap-2.5 pt-0.5">
               <Link
-                to="/routes/best"
+                to={`/routes/best?lat=${selectedIncident.lat}&lng=${selectedIncident.lng}`}
                 onClick={() => playClick()}
                 className="flex-1 py-1.5 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold text-[11px] flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity shadow-2xs"
               >
                 <RouteIcon className="h-3.5 w-3.5" />
                 Reroute Around
               </Link>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => playClick()}
+                className="px-2.5 py-1.5 rounded-xl border border-[var(--border-color)] text-[10px] font-semibold text-[var(--text-main)]"
+              >
+                {copy.openMaps}
+              </a>
               <button
                 type="button"
                 onClick={() => setSelectedIncident(null)}
@@ -440,6 +445,29 @@ export default function MapPage() {
           />
 
           <MapViewController center={mapCenter} zoom={mapZoom} />
+
+          {boundaries && (
+            <GeoJSON
+              data={boundaries as never}
+              style={() => ({ color: '#64748b', weight: 1, fillOpacity: 0.04 })}
+            />
+          )}
+
+          {envMode === 'flood' && forecast?.cells.map((cell) => (
+            cell.probability == null ? null : (
+              <Circle
+                key={`${cell.lat}-${cell.lng}`}
+                center={[cell.lat, cell.lng]}
+                radius={1800}
+                pathOptions={{
+                  color: cell.probability >= 0.5 ? '#d97706' : '#64748b',
+                  fillColor: cell.probability >= 0.5 ? '#d97706' : '#64748b',
+                  fillOpacity: 0.08 + Math.min(cell.probability, 1) * 0.2,
+                  weight: 1,
+                }}
+              />
+            )
+          ))}
 
           {/* User Live GPS Marker */}
           <Marker position={userCoords} icon={USER_LIVE_ICON} />

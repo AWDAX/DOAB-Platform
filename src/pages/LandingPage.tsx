@@ -38,8 +38,8 @@ const DOAB_STEPS = [
   {
     n: '01',
     phase: 'DETECT',
-    title: 'Ward-Level Telemetry & Anomaly Flagging',
-    description: 'IoT ultrasonic sensors and ground telemetry pinpoint submerged corridors and groundwater depletion in real time.',
+    title: 'One-hour waterlogging estimate',
+    description: 'A model uses past complaints, recent rainfall and elevation. It is an estimate, not a live municipal sensor.',
     icon: Activity,
     highlight: 'Sub-400m risk perimeters'
   },
@@ -47,7 +47,7 @@ const DOAB_STEPS = [
     n: '02',
     phase: 'ORDER',
     title: 'Automated Logistics & Bounty Dispatch',
-    description: 'Algorithmic work orders trigger commercial bounties: emergency plumbers (₹5,000) and municipal water tanker units.',
+    description: 'A proposed work-order idea for drainage crews. No funds are held or paid by this prototype.',
     icon: Truck,
     highlight: 'Automated municipal work orders'
   },
@@ -70,10 +70,10 @@ const DOAB_STEPS = [
 ];
 
 const COVERAGE_STATS = [
-  { label: 'Monitored Wards', value: '24 Wards', detail: 'Ranchi Municipal Grid' },
-  { label: 'Reroute Proximity', value: '<400m Ahead', detail: 'Turn-by-turn elevation bypass' },
-  { label: 'Bounty Dispatch', value: '₹5,000 / Tankers', detail: 'Plumbers & emergency logistics' },
-  { label: 'Latency Engine', value: '<120ms Sync', detail: 'Real-time telemetry streaming' }
+  { label: 'Labelled area', value: 'Bengaluru pilot', detail: 'Complaint records with coordinates' },
+  { label: 'Horizon', value: '1 hour', detail: 'Model estimate, not a sensor' },
+  { label: 'Elsewhere', value: 'No estimate', detail: 'Shown when labelled data is missing' },
+  { label: 'Routes', value: 'Maps link', detail: 'Scored only when a route key is set' }
 ];
 
 const FAQS = [
@@ -83,11 +83,11 @@ const FAQS = [
   },
   {
     q: 'How are safe rerouting paths calculated for delivery riders and citizens?',
-    a: 'The DOAB routing engine correlates live sensor water depths, elevation contours, and historical drainage choke probabilities to steer vehicles around standing water exceeding critical safety thresholds (e.g. >15cm for two-wheelers).'
+    a: 'Where the Bengaluru model has labelled complaints, route alternatives can be ranked by estimated risk and then travel time. Without a route key, the page gives an unscored Google Maps link. Depths are not live sensor readings.'
   },
   {
     q: 'How does the commercial dispatch bounty system work?',
-    a: 'When an anomaly is confirmed (e.g., clogged stormwater drain in Ward 14 or zero-water tap telemetry in Ward 08), the system publishes an automated bounty work order for registered municipal plumbers or verified tanker fleet partners.'
+    a: 'Work orders and tanker bounties are a concept only. This prototype does not dispatch crews or move money.'
   },
   {
     q: 'Does DOAB require special hardware or can anyone contribute?',
@@ -361,7 +361,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
 
           {/* Minimal Subtitle */}
           <p className="text-xs sm:text-sm md:text-base text-[var(--text-muted)] max-w-2xl leading-relaxed mb-8 font-normal">
-            Closed-loop intelligence bridging citizens, emergency responders, and municipal logistics across urban flood and drought extremes.
+            A prototype estimate of waterlogging one hour ahead, limited to the Bengaluru area with labelled complaints.
           </p>
         </div>
 
@@ -438,7 +438,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             How DOAB Runs the Crisis Loop
           </h2>
           <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1.5">
-            A closed-loop civic intelligence engine transforming sensor telemetry into life-safety routing and verified work orders.
+            A prototype that turns rainfall, elevation and past complaints into a one-hour waterlogging estimate and a maps link.
           </p>
         </div>
 
@@ -523,10 +523,10 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             <>
               <div className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] flex flex-col justify-between shadow-2xs">
                 <div>
-                  <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Live Telemetry</span>
-                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Waterlogging Hexes</h4>
+                  <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Model estimate</span>
+                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Waterlogging cells</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Real-time ultrasonic sensors measure water depth (cm) and rainfall intensity (mm/h) to flag impassable road segments.
+                    Cells show a one-hour probability from rainfall, elevation and past complaints. They are not ultrasonic depth readings.
                   </p>
                 </div>
               </div>
@@ -535,16 +535,16 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
                   <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Rider Protection</span>
                   <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Submerged Rerouting</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Avoids submerged low-lying junctions (e.g. MG Road, Harmu River) by providing turn-by-turn bypass corridors.
+                    Opens a Google Maps directions link. Alternatives are ranked only when a server-side route key is configured.
                   </p>
                 </div>
               </div>
               <div className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] flex flex-col justify-between shadow-2xs">
                 <div>
                   <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Civic Dispatch</span>
-                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Plumber Bounties (₹5k)</h4>
+                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Proposed work orders</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Instant work order disbursement for drain de-choking, heavy water pump deployment, and municipal sluice clearing.
+                    Crew dispatch is a concept. This prototype does not pay bounties or send municipal crews.
                   </p>
                 </div>
               </div>
@@ -553,10 +553,10 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             <>
               <div className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] flex flex-col justify-between shadow-2xs">
                 <div>
-                  <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Live Telemetry</span>
-                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Groundwater Deficits</h4>
+                  <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Not estimated</span>
+                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Drought demand</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Monitors underground aquifer levels, soil moisture depletion, and ward-by-ward dry tap reports.
+                    The current model does not estimate groundwater or tanker demand. Those views stay unnumbered.
                   </p>
                 </div>
               </div>
@@ -565,16 +565,16 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
                   <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Citizen Advisory</span>
                   <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Heatwave Advisories</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Real-time thermal stress index, shaded rest zones for outdoor delivery riders, and public hydration kiosks.
+                    Heat advisories are not produced by this model.
                   </p>
                 </div>
               </div>
               <div className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] flex flex-col justify-between shadow-2xs">
                 <div>
                   <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Civic Dispatch</span>
-                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Tanker Logistics Dispatch</h4>
+                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">No tanker dispatch</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Coordinates emergency potable water tanker units to high-stress wards with GPS delivery verification.
+                    Tanker movement is not implemented. Nothing here is a live logistics order.
                   </p>
                 </div>
               </div>
@@ -588,13 +588,13 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-3">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
-              <span>Ranchi Ward Incidents</span>
+              <span>Historical Bengaluru complaints</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
-              Active Sensor Incidents Preview
+              Complaint preview
             </h2>
             <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
-              Sample factor-grounded telemetry points currently plotted on the DOAB map.
+              Past civic complaints used as labels. These cards are not live sensor readings.
             </p>
           </div>
 
@@ -628,40 +628,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
                   {incident.description}
                 </p>
 
-                {/* Telemetry Factors */}
-                <div className="grid grid-cols-3 gap-2 p-2.5 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] text-center text-xs mb-4">
-                  {incident.envType === 'flood' ? (
-                    <>
-                      <div>
-                        <span className="text-[9px] font-mono text-[var(--text-muted)] block">Depth</span>
-                        <span className="font-mono font-bold text-[var(--text-main)]">{incident.waterDepthCm} cm</span>
-                      </div>
-                      <div className="border-x border-[var(--border-color)]">
-                        <span className="text-[9px] font-mono text-[var(--text-muted)] block">Rain Rate</span>
-                        <span className="font-mono font-bold text-[var(--text-main)]">{incident.rainfallMmH} mm/h</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-mono text-[var(--text-muted)] block">Blockage</span>
-                        <span className="font-mono font-bold text-[var(--text-main)]">{incident.drainageBlockagePct}%</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <span className="text-[9px] font-mono text-[var(--text-muted)] block">Deficit</span>
-                        <span className="font-mono font-bold text-[var(--text-main)]">{incident.groundwaterDeficitMeters}m</span>
-                      </div>
-                      <div className="border-x border-[var(--border-color)]">
-                        <span className="text-[9px] font-mono text-[var(--text-muted)] block">Tanker Need</span>
-                        <span className="font-mono font-bold text-[var(--text-main)]">{incident.tankerDeficitLiters}L</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-mono text-[var(--text-muted)] block">Verified</span>
-                        <span className="font-mono font-bold text-[var(--text-main)]">{incident.verifiedCount}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <p className="text-[11px] text-[var(--text-muted)] mb-4">Historical complaint record. Not a live sensor reading.</p>
               </div>
 
               <Link
@@ -669,7 +636,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
                 onClick={() => playClick()}
                 className="w-full py-2 rounded-xl bg-[var(--bg-main)] hover:bg-[var(--text-main)]/5 border border-[var(--border-color)] text-[var(--text-main)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
               >
-                <span>Inspect in Live Grid</span>
+                <span>View on map</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>

@@ -1,7 +1,7 @@
 # DOAB (दोआब) — Two Waters
 **Detect → Order → Alert → Back-check**
 
-DOAB is a real-time civic disaster resilience and municipal water-dispatch coordination platform engineered for extreme climate vulnerabilities (flash floods, urban waterlogging, drought shortages, and water tanker supply lines).
+DOAB is a civic prototype for urban waterlogging. The live piece is a one-hour model estimate for the Bengaluru area that has geolocated complaint labels. It is not a municipal sensor network, not an official warning, and it does not dispatch crews or move funds.
 
 Developed by **Team Contrarians** for WeMakeDevs Hackathon.
 
@@ -9,10 +9,10 @@ Developed by **Team Contrarians** for WeMakeDevs Hackathon.
 
 ## 🌊 Core Capabilities & The Loop
 
-1. **Detect**: Ward-level telemetry and hydrological predictive modeling dynamically flag inundated arteries and drought-stricken zones.
-2. **Order**: Dispatch and work-order pipeline instantly assigns civic response units, plumbers, suction pumps, or emergency water tankers.
-3. **Alert**: Real-time broadcast system warns citizens and reroutes delivery/two-wheeler riders around hazardous corridors.
-4. **Back-check**: Ground-truth validation and citizen back-check feedback continuously recalibrate ward safety scores.
+1. **Detect**: A model estimates waterlogging probability one hour ahead where labelled Bengaluru complaints, rainfall and elevation are available. Other places return "not enough data".
+2. **Order**: Work orders are a concept on the page. Nothing is dispatched.
+3. **Alert**: The map and alerts show the model estimate, labelled as an estimate.
+4. **Back-check**: Photo verification is not wired to the model.
 
 ---
 
@@ -59,6 +59,18 @@ npm run dev
 ```bash
 npm run build
 ```
+
+### One-hour estimate API
+```bash
+cd services/prediction-api
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m app.cli build-dataset
+.venv/bin/python -m app.cli train
+.venv/bin/uvicorn app.main:app --port 8000
+```
+Set `VITE_PREDICTION_API_URL` in `.env` (see `.env.example`). Optional `GOOGLE_ROUTES_API_KEY` and `GAUL_GEOJSON` stay on the server. Without the route key, the app returns an unscored Google Maps link. Without a GAUL file, the map shows the labelled pilot box only.
+
+Rainfall is Open-Meteo ERA5. Elevation is Open-Meteo Copernicus DEM. Labels are OpenCity Bengaluru complaints, not surveyed flood depths.
 
 ---
 

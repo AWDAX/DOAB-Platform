@@ -6,11 +6,11 @@ interface KineticRollingHeadlineProps {
 }
 
 const DEFAULT_PHRASES = [
-  "Detecting submerged corridors.",
-  "Ordering emergency tanker fleets.",
-  "Alerting commuters with safe bypasses.",
-  "Back-checking road clearance.",
-  "24 Municipal wards monitored."
+  "Estimating waterlogging one hour ahead.",
+  "Only where labelled complaints exist.",
+  "Opening a Google Maps link.",
+  "Not a municipal sensor reading.",
+  "Bengaluru pilot, not a national warning."
 ];
 
 export default function KineticRollingHeadline({ 

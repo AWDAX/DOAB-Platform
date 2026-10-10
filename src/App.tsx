@@ -226,7 +226,7 @@ function AppContent({
             element={
               isAuthenticated ? (
                 <PageTransition>
-                  <MapPage />
+                  <MapPage envMode={envMode} />
                 </PageTransition>
               ) : (
                 <PageTransition>
