@@ -194,17 +194,17 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             type="button"
             onClick={() => handleGoogleSignIn(mode === 'login' && lastGoogleAccount?.email ? lastGoogleAccount.email : null)}
             disabled={loading || googleLoading}
-            className="w-full h-11.5 sm:h-12 mb-5 sm:mb-6 flex items-center justify-between px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-tight border border-neutral-200/80 dark:border-white/10 bg-white/90 dark:bg-white/[0.05] hover:bg-neutral-50 dark:hover:bg-white/[0.08] text-neutral-900 dark:text-neutral-100 transition-all duration-200 shadow-xs active:scale-[0.99] disabled:opacity-50 cursor-pointer group font-sans"
+            className="w-full h-11.5 sm:h-12 mb-5 sm:mb-6 flex items-center justify-between px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-tight border border-neutral-300/90 dark:border-white/10 bg-neutral-100/90 dark:bg-white/[0.05] hover:bg-neutral-200/80 dark:hover:bg-white/[0.08] text-neutral-950 dark:text-white transition-all duration-200 shadow-xs active:scale-[0.99] disabled:opacity-50 cursor-pointer group font-sans"
           >
             <div className="flex items-center gap-3 min-w-0">
               {googleLoading ? (
-                <div className="w-4 h-4 border-2 border-neutral-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                <div className="w-4 h-4 border-2 border-neutral-600 dark:border-neutral-400 border-t-transparent rounded-full animate-spin shrink-0" />
               ) : mode === 'login' && lastGoogleAccount?.photoURL ? (
                 <img
                   src={lastGoogleAccount.photoURL}
                   alt=""
                   referrerPolicy="no-referrer"
-                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-white/15 shadow-2xs"
+                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-neutral-300 dark:border-white/15 shadow-2xs"
                 />
               ) : (
                 <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24">
@@ -214,7 +214,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
               )}
-              <span className="truncate font-semibold text-neutral-900 dark:text-white">
+              <span className="truncate font-semibold text-neutral-950 dark:text-white">
                 {mode === 'login'
                   ? (lastGoogleAccount ? `Continue as ${lastGoogleAccount.fullName?.split(' ')[0] || 'User'}` : 'Continue with Google')
                   : 'Sign up with Google'}
@@ -222,11 +222,11 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             </div>
 
             {mode === 'login' && lastGoogleAccount ? (
-              <span className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white truncate max-w-[170px] hidden sm:inline">
+              <span className="text-[11px] font-mono text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-950 dark:group-hover:text-white truncate max-w-[170px] hidden sm:inline">
                 {lastGoogleAccount.email}
               </span>
             ) : (
-              <span className="mono-badge text-[10px] text-neutral-900 dark:text-neutral-100 bg-neutral-200/80 dark:bg-white/10 border border-neutral-300 dark:border-white/20 px-2.5 py-0.5 rounded-full hidden sm:inline shrink-0 font-bold">
+              <span className="mono-badge text-[10px] text-neutral-900 dark:text-neutral-100 bg-neutral-200/90 dark:bg-white/10 border border-neutral-300 dark:border-white/20 px-2.5 py-0.5 rounded-full hidden sm:inline shrink-0 font-bold">
                 1-Click OAuth
               </span>
             )}
