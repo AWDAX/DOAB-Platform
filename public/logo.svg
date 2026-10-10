@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="doabLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#doabLogoGrad)" fill-rule="evenodd" clip-rule="evenodd" d="M22 14C19.7909 14 18 15.7909 18 18V82C18 84.2091 19.7909 86 22 86H50C69.8823 86 86 69.8823 86 50C86 30.1177 69.8823 14 50 14H22ZM32 28H49C61.1503 28 71 37.8497 71 50C71 62.1503 61.1503 72 49 72H32V28Z"/>
+</svg>
