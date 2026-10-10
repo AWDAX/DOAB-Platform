@@ -133,12 +133,12 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
       const scrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || window.pageYOffset || 0;
       setScrolled(scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    document.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
     handleScroll();
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      document.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll, { capture: true } as any);
+      document.removeEventListener('scroll', handleScroll, { capture: true } as any);
     };
   }, []);
 
@@ -202,7 +202,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300 relative overflow-x-hidden font-sans selection:bg-[var(--color-brand-accent)] selection:text-white">
+    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300 relative overflow-x-clip font-sans selection:bg-[var(--color-brand-accent)] selection:text-white">
       
       {/* ── Dynamic Morphing Navbar (SAHNIRMAAN / SWATVA Standard) ── */}
       <header className={`portfolio-header ${scrolled ? 'scrolled' : ''}`}>
