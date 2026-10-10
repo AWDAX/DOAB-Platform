@@ -259,10 +259,10 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
               <button
                 type="button"
                 onClick={() => { playClick(); onOpenPreferences(); }}
-                className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors flex items-center justify-center cursor-pointer shadow-2xs group"
+                className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 text-[var(--color-brand-accent)] hover:bg-[var(--color-brand-accent)]/10 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
                 aria-label="Preferences"
               >
-                <Settings className="h-4 w-4 text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-transform duration-500 group-hover:rotate-90" />
+                <Settings className="h-4 w-4 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-90" />
               </button>
             </Tooltip>
           )}

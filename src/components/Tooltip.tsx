@@ -101,7 +101,16 @@ export default function Tooltip({
     setCoords({ top: clampedTop, left: clampedLeft });
   }, [position]);
 
+  const isTouchDevice = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
+      window.innerWidth < 768
+    );
+  }, []);
+
   const handleMouseEnter = () => {
+    if (isTouchDevice()) return;
     calculatePosition();
     setIsVisible(true);
   };
@@ -111,6 +120,7 @@ export default function Tooltip({
   };
 
   const handleFocus = () => {
+    if (isTouchDevice()) return;
     calculatePosition();
     setIsVisible(true);
   };
@@ -121,10 +131,10 @@ export default function Tooltip({
 
   // Re-calculate accurately once tooltip DOM node renders to account for exact rendered width
   useLayoutEffect(() => {
-    if (isVisible) {
+    if (isVisible && !isTouchDevice()) {
       calculatePosition();
     }
-  }, [isVisible, calculatePosition]);
+  }, [isVisible, calculatePosition, isTouchDevice]);
 
   return (
     <>
@@ -162,7 +172,7 @@ export default function Tooltip({
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 text-white dark:bg-white dark:text-slate-950 text-[10px] font-mono uppercase font-bold tracking-tight border border-white/20 dark:border-black/20 shadow-xl backdrop-blur-md whitespace-nowrap">
                   <span>{content}</span>
                   {shortcut && (
-                    <kbd className="shrink-0 px-1 py-0.2 rounded bg-white/20 dark:bg-black/15 text-[8.5px] font-mono font-bold border border-white/20 dark:border-black/20">
+                    <kbd className="hidden md:inline-flex shrink-0 px-1 py-0.2 rounded bg-white/20 dark:bg-black/15 text-[8.5px] font-mono font-bold border border-white/20 dark:border-black/20">
                       {shortcut}
                     </kbd>
                   )}

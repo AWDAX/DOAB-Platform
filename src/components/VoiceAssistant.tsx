@@ -230,19 +230,23 @@ export default function VoiceAssistant() {
 
   return (
     <>
-      {/* Floating Action Button (AI Orb FAB) */}
-      <button 
+      {/* Touch & Desktop Draggable Floating Action Button (AI Orb FAB) */}
+      <motion.button 
+        drag
+        dragMomentum={false}
+        dragElastic={0.1}
+        whileDrag={{ scale: 1.08, cursor: 'grabbing' }}
         onClick={() => { playClick(); setIsOpen(true); }}
-        className={`fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] md:bottom-6 right-4 md:right-8 h-[54px] w-[54px] rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.14)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-pointer ${
+        className={`fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] md:bottom-6 right-3 sm:right-6 md:right-8 h-[52px] w-[52px] sm:h-[54px] sm:w-[54px] rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.18)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-grab touch-none ${
           isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
         }`}
-        aria-label="Open DOAB Assistant"
-        title="Open DOAB Assistant"
+        aria-label="Open DOAB Assistant (Draggable)"
+        title="Open DOAB Assistant (Draggable)"
       >
-        <AIOrbFace state="idle" size={54} className="w-full h-full" />
-      </button>
+        <AIOrbFace state="idle" size={54} className="w-full h-full pointer-events-none" />
+      </motion.button>
 
-      {/* Assistant Draggable Window */}
+      {/* Assistant Draggable / Adaptive Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div 
@@ -251,17 +255,17 @@ export default function VoiceAssistant() {
             exit={{ opacity: 0, scale: 0.94, y: 15 }}
             transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              width: isFullScreen ? '100vw' : `${size.w}px`,
-              height: isFullScreen ? '100dvh' : `${size.h}px`,
-              x: isFullScreen ? 0 : position.x,
-              y: isFullScreen ? 0 : position.y,
-              right: isFullScreen ? 0 : '2rem',
-              bottom: isFullScreen ? 0 : '2rem',
+              width: isFullScreen ? '100vw' : typeof window !== 'undefined' && window.innerWidth < 768 ? 'calc(100vw - 1rem)' : `${size.w}px`,
+              height: isFullScreen ? '100dvh' : typeof window !== 'undefined' && window.innerWidth < 768 ? 'min(78dvh, 580px)' : `${size.h}px`,
+              x: isFullScreen || (typeof window !== 'undefined' && window.innerWidth < 768) ? 0 : position.x,
+              y: isFullScreen || (typeof window !== 'undefined' && window.innerWidth < 768) ? 0 : position.y,
+              right: isFullScreen ? 0 : typeof window !== 'undefined' && window.innerWidth < 768 ? '0.5rem' : '2rem',
+              left: isFullScreen ? 0 : typeof window !== 'undefined' && window.innerWidth < 768 ? '0.5rem' : 'auto',
+              bottom: isFullScreen ? 0 : typeof window !== 'undefined' && window.innerWidth < 768 ? 'calc(env(safe-area-inset-bottom) + 4.5rem)' : '2rem',
+              top: isFullScreen ? 0 : 'auto',
               position: 'fixed'
             }}
-            className={`neo-glass-card z-50 flex flex-col shadow-2xl ${
-              isFullScreen ? 'rounded-none' : 'rounded-3xl border border-[var(--border-color)]'
-            } ${isDragging ? 'cursor-grabbing' : ''}`}
+            className={`neo-glass-card ${isFullScreen ? 'z-[200] rounded-none' : 'z-[100] rounded-3xl border border-[var(--border-color)]'} flex flex-col shadow-2xl ${isDragging ? 'cursor-grabbing' : ''}`}
           >
             {/* Top Drag Handle Bar */}
             <div 

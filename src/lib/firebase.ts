@@ -11,19 +11,29 @@ import {
   signOut,
 } from 'firebase/auth';
 
+function cleanEnv(val: any): string {
+  if (!val || typeof val !== 'string') return '';
+  const trimmed = val.trim();
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: cleanEnv(import.meta.env.VITE_FIREBASE_API_KEY),
+  authDomain: cleanEnv(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
+  projectId: cleanEnv(import.meta.env.VITE_FIREBASE_PROJECT_ID),
+  storageBucket: cleanEnv(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
+  messagingSenderId: cleanEnv(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+  appId: cleanEnv(import.meta.env.VITE_FIREBASE_APP_ID),
+  measurementId: cleanEnv(import.meta.env.VITE_FIREBASE_MEASUREMENT_ID),
 };
 
 const isValidConfig = Boolean(
   firebaseConfig.apiKey &&
   firebaseConfig.apiKey !== 'undefined' &&
+  firebaseConfig.apiKey !== 'your_firebase_api_key_here' &&
   firebaseConfig.apiKey.length > 5
 );
 
@@ -41,7 +51,27 @@ const DEMO_USER_KEY = 'doab_demo_user_v1';
 export function getStoredDemoUser() {
   try {
     const raw = localStorage.getItem(DEMO_USER_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    
+    // Purge any stale mock/dummy email from earlier sessions
+    if (parsed && (
+      parsed.email === 'suneet.chugh@doab.gov.in' || 
+      parsed.email === 'operator@doab.gov.in' ||
+      parsed.uid === 'doab-operator-demo'
+    )) {
+      localStorage.removeItem(DEMO_USER_KEY);
+      localStorage.removeItem('doab_last_google_account');
+      return null;
+    }
+
+    // Sanitize any legacy hardcoded unsplash dummy avatar
+    if (parsed && typeof parsed.photoURL === 'string' && parsed.photoURL.includes('images.unsplash.com/photo-1534528741775-53994a69daeb')) {
+      const name = parsed.displayName || parsed.email?.split('@')[0] || 'Operator';
+      parsed.photoURL = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0284c7&color=fff&bold=true`;
+      localStorage.setItem(DEMO_USER_KEY, JSON.stringify(parsed));
+    }
+    return parsed;
   } catch (e) {
     return null;
   }
@@ -49,18 +79,41 @@ export function getStoredDemoUser() {
 
 // Universal Auth Listener (supports real Firebase + Offline Demo fallback)
 export function onDOABAuthStateChanged(callback: (user: any) => void) {
+  // Purge any stale legacy accounts stored in localStorage
+  try {
+    const lastGoogle = localStorage.getItem('doab_last_google_account');
+    if (lastGoogle && lastGoogle.includes('suneet.chugh@doab.gov.in')) {
+      localStorage.removeItem('doab_last_google_account');
+    }
+  } catch {}
+
   if (auth) {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        callback(firebaseUser);
+        const enrichedUser = {
+          uid: firebaseUser.uid,
+          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Civic Operator',
+          email: firebaseUser.email,
+          photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email || 'User')}&background=0284c7&color=fff&bold=true`,
+          emailVerified: firebaseUser.emailVerified,
+          metadata: firebaseUser.metadata,
+          providerData: firebaseUser.providerData,
+          getIdToken: () => firebaseUser.getIdToken()
+        };
+        try {
+          localStorage.setItem(DEMO_USER_KEY, JSON.stringify(enrichedUser));
+          localStorage.setItem('doab_last_login', new Date().toISOString());
+        } catch {}
+        callback(enrichedUser);
       } else {
-        callback(getStoredDemoUser());
+        // When user is not signed in to Firebase, auth state is null
+        callback(null);
       }
     });
     return unsub;
   }
 
-  // Fallback listener for offline demo state
+  // Fallback listener for offline demo state only when Firebase is unconfigured
   const handleStorageOrCustom = () => {
     callback(getStoredDemoUser());
   };
@@ -75,24 +128,14 @@ export function onDOABAuthStateChanged(callback: (user: any) => void) {
   };
 }
 
-// Sign in with Google Popup (Graceful fallback to demo profile if Firebase unconfigured)
-export async function signInWithGoogle(loginHint = null) {
+// Sign in with Google Popup (Strict Genuine Google OAuth Enforcement)
+export async function signInWithGoogle(loginHint: string | null = null) {
   if (!auth) {
-    const demoUser = {
-      uid: 'doab-operator-01',
-      displayName: 'Suneet Chugh',
-      email: 'suneet.chugh@doab.gov.in',
-      photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256',
-      emailVerified: true,
-      lastLogin: new Date().toISOString()
-    };
-    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(demoUser));
-    localStorage.setItem('doab_last_login', new Date().toISOString());
-    window.dispatchEvent(new Event('doab_auth_changed'));
     return {
-      user: demoUser,
-      token: 'demo-jwt-token',
-      error: null
+      user: null,
+      token: null,
+      error: 'Google Authentication service is not configured. Please provide Firebase credentials in your environment.',
+      code: 'auth/not-configured'
     };
   }
 
@@ -105,17 +148,51 @@ export async function signInWithGoogle(loginHint = null) {
     }
     const result = await signInWithPopup(auth, provider);
     const token = await result.user.getIdToken();
+    const user = result.user;
+
+    const userProfile = {
+      uid: user.uid,
+      displayName: user.displayName || user.email?.split('@')[0] || 'Civic Operator',
+      email: user.email,
+      photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`,
+      emailVerified: user.emailVerified,
+      lastLogin: new Date().toISOString()
+    };
+
+    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(userProfile));
+    localStorage.setItem('doab_last_login', new Date().toISOString());
+    localStorage.setItem('doab_last_google_account', JSON.stringify({
+      email: user.email,
+      fullName: userProfile.displayName,
+      photoURL: userProfile.photoURL
+    }));
+    window.dispatchEvent(new Event('doab_auth_changed'));
+
     return {
-      user: result.user,
+      user: {
+        ...user,
+        photoURL: userProfile.photoURL
+      },
       token,
       error: null,
     };
   } catch (error: any) {
     console.error('Firebase Google Sign-In Error:', error);
+    let errorMessage = 'An error occurred during Google sign in.';
+    if (error.code === 'auth/popup-closed-by-user') {
+      errorMessage = 'Sign in was cancelled (Google popup closed before completion).';
+    } else if (error.code === 'auth/cancelled-popup-request') {
+      errorMessage = 'Another Google sign-in request is already in progress.';
+    } else if (error.code === 'auth/popup-blocked') {
+      errorMessage = 'Google sign-in popup was blocked by your browser. Please allow popups for this site.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
     return {
       user: null,
       token: null,
-      error: error.message || 'An error occurred during sign in.',
+      error: errorMessage,
       code: error.code,
     };
   }
@@ -123,30 +200,42 @@ export async function signInWithGoogle(loginHint = null) {
 
 // Sign in with Email & Password
 export async function signInWithFirebaseEmail(email: string, password: string) {
+  const name = email.split('@')[0].replace(/[._]/g, ' ') || 'Civic Operator';
+  const formattedName = name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const dynamicAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(formattedName)}&background=0284c7&color=fff&bold=true`;
+
   if (!auth) {
-    const demoUser = {
-      uid: 'doab-operator-email',
-      displayName: email.split('@')[0] || 'Civic Operator',
-      email: email,
-      photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}&background=0C4A6E&color=fff`,
-      emailVerified: true,
-      lastLogin: new Date().toISOString()
-    };
-    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(demoUser));
-    localStorage.setItem('doab_last_login', new Date().toISOString());
-    window.dispatchEvent(new Event('doab_auth_changed'));
     return {
-      user: demoUser,
-      token: 'demo-jwt-token',
-      error: null
+      user: null,
+      token: null,
+      error: 'Authentication service is not configured. Please provide Firebase credentials in your environment.',
+      code: 'auth/not-configured'
     };
   }
 
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
     const token = await result.user.getIdToken();
+    const user = result.user;
+
+    const userProfile = {
+      uid: user.uid,
+      displayName: user.displayName || formattedName,
+      email: user.email,
+      photoURL: user.photoURL || dynamicAvatar,
+      emailVerified: user.emailVerified,
+      lastLogin: new Date().toISOString()
+    };
+
+    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(userProfile));
+    localStorage.setItem('doab_last_login', new Date().toISOString());
+    window.dispatchEvent(new Event('doab_auth_changed'));
+
     return {
-      user: result.user,
+      user: {
+        ...user,
+        photoURL: userProfile.photoURL
+      },
       token,
       error: null,
     };
@@ -163,6 +252,7 @@ export async function signInWithFirebaseEmail(email: string, password: string) {
 // Sign Out
 export async function firebaseSignOut() {
   localStorage.removeItem(DEMO_USER_KEY);
+  localStorage.removeItem('doab_last_login');
   window.dispatchEvent(new Event('doab_auth_changed'));
   
   if (auth) {

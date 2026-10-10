@@ -91,9 +91,9 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
       description: 'Used on the operations map to compute turn-by-turn flood avoidance paths and calculate risk perimeters.',
       icon: MapPin,
       isGranted: permissions.location === 'granted',
-      statusLabel: 'Active',
+      statusLabel: 'Granted',
       action: requestLocation,
-      actionText: permissions.location === 'granted' ? 'GPS Active' : 'Allow Location'
+      actionText: permissions.location === 'granted' ? 'Allowed' : 'Allow Location Access'
     },
     {
       id: 'notifications',
@@ -102,9 +102,9 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
       description: 'Permits DOAB to broadcast real-time ward telemetry alerts, flash flood warnings, and tanker dispatch updates.',
       icon: Bell,
       isGranted: permissions.notifications === 'granted',
-      statusLabel: 'Active',
+      statusLabel: 'Enabled',
       action: requestNotifications,
-      actionText: permissions.notifications === 'granted' ? 'Notifications Active' : 'Grant Notifications'
+      actionText: permissions.notifications === 'granted' ? 'Enabled' : 'Enable Notifications'
     },
     {
       id: 'geofence',
@@ -113,9 +113,9 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
       description: 'Transmits passive road elevation telemetry during your commute so surrounding riders are alerted in real time.',
       icon: Radio,
       isGranted: permissions.geofence,
-      statusLabel: 'Active',
+      statusLabel: 'Enabled',
       action: () => { playClick(); setPermissions((prev) => ({ ...prev, geofence: !prev.geofence })); },
-      actionText: permissions.geofence ? 'Geofencing Active' : 'Enable Geofencing'
+      actionText: permissions.geofence ? 'Disable' : 'Enable Geofencing'
     },
     {
       id: 'dnd_broadcast',
@@ -124,12 +124,12 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
       description: 'Enables high-priority full-screen emergency broadcast screens when your route crosses an unsafe red flood zone.',
       icon: Volume2,
       isGranted: permissions.dndBroadcast,
-      statusLabel: 'Armed',
+      statusLabel: 'Enabled',
       action: () => {
         playClick();
         if (onTestDangerBroadcast) onTestDangerBroadcast();
       },
-      actionText: 'Test Danger Screen'
+      actionText: 'Test Emergency Alert'
     }
   ];
 
@@ -140,12 +140,12 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md pb-[max(1rem,env(safe-area-inset-bottom))]">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="relative w-full max-w-lg neo-glass-card rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl overflow-hidden p-6 sm:p-7 flex flex-col"
+        className="relative w-full max-w-lg neo-glass-card rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl overflow-hidden p-4 sm:p-7 flex flex-col max-h-[88dvh]"
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-5 pb-3 border-b border-[var(--border-color)]">
@@ -232,7 +232,7 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
           })}
         </div>
 
-        {/* Footer Actions: Manage & Test SOS CTA + Complete Setup */}
+        {/* Footer Actions: Test Emergency Broadcast CTA + Save & Close */}
         <div className="mt-4 pt-3.5 border-t border-[var(--border-color)] flex flex-col sm:flex-row items-center justify-between gap-3">
           <button
             type="button"
@@ -243,14 +243,14 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
             className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-semibold hover:bg-red-500/20 transition-colors cursor-pointer"
           >
             <AlertTriangle className="h-3.5 w-3.5" />
-            <span>Manage & Test SOS</span>
+            <span>Test Emergency Broadcast</span>
           </button>
 
           <button
             onClick={handleComplete}
             className="w-full sm:w-auto px-4 py-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-bold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
           >
-            Confirm & Arm Suite
+            Save & Close
           </button>
         </div>
       </motion.div>

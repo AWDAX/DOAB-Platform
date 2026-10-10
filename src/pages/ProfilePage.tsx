@@ -93,8 +93,9 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
               <div className="flex items-center gap-3.5 min-w-0">
                 <img 
-                  src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}`} 
+                  src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`} 
                   alt="Avatar" 
+                  referrerPolicy="no-referrer"
                   className="h-11 w-11 rounded-full border border-[var(--border-color)] shadow-xs object-cover shrink-0" 
                 />
                 <div className="min-w-0">
@@ -220,8 +221,8 @@ export default function ProfilePage() {
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
               <span className="text-xs font-bold text-[var(--text-main)]">GPS Location</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--text-main)]/10 text-[var(--text-main)]">
-                Active
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                Granted
               </span>
             </button>
             <button 
@@ -230,8 +231,8 @@ export default function ProfilePage() {
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
               <span className="text-xs font-bold text-[var(--text-main)]">Civic Notifications</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--text-main)]/10 text-[var(--text-main)]">
-                Active
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                Enabled
               </span>
             </button>
             <button 
@@ -240,8 +241,8 @@ export default function ProfilePage() {
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
               <span className="text-xs font-bold text-[var(--text-main)]">Commuter Geofencing</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--text-main)]/10 text-[var(--text-main)]">
-                Active
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                Enabled
               </span>
             </button>
             <button 
@@ -250,8 +251,8 @@ export default function ProfilePage() {
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
               <span className="text-xs font-bold text-[var(--text-main)]">DND / SOS Broadcast</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--text-main)]/10 text-[var(--text-main)]">
-                Armed
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                Enabled
               </span>
             </button>
           </div>

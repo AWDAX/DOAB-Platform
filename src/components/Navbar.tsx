@@ -2,10 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Search, Compass, Settings, X, MapPin, Route as RouteIcon, Bell, User, Sun, Droplets, ShieldAlert } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import ThemeToggle from './ThemeToggle';
-import EnvToggle from './EnvToggle';
 import Tooltip from './Tooltip';
 import BrandLogo from './BrandLogo';
+import ThemeToggle from './ThemeToggle';
 import { playClick } from '../utils/soundFx';
 import { CIVIC_INCIDENTS } from '../pages/MapPage';
 
@@ -256,42 +255,25 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
 
           {/* Action Controls & Navigation Utilities */}
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {onOpenPreferences && (
-              <Tooltip content="Preferences" shortcut="Shift+S" position="bottom">
-                <button
-                  type="button"
-                  onClick={() => { playClick(); onOpenPreferences(); }}
-                  className="w-9 h-9 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors flex items-center justify-center cursor-pointer shadow-2xs group"
-                  aria-label="Open System Preferences"
-                >
-                  <Settings className="h-4.5 w-4.5 text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-transform duration-500 group-hover:rotate-90" />
-                </button>
-              </Tooltip>
-            )}
-
-            {onOpenTour && (
-              <Tooltip content="Platform Tour" shortcut="Shift+G" position="bottom">
-                <button
-                  type="button"
-                  onClick={() => { playClick(); onOpenTour(); }}
-                  className="w-9 h-9 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors flex items-center justify-center cursor-pointer shadow-2xs group"
-                  aria-label="Start Guided Platform Tour"
-                >
-                  <Compass className="h-4.5 w-4.5 text-[var(--color-brand-accent)] transition-transform duration-300 group-hover:rotate-45" />
-                </button>
-              </Tooltip>
-            )}
-
-            <div id="tour-env-toggle" className="flex items-center">
-              <Tooltip content={envMode === 'flood' ? "Drought" : "Flood"} shortcut="Shift+E" position="bottom">
-                <EnvToggle envMode={envMode} toggleEnvMode={toggleEnvMode} />
-              </Tooltip>
+            {/* Desktop Theme Toggle */}
+            <div className="hidden md:flex items-center">
+              <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
             </div>
 
-            <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
-              <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
-            </Tooltip>
-            
+            {onOpenPreferences && (
+              <Tooltip content="Preferences & Controls" shortcut="Shift+S" position="bottom">
+                <button
+                  type="button"
+                  id="tour-preferences-btn"
+                  onClick={() => { playClick(); onOpenPreferences(); }}
+                  className="w-9 h-9 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                  aria-label="Open System Preferences"
+                >
+                  <Settings className="h-4.5 w-4.5 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-90" />
+                </button>
+              </Tooltip>
+            )}
+
             {/* Mobile Menu Trigger */}
             <button 
               type="button"
@@ -432,7 +414,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                       onClick={() => { playClick(); setIsMobileMenuOpen(false); onOpenPreferences(); }}
                       className="p-2.5 rounded-xl bg-[var(--bg-main)] text-[var(--text-main)] hover:bg-[var(--text-main)]/10 text-left flex items-center gap-3 text-xs font-semibold transition-colors cursor-pointer"
                     >
-                      <Settings className="h-4 w-4 text-[var(--text-muted)]" />
+                      <Settings className="h-4 w-4 text-[var(--color-brand-accent)]" />
                       <span>System Preferences</span>
                     </button>
                   )}

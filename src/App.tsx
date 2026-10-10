@@ -27,13 +27,13 @@ function BottomNav() {
     { path: '/', icon: Map, label: 'Map' },
     { path: '/routes/best', icon: RouteIcon, label: 'Routes' },
     { path: '/routes/old', icon: History, label: 'History' },
-    { path: '/notifications', icon: Bell, label: 'All Alerts' },
+    { path: '/notifications', icon: Bell, label: 'Alerts', badge: '3' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)]/95 backdrop-blur-lg border-t border-[var(--border-color)] pb-[env(safe-area-inset-bottom)] z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
-      <div className="flex justify-around items-center h-16 px-2">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)]/92 backdrop-blur-2xl border-t border-[var(--border-color)] pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 z-40 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+      <div className="flex justify-around items-center h-14 px-2 max-w-md mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -42,12 +42,26 @@ function BottomNav() {
               key={item.path} 
               to={item.path}
               onClick={() => playClick()}
-              className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${
-                isActive ? 'text-[var(--text-main)] font-bold' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+              className={`relative flex flex-col items-center justify-center flex-1 h-full py-1 rounded-xl transition-all duration-200 active:scale-95 ${
+                isActive 
+                  ? 'text-[var(--color-brand-accent)] font-bold' 
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
               }`}
             >
-              <Icon className={`h-4.5 w-4.5 ${isActive ? 'stroke-[2.3]' : ''}`} />
-              <span className="text-[10px] font-semibold tracking-tight truncate max-w-[4.5rem]">{item.label}</span>
+              <div className="relative">
+                <Icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? 'scale-110 stroke-[2.4]' : 'stroke-[1.8]'}`} />
+                {item.badge && (
+                  <span className="absolute -top-1 -right-2 h-3.5 min-w-[14px] px-1 rounded-full bg-[var(--color-brand-accent)] text-[var(--bg-card)] text-[9px] font-mono font-black flex items-center justify-center shadow-xs">
+                    {item.badge}
+                  </span>
+                )}
+              </div>
+              <span className={`text-[10px] tracking-tight truncate max-w-[4rem] mt-0.5 ${isActive ? 'font-bold' : 'font-medium'}`}>
+                {item.label}
+              </span>
+              {isActive && (
+                <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-[var(--color-brand-accent)] animate-pulse" />
+              )}
             </Link>
           );
         })}
@@ -68,13 +82,13 @@ function DashboardLayout({
   children: React.ReactNode; 
   isStandalonePage?: boolean;
 }) {
-  if (isStandalonePage) return <>{children}</>;
+  if (isStandalonePage) return <div className="flex-1 overflow-y-auto">{children}</div>;
 
   return (
-    <div className="flex-1 min-h-0 w-full max-w-[1800px] 2xl:max-w-full mx-auto px-3 sm:px-5 md:px-6 py-3 sm:py-4 flex flex-col md:flex-row gap-4 sm:gap-6 z-10 overflow-hidden h-[calc(100dvh-4.25rem)] pb-16 md:pb-0">
+    <div className="flex-1 min-h-0 w-full max-w-[1920px] 2xl:max-w-full mx-auto px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 flex flex-col md:flex-row gap-2.5 sm:gap-3 md:gap-4 z-10 overflow-hidden h-[calc(100dvh-4rem)] pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-2.5">
       <GlobalSidebar />
       
-      <main className="flex-1 min-h-0 h-full rounded-3xl neo-glass-card shadow-sm overflow-hidden flex flex-col transition-colors duration-200 relative border border-[var(--border-color)]">
+      <main className="flex-1 min-h-0 h-full rounded-2xl sm:rounded-3xl neo-glass-card shadow-sm overflow-hidden flex flex-col transition-colors duration-200 relative border border-[var(--border-color)]">
         {children}
       </main>
       
@@ -159,7 +173,7 @@ function AppContent({
   }, [setIsPermissionsOpen, setIsDangerBroadcastOpen, setIsTourOpen, setIsPreferencesOpen]);
 
   return (
-    <div className="min-h-[100dvh] flex flex-col font-sans transition-colors duration-200 max-w-full bg-[var(--bg-main)] text-[var(--text-main)] selection:bg-[var(--color-brand-accent)] selection:text-white antialiased">
+    <div className="h-[100dvh] max-h-[100dvh] flex flex-col font-sans transition-colors duration-200 max-w-full bg-[var(--bg-main)] text-[var(--text-main)] selection:bg-[var(--color-brand-accent)] selection:text-white antialiased overflow-hidden">
       <SplashLoader />
       
       {!isStandalonePage && (
@@ -216,7 +230,14 @@ function AppContent({
                 </PageTransition>
               ) : (
                 <PageTransition>
-                  <LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} envMode={envMode} toggleEnvMode={toggleEnvMode} user={user} />
+                  <LandingPage 
+                    isDarkMode={isDarkMode} 
+                    toggleTheme={toggleTheme} 
+                    envMode={envMode} 
+                    toggleEnvMode={toggleEnvMode} 
+                    user={user} 
+                    onOpenPreferences={() => { playClick(); setIsPreferencesOpen(true); }}
+                  />
                 </PageTransition>
               )
             } 

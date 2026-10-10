@@ -9,15 +9,77 @@ import {
   CloudRain, 
   SunMedium, 
   Volume2, 
+  VolumeX,
   Compass, 
   User, 
   LogOut, 
   Sparkles,
-  ArrowRight
+  MousePointer,
+  Bell,
+  Check,
+  ChevronDown,
+  ShieldCheck
 } from 'lucide-react';
 import { playClick, playAlertAlarm, isSoundEnabled } from '../utils/soundFx';
 import { firebaseSignOut } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
+
+/**
+ * High-Precision ToggleSwitch Component
+ * Replaces default checkboxes with a clean, semantic animated button slider.
+ * Ported directly from SWATVA and SAHNIRMAAN design standard.
+ */
+function ToggleSwitch({ 
+  checked, 
+  onChange, 
+  disabled = false, 
+  size = 'md', 
+  ariaLabel = 'Toggle switch' 
+}: { 
+  checked: boolean; 
+  onChange: (next: boolean) => void; 
+  disabled?: boolean; 
+  size?: 'sm' | 'md';
+  ariaLabel?: string;
+}) {
+  const isSmall = size === 'sm';
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      disabled={disabled}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!disabled && onChange) onChange(!checked);
+      }}
+      className={`relative inline-flex items-center rounded-full transition-colors duration-300 focus:outline-none cursor-pointer select-none border-transparent shrink-0 ${
+        isSmall ? 'w-9 h-5 p-0.5' : 'w-11 h-6 p-0.5'
+      } ${
+        checked 
+          ? 'bg-[var(--text-main)]' 
+          : 'bg-slate-200 dark:bg-white/20'
+      } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+    >
+      <span
+        className={`inline-block rounded-full transition-transform duration-300 shadow-xs pointer-events-none ${
+          isSmall ? 'w-4 h-4' : 'w-5 h-5'
+        } ${
+          checked 
+            ? 'bg-[var(--bg-card)]' 
+            : 'bg-white dark:bg-slate-300'
+        }`}
+        style={{
+          transform: checked 
+            ? (isSmall ? 'translateX(16px)' : 'translateX(20px)') 
+            : 'translateX(0px)'
+        }}
+      />
+    </button>
+  );
+}
 
 interface PreferencesModalProps {
   isOpen: boolean;
@@ -43,7 +105,11 @@ export default function PreferencesModal({
   const navigate = useNavigate();
 
   // Acoustic feedback state
-  const [soundActive, setSoundActive] = useState(() => isSoundEnabled());
+  const [soundsActive, setSoundsActive] = useState(() => isSoundEnabled());
+  const [clickSoundActive, setClickSoundActive] = useState(() => localStorage.getItem('doab_click_sound') !== 'off');
+  const [isAudioAccordionOpen, setIsAudioAccordionOpen] = useState(true);
+
+  // Vehicle routing parameters
   const [clearanceLimit, setClearanceLimit] = useState<'15' | '20' | '25'>(() => {
     return (localStorage.getItem('doab_clearance_limit') as any) || '15';
   });
@@ -51,16 +117,21 @@ export default function PreferencesModal({
     return localStorage.getItem('doab_high_elevation') !== 'false';
   });
 
-  // Keep sound state synchronized
-  const handleToggleSound = () => {
+  // Keep master sound state synchronized
+  const handleMasterSoundToggle = (next: boolean) => {
     playClick();
-    const next = !soundActive;
-    setSoundActive(next);
+    setSoundsActive(next);
     if (next) {
       localStorage.removeItem('doab_sounds_muted');
     } else {
       localStorage.setItem('doab_sounds_muted', 'true');
     }
+  };
+
+  const handleClickSoundToggle = (next: boolean) => {
+    playClick();
+    setClickSoundActive(next);
+    localStorage.setItem('doab_click_sound', next ? 'on' : 'off');
   };
 
   const handleClearanceChange = (val: '15' | '20' | '25') => {
@@ -69,9 +140,8 @@ export default function PreferencesModal({
     localStorage.setItem('doab_clearance_limit', val);
   };
 
-  const handleElevationToggle = () => {
+  const handleElevationToggle = (next: boolean) => {
     playClick();
-    const next = !highElevationPriority;
     setHighElevationPriority(next);
     localStorage.setItem('doab_high_elevation', String(next));
   };
@@ -107,13 +177,13 @@ export default function PreferencesModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18 }}
             onClick={() => { playClick(); onClose(); }}
             className="fixed inset-0 bg-black/60 backdrop-blur-md"
             aria-hidden="true"
           />
 
-          {/* Modal Container Card */}
+          {/* Modal Container Card (SAHNIRMAAN & SWATVA Standard) */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -132,7 +202,7 @@ export default function PreferencesModal({
                     System Preferences & Controls
                   </h2>
                   <p className="text-xs text-[var(--text-muted)] truncate">
-                    Acoustics, climate engine & life-safety routing
+                    Climate dynamics, acoustics & safe routing parameters
                   </p>
                 </div>
               </div>
@@ -155,181 +225,297 @@ export default function PreferencesModal({
             {/* Scrollable Content Body */}
             <div className="flex-1 overflow-y-auto py-5 space-y-5 custom-scrollbar pr-1">
               
-              {/* SECTION 1: Dual-Climate & Theme Grid */}
-              <div className="space-y-3">
+              {/* SECTION 1: Dual-Climate Dynamics (SWATVA Visual Cards) */}
+              <div className="space-y-2.5">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
                   <Sparkles size={12} className="text-[var(--color-brand-accent)]" />
-                  Appearance & Environmental Engine
+                  Dual-Climate Environmental Engine
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Climate Grid Mode Switcher */}
-                  <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col justify-between gap-3">
-                    <div>
-                      <div className="text-xs font-bold text-[var(--text-main)] flex items-center gap-1.5">
-                        {envMode === 'flood' ? <CloudRain size={14} className="text-sky-500" /> : <SunMedium size={14} className="text-amber-500" />}
-                        <span>Climate Grid Mode</span>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Flood Mode Card */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (envMode !== 'flood') {
+                        playClick();
+                        toggleEnvMode();
+                      }
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer select-none relative group h-28 ${
+                      envMode === 'flood'
+                        ? 'bg-sky-500/10 border-sky-500/40 text-sky-950 dark:text-sky-100 shadow-sm ring-1 ring-sky-500/30'
+                        : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--text-muted)]/30'
+                    }`}
+                  >
+                    {envMode === 'flood' && (
+                      <div className="absolute top-2.5 right-2.5 w-4.5 h-4.5 rounded-full bg-sky-500 text-white flex items-center justify-center shadow-xs">
+                        <Check size={11} strokeWidth={3.5} />
                       </div>
-                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                        {envMode === 'flood' ? 'Monsoon submersion & drainage' : 'Groundwater deficit & tanker fleet'}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => { playClick(); toggleEnvMode(); }}
-                      className="w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] transition-all cursor-pointer shadow-xs"
-                    >
-                      <span>Switch to {envMode === 'flood' ? 'Drought Mode' : 'Flood Mode'}</span>
-                      <ArrowRight size={13} />
-                    </button>
-                  </div>
-
-                  {/* Dark/Light Appearance Switcher */}
-                  <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col justify-between gap-3">
-                    <div>
-                      <div className="text-xs font-bold text-[var(--text-main)] flex items-center gap-1.5">
-                        {isDarkMode ? <Moon size={14} className="text-sky-400" /> : <Sun size={14} className="text-amber-500" />}
-                        <span>Visual Theme</span>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                        <CloudRain size={16} />
                       </div>
-                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                        {isDarkMode ? 'Abyssal dark canvas with high contrast' : 'Porcelain light canvas with crisp ink'}
-                      </p>
+                      <div>
+                        <div className="text-xs font-bold leading-tight text-[var(--text-main)]">Flood Mode</div>
+                        <div className="text-[9px] font-mono text-[var(--text-muted)]">Aqua / Porcelain</div>
+                      </div>
                     </div>
+                    <div className="text-[10px] text-[var(--text-muted)] leading-tight">
+                      Monsoon inundation, ward waterlog & high-elevation reroutes
+                    </div>
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={() => { playClick(); toggleTheme(); }}
-                      className="w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] transition-all cursor-pointer shadow-xs"
-                    >
-                      <span>Switch to {isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                      <ArrowRight size={13} />
-                    </button>
-                  </div>
+                  {/* Drought Mode Card */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (envMode !== 'drought') {
+                        playClick();
+                        toggleEnvMode();
+                      }
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer select-none relative group h-28 ${
+                      envMode === 'drought'
+                        ? 'bg-amber-500/10 border-amber-500/40 text-amber-950 dark:text-amber-100 shadow-sm ring-1 ring-amber-500/30'
+                        : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--text-muted)]/30'
+                    }`}
+                  >
+                    {envMode === 'drought' && (
+                      <div className="absolute top-2.5 right-2.5 w-4.5 h-4.5 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                        <Check size={11} strokeWidth={3.5} />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                        <SunMedium size={16} />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold leading-tight text-[var(--text-main)]">Drought Mode</div>
+                        <div className="text-[9px] font-mono text-[var(--text-muted)]">Amber / Baked Earth</div>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-[var(--text-muted)] leading-tight">
+                      Groundwater deficits, dry wards & emergency tanker dispatches
+                    </div>
+                  </button>
                 </div>
               </div>
 
-              {/* SECTION 2: Acoustics & Audio Feedback */}
-              <div className="space-y-3 pt-2 border-t border-[var(--border-color)]">
+              {/* SECTION 2: Visual Theme (Light vs Dark) - Preserved for Mobile, Hidden on Desktop */}
+              <div className="space-y-2.5 pt-1 md:hidden">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
-                  <Volume2 size={12} className="text-[var(--color-brand-accent)]" />
-                  Tactile Audio & Siren Feedback
+                  {isDarkMode ? <Moon size={12} className="text-sky-400" /> : <Sun size={12} className="text-amber-500" />}
+                  Theme & Contrast Canvas
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Click Acoustics */}
-                  <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-[var(--text-main)] truncate">Tactile Click Sound</div>
-                      <div className="text-[11px] text-[var(--text-muted)] truncate">Low-latency physical click FX</div>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Light Canvas */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isDarkMode) {
+                        playClick();
+                        toggleTheme();
+                      }
+                    }}
+                    className={`p-3 rounded-2xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                      !isDarkMode
+                        ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-transparent shadow-sm'
+                        : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--text-muted)]/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Sun size={15} className={!isDarkMode ? 'text-amber-300' : 'text-[var(--text-muted)]'} />
+                      <div>
+                        <div className={`text-xs font-bold leading-tight ${!isDarkMode ? 'text-[var(--bg-card)]' : 'text-[var(--text-main)]'}`}>
+                          Light Theme
+                        </div>
+                        <div className={`text-[9px] font-mono mt-0.5 ${!isDarkMode ? 'text-[var(--bg-card)]/70' : 'text-[var(--text-muted)]'}`}>
+                          Clean Sea Porcelain
+                        </div>
+                      </div>
                     </div>
+                    {!isDarkMode && <Check size={14} strokeWidth={3} className="text-[var(--bg-card)]" />}
+                  </button>
+
+                  {/* Dark Canvas */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isDarkMode) {
+                        playClick();
+                        toggleTheme();
+                      }
+                    }}
+                    className={`p-3 rounded-2xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                      isDarkMode
+                        ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-transparent shadow-sm'
+                        : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--text-muted)]/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Moon size={15} className={isDarkMode ? 'text-sky-400' : 'text-[var(--text-muted)]'} />
+                      <div>
+                        <div className={`text-xs font-bold leading-tight ${isDarkMode ? 'text-[var(--bg-card)]' : 'text-[var(--text-main)]'}`}>
+                          Dark Theme
+                        </div>
+                        <div className={`text-[9px] font-mono mt-0.5 ${isDarkMode ? 'text-[var(--bg-card)]/70' : 'text-[var(--text-muted)]'}`}>
+                          Abyssal Obsidian
+                        </div>
+                      </div>
+                    </div>
+                    {isDarkMode && <Check size={14} strokeWidth={3} className="text-[var(--bg-card)]" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* SECTION 3: Sensory & Audio Feedback Engine (SWATVA Accordion) */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] flex items-center justify-center shrink-0 shadow-2xs">
+                      {soundsActive ? <Volume2 size={16} /> : <VolumeX size={16} className="text-[var(--text-muted)]" />}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[var(--text-main)] truncate">Acoustic & Tactile Audio</div>
+                      <div className="text-[10px] text-[var(--text-muted)] truncate">UI click feedback & emergency life-safety alert siren</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <ToggleSwitch 
+                      checked={soundsActive} 
+                      onChange={handleMasterSoundToggle} 
+                      ariaLabel="Toggle audio feedback"
+                    />
                     <button
                       type="button"
-                      onClick={handleToggleSound}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
-                        soundActive 
-                          ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs' 
-                          : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)]'
+                      onClick={() => { playClick(); setIsAudioAccordionOpen(!isAudioAccordionOpen); }}
+                      className="p-1 rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
+                      title="Audio Sub-options"
+                    >
+                      <ChevronDown 
+                        size={15} 
+                        className={`transition-transform duration-300 ${isAudioAccordionOpen ? 'rotate-180' : ''}`} 
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-Settings Accordion */}
+                <AnimatePresence>
+                  {isAudioAccordionOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-2 border-t border-[var(--border-color)] pt-3 overflow-hidden"
+                    >
+                      {/* Sub 1: Tactile Click Sound */}
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <MousePointer size={13} className="text-[var(--text-muted)] shrink-0" />
+                          <span className="text-xs font-medium text-[var(--text-main)] truncate">Tactile Physical Click FX</span>
+                        </div>
+                        <ToggleSwitch
+                          size="sm"
+                          disabled={!soundsActive}
+                          checked={clickSoundActive && soundsActive}
+                          onChange={handleClickSoundToggle}
+                          ariaLabel="Toggle click sounds"
+                        />
+                      </div>
+
+                      {/* Sub 2: Emergency Alert Siren */}
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Bell size={13} className="text-[var(--text-muted)] shrink-0" />
+                          <span className="text-xs font-medium text-[var(--text-main)] truncate">Emergency Life-Safety Siren</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { playClick(); playAlertAlarm(); }}
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono uppercase bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-colors cursor-pointer"
+                        >
+                          Test Siren
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* SECTION 4: Life-Safety & Vehicle Routing Parameters */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <ShieldCheck size={16} className="text-[var(--color-brand-accent)] shrink-0" />
+                    <div>
+                      <div className="text-xs font-bold text-[var(--text-main)]">Two-Wheeler Flood Clearance Limit</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">Reroutes riders when standing water exceeds limit</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--color-brand-accent)] shrink-0">
+                    {clearanceLimit} cm max
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  {[
+                    { val: '15', label: '15 cm', desc: 'Strict Safety' },
+                    { val: '20', label: '20 cm', desc: 'Standard City' },
+                    { val: '25', label: '25 cm', desc: 'High Clearance' },
+                  ].map((item) => (
+                    <button
+                      key={item.val}
+                      type="button"
+                      onClick={() => handleClearanceChange(item.val as any)}
+                      className={`p-2 rounded-xl text-center border transition-all cursor-pointer ${
+                        clearanceLimit === item.val
+                          ? 'border-[var(--text-main)] bg-[var(--bg-card)] shadow-xs ring-1 ring-[var(--text-main)]'
+                          : 'border-[var(--border-color)] bg-[var(--bg-card)]/50 hover:bg-[var(--bg-card)]'
                       }`}
                     >
-                      {soundActive ? 'Enabled' : 'Muted'}
+                      <div className="text-xs font-bold text-[var(--text-main)]">{item.label}</div>
+                      <div className="text-[9px] text-[var(--text-muted)] font-mono">{item.desc}</div>
                     </button>
-                  </div>
+                  ))}
+                </div>
 
-                  {/* Danger Alarm Acoustics */}
-                  <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-[var(--text-main)] truncate">Emergency Siren Audio</div>
-                      <div className="text-[11px] text-[var(--text-muted)] truncate">Dual-tone critical life-safety buzzer</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => { playClick(); playAlertAlarm(); }}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-colors cursor-pointer shrink-0 shadow-xs"
-                    >
-                      Test Siren
-                    </button>
+                <div className="pt-2 border-t border-[var(--border-color)] flex items-center justify-between gap-3">
+                  <div className="text-xs font-medium text-[var(--text-main)]">
+                    Prefer High-Elevation Ridges
                   </div>
+                  <ToggleSwitch
+                    size="sm"
+                    checked={highElevationPriority}
+                    onChange={handleElevationToggle}
+                    ariaLabel="Toggle high-elevation priority"
+                  />
                 </div>
               </div>
 
-              {/* SECTION 3: Life-Safety Routing Thresholds */}
-              <div className="space-y-3 pt-2 border-t border-[var(--border-color)]">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
-                  <Compass size={12} className="text-[var(--color-brand-accent)]" />
-                  Routing & Flood Clearance Safety
-                </span>
-
-                <div className="p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <div className="text-xs font-bold text-[var(--text-main)]">Two-Wheeler Submersion Limit</div>
-                      <div className="text-[11px] text-[var(--text-muted)]">Reroutes riders when standing water depth exceeds threshold</div>
-                    </div>
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--color-brand-accent)] self-start sm:self-auto">
-                      {clearanceLimit} cm max
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 pt-1">
-                    {[
-                      { val: '15', label: '15 cm', desc: 'Strict Safety' },
-                      { val: '20', label: '20 cm', desc: 'Standard' },
-                      { val: '25', label: '25 cm', desc: 'High Clearance' },
-                    ].map((item) => (
-                      <button
-                        key={item.val}
-                        type="button"
-                        onClick={() => handleClearanceChange(item.val as any)}
-                        className={`p-2 rounded-xl text-center border transition-all cursor-pointer ${
-                          clearanceLimit === item.val
-                            ? 'border-[var(--text-main)] bg-[var(--bg-card)] shadow-xs ring-1 ring-[var(--text-main)]'
-                            : 'border-[var(--border-color)] bg-[var(--bg-card)]/50 hover:bg-[var(--bg-card)]'
-                        }`}
-                      >
-                        <div className="text-xs font-bold text-[var(--text-main)]">{item.label}</div>
-                        <div className="text-[9px] text-[var(--text-muted)] font-mono">{item.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="pt-2 border-t border-[var(--border-color)] flex items-center justify-between gap-3">
-                    <div className="text-xs font-medium text-[var(--text-main)]">
-                      Prefer High-Elevation Ridges
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleElevationToggle}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
-                        highElevationPriority
-                          ? 'bg-[var(--text-main)] text-[var(--bg-card)]'
-                          : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)]'
-                      }`}
-                    >
-                      {highElevationPriority ? 'Enabled' : 'Disabled'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 4: Active Operator & Session */}
-              <div className="space-y-3 pt-2 border-t border-[var(--border-color)]">
+              {/* SECTION 5: Stakeholder Session & Identity */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
                   <User size={12} className="text-[var(--color-brand-accent)]" />
-                  Stakeholder Session & Access
+                  Operator Session & Authentication
                 </span>
 
                 {user ? (
-                  <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
                     <div className="flex items-center gap-3 min-w-0">
                       <img
-                        src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}`}
+                        src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`}
                         alt="Avatar"
-                        className="w-10 h-10 rounded-full border border-[var(--border-color)] object-cover shrink-0"
+                        referrerPolicy="no-referrer"
+                        className="w-9 h-9 rounded-full border border-[var(--border-color)] object-cover shrink-0"
                       />
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-[var(--text-main)] truncate">{user.displayName || 'Civic Operator'}</div>
-                        <div className="text-[11px] font-mono text-[var(--text-muted)] truncate">{user.email}</div>
+                        <div className="text-[10px] font-mono text-[var(--text-muted)] truncate">{user.email}</div>
                       </div>
                     </div>
 
@@ -343,10 +529,10 @@ export default function PreferencesModal({
                     </button>
                   </div>
                 ) : (
-                  <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
                     <div className="min-w-0">
                       <div className="text-xs font-bold text-[var(--text-main)]">Anonymous Viewer</div>
-                      <div className="text-[11px] text-[var(--text-muted)]">Sign in to unlock operator routing & dispatch bounties</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">Sign in to publish tanker dispatches & safe routing</div>
                     </div>
 
                     <button

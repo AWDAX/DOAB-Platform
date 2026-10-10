@@ -46,7 +46,7 @@
     --danger-border-hover: rgba(153, 27, 27, 0.38);
   }
 
-  .dark .theme-drought, .theme-drought.dark {
+  .dark .theme-drought, .theme-drought.dark, .dark.theme-drought, html.theme-drought.dark, html.dark.theme-drought {
     /* DROUGHT THEME: Original Premium Amber Ground (Dark Mode) */
     --bg-main: #1F1915;         /* Deep Ground Base */
     --bg-card: #2C241E;         /* Warm Baked Earth Card */
@@ -75,6 +75,15 @@
     background-color: var(--bg-main);
     color: var(--text-main);
     min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: none;
+  }
+
+  button, a, input, select, textarea, [role="button"], [role="switch"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -480,12 +489,83 @@ body.dark .cursor-grab:active {
   color: #0f172a;
 }
 
-:not(.dark) .footer-scroll-top:hover {
-  transform: translate(-50%, -50%) translateY(-2px);
-  background: #ffffff !important;
-  border-color: var(--color-brand-accent) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 
-              0 0 12px var(--color-brand-accent) !important;
-  color: var(--color-brand-accent);
+/* ══════════════════════════════════════════════════════════════════════════
+   Leaflet Map Engine, Smooth Hold & Drag Physics & Adaptive Cursors
+   ══════════════════════════════════════════════════════════════════════════ */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 400px;
+  background-color: var(--bg-main) !important;
+  font-family: inherit !important;
+  z-index: 1 !important;
+  outline: none;
+  cursor: grab !important;
+  cursor: -webkit-grab !important;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-x pan-y pinch-zoom;
 }
+
+/* Default grab state when hovering over map */
+.leaflet-grab {
+  cursor: grab !important;
+  cursor: -webkit-grab !important;
+}
+
+/* Grabbing state when holding mouse down & dragging across map */
+.leaflet-container:active,
+.leaflet-grab:active,
+.leaflet-dragging,
+.leaflet-dragging .leaflet-container,
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-interactive,
+.leaflet-dragging .leaflet-tile,
+.leaflet-dragging .leaflet-marker-pane,
+.leaflet-dragging .leaflet-overlay-pane {
+  cursor: grabbing !important;
+  cursor: -webkit-grabbing !important;
+}
+
+/* Interactive Marker Pins have crisp pointer cursor */
+.leaflet-interactive,
+.leaflet-marker-icon,
+.custom-incident-pin,
+.custom-incident-pin-selected,
+.user-live-pin {
+  cursor: pointer !important;
+}
+
+/* While holding and dragging, maintain grabbing cursor across all child elements */
+.leaflet-dragging .leaflet-marker-icon,
+.leaflet-dragging .custom-incident-pin,
+.leaflet-dragging .custom-incident-pin-selected,
+.leaflet-dragging .user-live-pin {
+  cursor: grabbing !important;
+  cursor: -webkit-grabbing !important;
+}
+
+/* Dark Mode Tile Inversion Filter for High Legibility & Modern Dark Maps */
+.dark .leaflet-tile {
+  filter: brightness(0.65) invert(1) contrast(1.15) hue-rotate(200deg) saturate(0.75);
+}
+
+.dark.theme-drought .leaflet-tile,
+.dark .theme-drought .leaflet-tile,
+html.dark.theme-drought .leaflet-tile {
+  filter: brightness(0.65) invert(1) contrast(1.1) hue-rotate(180deg) sepia(0.2) saturate(0.85);
+}
+
+/* Leaflet Custom Marker & Live Pulse Pin Rules */
+.custom-incident-pin,
+.user-live-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-control-container .leaflet-bottom {
+  z-index: 10 !important;
+}
+
+
 

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, Route as RouteIcon, X, Volume2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { playClick, playAlertAlarm } from '../utils/soundFx';
+import { NativeService } from '../utils/nativeService';
 
 interface EmergencyDangerBroadcastProps {
   isOpen: boolean;
@@ -27,20 +28,25 @@ export default function EmergencyDangerBroadcast({
   useEffect(() => {
     if (isOpen) {
       playAlertAlarm();
+      NativeService.triggerSosHaptics();
+      NativeService.sendEmergencyNotification(
+        "🚨 SEVERE FLOOD / DANGER AHEAD",
+        `${title} at ${ward}. Depth: ${waterDepthCm}cm. Bypass advised.`
+      );
     }
-  }, [isOpen]);
+  }, [isOpen, title, ward, waterDepthCm]);
 
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md pb-[max(1rem,env(safe-area-inset-bottom))]">
         <motion.div
           initial={{ opacity: 0, scale: 0.94, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 12 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-lg neo-glass-card rounded-3xl border-2 border-red-500/60 bg-[var(--bg-card)] shadow-[0_0_50px_rgba(239,68,68,0.25)] overflow-hidden p-6 sm:p-7 flex flex-col"
+          className="relative w-full max-w-lg neo-glass-card rounded-3xl border-2 border-red-500/60 bg-[var(--bg-card)] shadow-[0_0_50px_rgba(239,68,68,0.25)] overflow-hidden p-4 sm:p-7 flex flex-col max-h-[88dvh] overflow-y-auto"
         >
           {/* Top Danger Bar */}
           <div className="flex items-center justify-between gap-3 mb-5">

@@ -214,6 +214,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                     <img
                       src={member.avatar || member.fallbackAvatar}
                       alt={member.name}
+                      referrerPolicy="no-referrer"
                       className="h-14 w-14 rounded-2xl object-cover border border-[var(--border-color)] bg-[var(--bg-main)] shadow-2xs group-hover:scale-105 transition-transform"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = member.fallbackAvatar;
@@ -309,7 +310,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
       {/* Lightbox Member Modal */}
       {lightboxMember && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md select-none"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md select-none pb-[max(1rem,env(safe-area-inset-bottom))]"
           onClick={() => { playClick(); setLightboxMember(null); }}
         >
           <div
@@ -321,7 +322,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             style={{
               transform: `perspective(1000px) rotateX(${lightboxTilt.y}deg) rotateY(${lightboxTilt.x}deg)`
             }}
-            className="relative w-full max-w-md neo-glass-card rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl overflow-hidden p-6 sm:p-7 flex flex-col transition-transform duration-150"
+            className="relative w-full max-w-md neo-glass-card rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl overflow-hidden p-5 sm:p-7 flex flex-col transition-transform duration-150 max-h-[88dvh] overflow-y-auto"
           >
             {/* Header / Close */}
             <div className="flex items-center justify-between mb-5 pb-3 border-b border-[var(--border-color)]">
@@ -342,6 +343,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
               <img
                 src={lightboxMember.avatar || lightboxMember.fallbackAvatar}
                 alt={lightboxMember.name}
+                referrerPolicy="no-referrer"
                 className="h-16 w-16 rounded-2xl object-cover border border-[var(--border-color)] bg-[var(--bg-main)] shadow-sm shrink-0"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = lightboxMember.fallbackAvatar;

@@ -137,7 +137,7 @@ export default function GlobalSidebar() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="group relative flex items-center justify-between h-10 w-full rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-muted)] hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all duration-150 cursor-pointer"
+            className="group relative flex items-center h-10 w-full rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-muted)] hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all duration-150 cursor-pointer"
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-5 h-5 flex items-center justify-center shrink-0">
@@ -145,9 +145,6 @@ export default function GlobalSidebar() {
               </div>
               <span className="truncate text-left font-medium">Sign Out</span>
             </div>
-            <span className="text-[10px] font-mono text-[var(--text-muted)] group-hover:text-red-500/80 px-1 py-0.5 rounded border border-transparent group-hover:border-red-500/20">
-              Exit
-            </span>
           </button>
         ) : (
           <Tooltip content="Sign Out" position="right" className="w-full flex justify-center">

@@ -121,8 +121,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
 
             {/* Footer */}
             <div className="mt-5 pt-3 border-t border-[var(--border-color)] flex justify-between items-center text-[10px] font-mono text-[var(--text-muted)]">
-              <span>Press <kbd className="px-1.5 py-0.5 rounded bg-[var(--bg-main)] border border-[var(--border-color)]">Esc</kbd> anytime to dismiss</span>
-              <span className="text-[var(--color-brand-accent)] font-semibold">[A11Y_COMPLIANT]</span>
+              <span>Press <kbd className="px-1.5 py-0.5 rounded bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)]">Esc</kbd> anytime to dismiss</span>
             </div>
           </motion.div>
         </div>

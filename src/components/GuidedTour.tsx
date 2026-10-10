@@ -315,7 +315,7 @@ export const NOTIFICATIONS_TOUR_STEPS: TourStep[] = [
     badge: 'Step 02/04',
     floodDescription: 'High-severity alerts (>30cm water) linked to Safe Reroutes and SOS mode.',
     droughtDescription: 'Severe water deficit alerts triggering commercial plumber work orders.',
-    proTip: 'Can override device DND when life-safety permissions are armed.',
+    proTip: 'Can override device DND when emergency broadcast alerts are enabled.',
     icon: ShieldCheck,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
@@ -560,9 +560,10 @@ export default function GuidedTour({
       }
 
       // Center horizontally on target, clamped within screen margins
+      const effectiveCardWidth = Math.min(cardWidth, viewportWidth - screenPadding * 2);
       const targetCenterX = rect.left + rect.width / 2;
-      let left = targetCenterX - cardWidth / 2;
-      left = Math.max(screenPadding, Math.min(viewportWidth - cardWidth - screenPadding, left));
+      let left = targetCenterX - effectiveCardWidth / 2;
+      left = Math.max(screenPadding, Math.min(viewportWidth - effectiveCardWidth - screenPadding, left));
 
       setPopoverPos({ top, left, isTop });
     } else {
@@ -575,7 +576,8 @@ export default function GuidedTour({
       setSpotlightCoords({ x, y, w: centerW, h: centerH, rx: 24, ry: 24 });
       setHasTarget(false);
 
-      const left = Math.max(screenPadding, (viewportWidth - cardWidth) / 2);
+      const effectiveCardWidth = Math.min(cardWidth, viewportWidth - screenPadding * 2);
+      const left = Math.max(screenPadding, (viewportWidth - effectiveCardWidth) / 2);
       const top = Math.max(screenPadding, (viewportHeight - cardHeight) / 2);
       setPopoverPos({ top, left, isTop: false });
     }
