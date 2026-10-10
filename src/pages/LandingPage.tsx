@@ -16,13 +16,10 @@ import {
   Menu, 
   X, 
   Layers, 
-  HelpCircle,
-  Settings,
-  ArrowUp
+  HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '../components/ThemeToggle';
-import EnvToggle from '../components/EnvToggle';
 import Tooltip from '../components/Tooltip';
 import BrandLogo from '../components/BrandLogo';
 import KineticRollingHeadline from '../components/KineticRollingHeadline';
@@ -101,13 +98,13 @@ const FAQS = [
 interface LandingPageProps {
   isDarkMode: boolean;
   toggleTheme: () => void;
-  envMode: 'flood' | 'drought';
-  toggleEnvMode: () => void;
+  envMode?: 'flood' | 'drought';
+  toggleEnvMode?: () => void;
   user?: any;
   onOpenPreferences?: () => void;
 }
 
-export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEnvMode, user, onOpenPreferences }: LandingPageProps) {
+export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', user }: LandingPageProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
@@ -254,23 +251,6 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
 
         {/* Right: Controls & Clean Sign In CTA */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {onOpenPreferences && (
-            <Tooltip content="Preferences" shortcut="Shift+S" position="bottom">
-              <button
-                type="button"
-                onClick={() => { playClick(); onOpenPreferences(); }}
-                className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 text-[var(--color-brand-accent)] hover:bg-[var(--color-brand-accent)]/10 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
-                aria-label="Preferences"
-              >
-                <Settings className="h-4 w-4 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-90" />
-              </button>
-            </Tooltip>
-          )}
-
-          <Tooltip content={envMode === 'flood' ? "Drought" : "Flood"} shortcut="Shift+E" position="bottom">
-            <EnvToggle envMode={envMode} toggleEnvMode={toggleEnvMode} />
-          </Tooltip>
-
           <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
             <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
           </Tooltip>
@@ -451,7 +431,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
       {/* ── SECTION: THE DOAB 4-STAGE LOOP ── */}
       <section id="loop" className="py-14 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
         <div className="mb-10 text-center max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-mono font-bold text-[var(--text-muted)] mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
             <span>Operating Framework</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
@@ -496,7 +476,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
       {/* ── SECTION: CLIMATE MODES COMPARISON ── */}
       <section id="modes" className="py-14 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
         <div className="mb-8 text-center max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-mono font-bold text-[var(--text-muted)] mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
             <span>Dual Crisis Engine</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
@@ -607,7 +587,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
       <section id="telemetry" className="py-14 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-3">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-mono font-bold text-[var(--text-muted)] mb-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
               <span>Ranchi Ward Incidents</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
@@ -700,7 +680,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
       {/* ── SECTION: FREQUENTLY ASKED QUESTIONS ── */}
       <section id="faq" className="py-14 px-4 sm:px-6 max-w-[900px] mx-auto border-t border-[var(--border-color)]">
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-mono font-bold text-[var(--text-muted)] mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
             <span>System FAQ</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
@@ -742,18 +722,36 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode, toggleEn
 
       {/* ── FOOTER ── */}
       <footer className="relative border-t border-[var(--border-color)] bg-[var(--bg-card)]/90 pt-8 pb-10 px-4 sm:px-6">
-        {/* Absolute Centered Top-Border Scroll-to-Top Button */}
+        {/* Absolute Centered Top-Border Scroll-to-Top Button (SWATVA Standard) */}
         <button 
           type="button" 
           onClick={() => {
             playClick();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.dispatchEvent(new CustomEvent('doab-trigger-particle-dissolve'));
+            setTimeout(() => {
+              if ((window as any).lenis) {
+                (window as any).lenis.scrollTo(0, { duration: 1.2 });
+              } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+                document.body.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }, 320);
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('doab-reset-particles'));
+            }, 1600);
           }} 
-          className="footer-scroll-top group"
-          aria-label="Scroll to Top"
-          title="Scroll to Top"
+          className="footer-scroll-top"
+          aria-label="Scroll to top"
+          title="Scroll to top"
         >
-          <ArrowUp className="h-4 w-4 stroke-[2.2] transition-transform duration-300 group-hover:-translate-y-0.5" />
+          <img
+            src="/cursors/scroll-up.svg"
+            className="scroll-up-img pointer-events-none"
+            alt="Scroll to top"
+            width="17"
+            height="17"
+          />
         </button>
 
         <div className="max-w-[1200px] mx-auto flex flex-col items-center">

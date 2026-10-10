@@ -1,7 +1,17 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+}
+
 @layer base {
   :root {
+    --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
     /* FLOOD THEME: Sea Porcelain Blur (Light Mode) */
     --bg-main: #F4F6F8;         /* Sea Porcelain Canvas */
     --bg-card: #FFFFFF;         /* Pure Porcelain Card */
@@ -71,20 +81,89 @@
     scrollbar-color: rgba(212, 212, 212, 0.22) transparent;
   }
 
+  /* Acclaimed Heading Typography from SWATVA & SAHNIRMAAN */
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.032em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
   body {
+    font-family: var(--font-family);
     background-color: var(--bg-main);
     color: var(--text-main);
     min-height: 100dvh;
+    letter-spacing: -0.011em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior-y: none;
   }
 
+  code, kbd, samp, pre {
+    font-family: var(--font-mono);
+  }
+
   button, a, input, select, textarea, [role="button"], [role="switch"] {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SWATVA Monochromatic Status Badge Standard
+   ══════════════════════════════════════════════════════════════════════════ */
+.mono-badge {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0f172a;
+}
+
+.dark .mono-badge {
+  color: #f1f5f9;
+}
+
+.theme-drought .mono-badge {
+  color: #451a03;
+}
+
+.dark.theme-drought .mono-badge,
+.dark .theme-drought .mono-badge {
+  color: #fef3c7;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SWATVA Authentication Glass Card
+   ══════════════════════════════════════════════════════════════════════════ */
+.auth-glass-card,
+.login-form-card {
+  position: relative;
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border-radius: 1.5rem;
+  border: 1px solid var(--border-color);
+  outline: none !important;
+  background: var(--bg-card);
+  box-shadow: 0 16px 45px -8px rgba(0, 0, 0, 0.08);
+  transition: background 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease, border-color 0.35s ease;
+}
+
+.auth-glass-card:hover,
+.login-form-card:hover {
+  border-color: var(--border-color);
+  box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.12);
+}
+
+.dark .auth-glass-card,
+.dark .login-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color) !important;
+  outline: none !important;
+  box-shadow: 0 16px 45px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -435,58 +514,76 @@ body.dark .cursor-grab:active {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Footer Scroll-to-Top Floating Circle Enclosure (SAHNIRMAAN & SWATVA Standard)
+   Footer Scroll to Top Button (from SWATVA & SAHNIRMAAN)
    ══════════════════════════════════════════════════════════════════════════ */
 .footer-scroll-top {
   position: absolute;
   left: 50%;
   top: 0;
   transform: translate(-50%, -50%);
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  opacity: 0.85;
   cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  color: inherit;
   z-index: 20;
 }
 
-/* Dark Mode Default & Hover */
+:root:not(.dark) .footer-scroll-top {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+}
+
+:root:not(.dark) .footer-scroll-top:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  transform: translate(-50%, -50%) translateY(-2px);
+  opacity: 1 !important;
+}
+
 .dark .footer-scroll-top {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: #ffffff;
 }
 
 .dark .footer-scroll-top:hover {
-  transform: translate(-50%, -50%) translateY(-2px);
-  background: rgba(0, 203, 214, 0.22) !important;
-  border-color: rgba(0, 203, 214, 0.9) !important;
-  box-shadow: 0 0 18px rgba(0, 203, 214, 0.65), 
-              0 0 32px rgba(0, 203, 214, 0.35), 
-              inset 0 0 12px rgba(0, 203, 214, 0.45) !important;
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) translateY(-2px) !important;
+  background: rgba(2, 132, 199, 0.15) !important;
+  border-color: rgba(56, 189, 248, 0.7) !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4), inset 0 0 8px rgba(56, 189, 248, 0.3) !important;
 }
 
 .theme-drought.dark .footer-scroll-top:hover,
 .dark .theme-drought .footer-scroll-top:hover {
-  background: rgba(245, 158, 11, 0.22) !important;
-  border-color: rgba(245, 158, 11, 0.9) !important;
-  box-shadow: 0 0 18px rgba(245, 158, 11, 0.65), 
-              0 0 32px rgba(245, 158, 11, 0.35), 
-              inset 0 0 12px rgba(245, 158, 11, 0.45) !important;
+  background: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(245, 158, 11, 0.7) !important;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4), inset 0 0 8px rgba(245, 158, 11, 0.3) !important;
 }
 
-/* Light Mode Default & Hover */
-:not(.dark) .footer-scroll-top {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  color: #0f172a;
+.scroll-up-img {
+  width: 17px;
+  height: 17px;
+  transform: rotate(180deg) translateY(1px);
+  display: block;
+}
+
+:root:not(.dark) .scroll-up-img {
+  filter: invert(1);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

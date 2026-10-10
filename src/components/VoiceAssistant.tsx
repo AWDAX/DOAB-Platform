@@ -51,10 +51,18 @@ export default function VoiceAssistant() {
   const dragStartRef = useRef({ mouseX: 0, mouseY: 0, startX: 0, startY: 0 });
   const currentPosRef = useRef({ x: 0, y: 0 });
 
-  // Window Resizable Size
+  // Window Resizable Size (Multi-directional 4-corner & edge resizing)
+  type ResizeDirection = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w';
   const [size, setSize] = useState({ w: 420, h: 580 });
-  const [isResizing, setIsResizing] = useState(false);
-  const resizeStartRef = useRef({ startW: 420, startH: 580 });
+  const [resizeDir, setResizeDir] = useState<ResizeDirection | null>(null);
+  const resizeStartRef = useRef({
+    mouseX: 0,
+    mouseY: 0,
+    startW: 420,
+    startH: 580,
+    startX: 0,
+    startY: 0
+  });
   
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
@@ -193,29 +201,63 @@ export default function VoiceAssistant() {
     };
   }, [isDragging]);
 
-  // Resizing Logic
-  const handleResizeStart = (e: React.MouseEvent) => {
+  // Resizing Logic (4 Corners & 4 Edges)
+  const handleResizeStart = (e: React.MouseEvent, direction: ResizeDirection) => {
     if (isFullScreen) return;
     e.preventDefault();
     e.stopPropagation();
-    setIsResizing(true);
-    dragStartRef.current.mouseX = e.clientX;
-    dragStartRef.current.mouseY = e.clientY;
-    resizeStartRef.current = { startW: size.w, startH: size.h };
+    setResizeDir(direction);
+    resizeStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      startW: size.w,
+      startH: size.h,
+      startX: currentPosRef.current.x,
+      startY: currentPosRef.current.y
+    };
   };
 
   useEffect(() => {
     const handleResizeMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      const dx = e.clientX - dragStartRef.current.mouseX;
-      const dy = e.clientY - dragStartRef.current.mouseY;
-      const newW = Math.max(340, Math.min(850, resizeStartRef.current.startW - dx));
-      const newH = Math.max(420, Math.min(900, resizeStartRef.current.startH - dy));
-      setSize({ w: newW, h: newH });
-    };
-    const handleResizeEnd = () => setIsResizing(false);
+      if (!resizeDir) return;
+      const dx = e.clientX - resizeStartRef.current.mouseX;
+      const dy = e.clientY - resizeStartRef.current.mouseY;
+      const { startW, startH, startX, startY } = resizeStartRef.current;
 
-    if (isResizing) {
+      const minW = 340;
+      const maxW = Math.min(900, window.innerWidth - 32);
+      const minH = 420;
+      const maxH = Math.min(920, window.innerHeight - 32);
+
+      let newW = startW;
+      let newH = startH;
+      let newX = startX;
+      let newY = startY;
+
+      // Horizontal resizing
+      if (resizeDir === 'nw' || resizeDir === 'w' || resizeDir === 'sw') {
+        newW = Math.max(minW, Math.min(maxW, startW - dx));
+      } else if (resizeDir === 'ne' || resizeDir === 'e' || resizeDir === 'se') {
+        newW = Math.max(minW, Math.min(maxW, startW + dx));
+        newX = startX + (newW - startW);
+      }
+
+      // Vertical resizing
+      if (resizeDir === 'nw' || resizeDir === 'n' || resizeDir === 'ne') {
+        newH = Math.max(minH, Math.min(maxH, startH - dy));
+      } else if (resizeDir === 'sw' || resizeDir === 's' || resizeDir === 'se') {
+        newH = Math.max(minH, Math.min(maxH, startH + dy));
+        newY = startY + (newH - startH);
+      }
+
+      setSize({ w: newW, h: newH });
+      setPosition({ x: newX, y: newY });
+      currentPosRef.current = { x: newX, y: newY };
+    };
+
+    const handleResizeEnd = () => setResizeDir(null);
+
+    if (resizeDir) {
       window.addEventListener('mousemove', handleResizeMove);
       window.addEventListener('mouseup', handleResizeEnd);
     }
@@ -223,7 +265,7 @@ export default function VoiceAssistant() {
       window.removeEventListener('mousemove', handleResizeMove);
       window.removeEventListener('mouseup', handleResizeEnd);
     };
-  }, [isResizing]);
+  }, [resizeDir]);
 
   const activeOrbState = isListening ? 'listening' : isThinking ? 'thinking' : 'idle';
   const currentSuggestion = ROTATING_SUGGESTIONS[suggestionIdx];
@@ -559,13 +601,68 @@ export default function VoiceAssistant() {
               </div>
             </div>
 
-            {/* Top-Left Resize Handle */}
+            {/* Multi-Directional 4-Corner & 4-Edge Resize Handles */}
             {!isFullScreen && (
-              <div 
-                onMouseDown={handleResizeStart}
-                className="absolute top-0 left-0 w-5 h-5 cursor-nwse-resize z-50"
-                title="Resize window"
-              />
+              <>
+                {/* 4 Corner Handles with Dynamic Bidirectional Cursors & Minimalist Hover Affordances */}
+                {/* Top-Left Corner */}
+                <div 
+                  onMouseDown={(e) => handleResizeStart(e, 'nw')}
+                  className="absolute -top-1 -left-1 w-6 h-6 cursor-nwse-resize z-50 flex items-start justify-start p-1.5 group/corner select-none"
+                  title="Resize (Top-Left)"
+                >
+                  <div className="w-2.5 h-2.5 border-t-2 border-l-2 rounded-tl-sm border-transparent group-hover/corner:border-[var(--color-brand-accent)] transition-all opacity-0 group-hover/corner:opacity-100" />
+                </div>
+
+                {/* Top-Right Corner */}
+                <div 
+                  onMouseDown={(e) => handleResizeStart(e, 'ne')}
+                  className="absolute -top-1 -right-1 w-6 h-6 cursor-nesw-resize z-50 flex items-start justify-end p-1.5 group/corner select-none"
+                  title="Resize (Top-Right)"
+                >
+                  <div className="w-2.5 h-2.5 border-t-2 border-r-2 rounded-tr-sm border-transparent group-hover/corner:border-[var(--color-brand-accent)] transition-all opacity-0 group-hover/corner:opacity-100" />
+                </div>
+
+                {/* Bottom-Left Corner */}
+                <div 
+                  onMouseDown={(e) => handleResizeStart(e, 'sw')}
+                  className="absolute -bottom-1 -left-1 w-6 h-6 cursor-nesw-resize z-50 flex items-end justify-start p-1.5 group/corner select-none"
+                  title="Resize (Bottom-Left)"
+                >
+                  <div className="w-2.5 h-2.5 border-b-2 border-l-2 rounded-bl-sm border-transparent group-hover/corner:border-[var(--color-brand-accent)] transition-all opacity-0 group-hover/corner:opacity-100" />
+                </div>
+
+                {/* Bottom-Right Corner */}
+                <div 
+                  onMouseDown={(e) => handleResizeStart(e, 'se')}
+                  className="absolute -bottom-1 -right-1 w-6 h-6 cursor-nwse-resize z-50 flex items-end justify-end p-1.5 group/corner select-none"
+                  title="Resize (Bottom-Right)"
+                >
+                  <div className="w-2.5 h-2.5 border-b-2 border-r-2 rounded-br-sm border-transparent group-hover/corner:border-[var(--color-brand-accent)] transition-all opacity-0 group-hover/corner:opacity-100" />
+                </div>
+
+                {/* 4 Edge Handles */}
+                <div 
+                  onMouseDown={(e) => handleResizeStart(e, 'n')}
+                  className="absolute -top-1 left-6 right-6 h-2.5 cursor-ns-resize z-40 select-none"
+                  title="Resize (Top)"
+                />
+                <div 
+                  onMouseDown={(e) => handleResizeStart(e, 's')}
+                  className="absolute -bottom-1 left-6 right-6 h-2.5 cursor-ns-resize z-40 select-none"
+                  title="Resize (Bottom)"
+                />
+                <div 
+                  onMouseDown={(e) => handleResizeStart(e, 'w')}
+                  className="absolute top-6 bottom-6 -left-1 w-2.5 cursor-ew-resize z-40 select-none"
+                  title="Resize (Left)"
+                />
+                <div 
+                  onMouseDown={(e) => handleResizeStart(e, 'e')}
+                  className="absolute top-6 bottom-6 -right-1 w-2.5 cursor-ew-resize z-40 select-none"
+                  title="Resize (Right)"
+                />
+              </>
             )}
           </motion.div>
         )}

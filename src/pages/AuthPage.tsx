@@ -134,78 +134,77 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
 
       {/* Main Authentication Form Container (SWATVA Proportions, True Center with Balanced Margins) */}
       <main className="relative flex-1 flex flex-col items-center justify-center w-full max-w-[540px] z-10 pt-16 pb-14 my-auto">
-        <div className="w-full p-6 sm:p-8 md:p-9 rounded-2xl sm:rounded-3xl border border-amber-500/25 dark:border-amber-400/20 bg-gradient-to-b from-[var(--bg-card)]/92 via-[var(--bg-card)]/85 to-[var(--bg-card)]/92 backdrop-blur-2xl shadow-[0_20px_50px_-12px_rgba(217,119,6,0.12),0_12px_24px_-8px_rgba(0,0,0,0.06)] dark:shadow-[0_25px_60px_-15px_rgba(245,158,11,0.16),0_0_0_1px_rgba(245,158,11,0.12)] relative overflow-hidden transition-all duration-300">
+        <div className="w-full p-6 sm:p-8 md:p-9 login-form-card neo-glass-card shadow-2xl relative overflow-hidden transition-all duration-300">
           
-          {/* Subtle Top Amber-Gold Shimmer Rim */}
-          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500/60 dark:via-amber-400/70 to-transparent" />
-          <div className="absolute top-1 inset-x-0 h-px bg-white/20 dark:bg-amber-300/10 pointer-events-none" />
-          
-          <h1 className="flex items-center justify-center gap-2 text-base sm:text-lg font-bold text-[var(--text-main)] text-center mb-5 sm:mb-6 tracking-tight">
+          <h1 className="h-7 sm:h-8 flex items-center justify-center gap-2 text-base sm:text-lg font-bold text-neutral-950 dark:text-white text-center mb-5 sm:mb-6 whitespace-nowrap tracking-tight font-sans">
             {mode === 'login' ? (
               <>
-                <LogIn size={19} className="stroke-[2.2] text-[var(--color-brand-accent)]" />
+                <LogIn size={16} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
                 <span>Sign in to DOAB</span>
               </>
             ) : (
               <>
-                <UserPlus size={19} className="stroke-[2.2] text-[var(--color-brand-accent)]" />
-                <span>Create DOAB Account</span>
+                <UserPlus size={16} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
+                <span>Create your DOAB account</span>
               </>
             )}
           </h1>
 
-          {/* Clean Segmented Control / Pill Mode Switcher */}
-          <div className="mb-5 sm:mb-6 p-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)]">
+          {/* Clean Segmented Control / Pill Mode Switcher from SWATVA */}
+          <div className="mb-5 sm:mb-6 p-1 rounded-full neo-glass-card border border-neutral-200/80 dark:border-white/10">
             <div className="relative grid grid-cols-2 gap-1">
               <span
-                className={`absolute inset-y-0 left-0 w-[calc(50%-2px)] rounded-lg bg-[var(--text-main)] transition-transform duration-300 ease-out ${
+                aria-hidden="true"
+                className={`absolute inset-y-0 left-0 w-[calc(50%-2px)] rounded-full bg-neutral-950 dark:bg-white transition-transform duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
                   mode === 'register' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
                 }`}
               />
               <button
                 type="button"
                 onClick={() => { setMode('login'); setError(null); }}
-                className={`relative z-10 h-8.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                  mode === 'login' ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                className={`relative z-10 inline-flex items-center justify-center gap-1.5 h-8.5 rounded-full text-xs font-semibold tracking-tight transition-colors cursor-pointer font-sans ${
+                  mode === 'login' ? 'text-white dark:text-neutral-950 font-bold' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                 }`}
               >
-                Sign In
+                <LogIn size={13} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
+                <span>Sign In</span>
               </button>
               <button
                 type="button"
                 onClick={() => { setMode('register'); setError(null); }}
-                className={`relative z-10 h-8.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                  mode === 'register' ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                className={`relative z-10 inline-flex items-center justify-center gap-1.5 h-8.5 rounded-full text-xs font-semibold tracking-tight transition-colors cursor-pointer font-sans ${
+                  mode === 'register' ? 'text-white dark:text-neutral-950 font-bold' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                 }`}
               >
-                Create Account
+                <UserPlus size={13} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
+                <span>Create Account</span>
               </button>
             </div>
           </div>
 
           {error && (
-            <div className="mb-5 sm:mb-6 p-3 sm:p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-xs sm:text-sm flex items-start gap-2.5">
-              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+            <div className="mb-5 sm:mb-6 p-3 sm:p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs sm:text-sm flex items-start gap-2.5 font-sans">
+              <AlertTriangle size={15} className="shrink-0 mt-0.5 text-red-500" />
               <span className="leading-relaxed font-medium">{error}</span>
             </div>
           )}
 
-          {/* Unified Height-Constant Google OAuth Button */}
+          {/* Unified Height-Constant Google OAuth Button from SWATVA */}
           <button
             type="button"
             onClick={() => handleGoogleSignIn(mode === 'login' && lastGoogleAccount?.email ? lastGoogleAccount.email : null)}
             disabled={loading || googleLoading}
-            className="w-full h-11.5 sm:h-12 mb-5 sm:mb-6 flex items-center justify-between px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-wide border border-amber-500/25 dark:border-amber-400/20 bg-[var(--bg-main)]/90 backdrop-blur-md hover:border-amber-500/40 text-[var(--text-main)] transition-all duration-200 shadow-xs active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
+            className="w-full h-11.5 sm:h-12 mb-5 sm:mb-6 flex items-center justify-between px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-tight border border-neutral-300/90 dark:border-white/10 bg-neutral-100/90 dark:bg-white/[0.05] hover:bg-neutral-200/80 dark:hover:bg-white/[0.08] text-neutral-950 dark:text-white transition-all duration-200 shadow-xs active:scale-[0.99] disabled:opacity-50 cursor-pointer group font-sans"
           >
             <div className="flex items-center gap-3 min-w-0">
               {googleLoading ? (
-                <div className="w-4 h-4 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin shrink-0" />
+                <div className="w-4 h-4 border-2 border-neutral-600 dark:border-neutral-400 border-t-transparent rounded-full animate-spin shrink-0" />
               ) : mode === 'login' && lastGoogleAccount?.photoURL ? (
                 <img
                   src={lastGoogleAccount.photoURL}
                   alt=""
                   referrerPolicy="no-referrer"
-                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-amber-500/30 shadow-2xs"
+                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-neutral-300 dark:border-white/15 shadow-2xs"
                 />
               ) : (
                 <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24">
@@ -215,7 +214,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
               )}
-              <span className="truncate">
+              <span className="truncate font-semibold text-neutral-950 dark:text-white">
                 {mode === 'login'
                   ? (lastGoogleAccount ? `Continue as ${lastGoogleAccount.fullName?.split(' ')[0] || 'User'}` : 'Continue with Google')
                   : 'Sign up with Google'}
@@ -223,52 +222,52 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             </div>
 
             {mode === 'login' && lastGoogleAccount ? (
-              <span className="text-[11px] font-mono text-[var(--text-muted)] group-hover:text-[var(--text-main)] truncate max-w-[170px] hidden sm:inline">
+              <span className="text-[11px] font-mono text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-950 dark:group-hover:text-white truncate max-w-[170px] hidden sm:inline">
                 {lastGoogleAccount.email}
               </span>
             ) : (
-              <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full hidden sm:inline shrink-0">
+              <span className="mono-badge text-[10px] text-neutral-900 dark:text-neutral-100 bg-neutral-200/90 dark:bg-white/10 border border-neutral-300 dark:border-white/20 px-2.5 py-0.5 rounded-full hidden sm:inline shrink-0 font-bold">
                 1-Click OAuth
               </span>
             )}
           </button>
 
           <div className="relative flex items-center justify-center my-5 sm:my-6">
-            <div className="border-t border-[var(--border-color)] w-full" />
-            <span className="bg-[var(--bg-card)] px-3 text-[10px] sm:text-[11px] uppercase font-mono tracking-widest text-[var(--text-muted)] shrink-0 font-medium">
-              or use credentials
+            <div className="border-t border-neutral-200/80 dark:border-white/10 w-full" />
+            <span className="bg-[var(--bg-card)] px-3 text-[10px] sm:text-[11px] uppercase font-mono tracking-widest text-neutral-500 dark:text-neutral-400 shrink-0 font-semibold">
+              or continue with email
             </span>
-            <div className="border-t border-[var(--border-color)] w-full" />
+            <div className="border-t border-neutral-200/80 dark:border-white/10 w-full" />
           </div>
 
-          {/* Email/Password Form */}
+          {/* Email/Password Form matching SWATVA */}
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-4.5">
             <div>
-              <label className="block text-[10px] sm:text-[11px] uppercase tracking-widest font-mono text-[var(--text-muted)] mb-1.5 font-semibold">
-                Entity Email
+              <label className="block text-[10px] sm:text-[11px] uppercase tracking-widest font-mono text-neutral-500 dark:text-neutral-400 mb-1.5 font-semibold">
+                Email address
               </label>
-              <div className="relative flex items-center h-11.5 sm:h-12 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/80 backdrop-blur-md focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 transition-all">
-                <div className="w-11 sm:w-12 shrink-0 border-r border-[var(--border-color)] h-full flex items-center justify-center text-[var(--text-muted)]">
-                  <Mail size={17} />
+              <div className="relative flex items-center h-11.5 sm:h-12 w-full rounded-xl border border-neutral-200/80 dark:border-white/10 bg-neutral-50/80 dark:bg-white/[0.04] focus-within:border-neutral-900 dark:focus-within:border-neutral-300 transition-colors">
+                <div className="w-11 sm:w-12 shrink-0 border-r border-neutral-200/80 dark:border-white/10 h-full flex items-center justify-center text-neutral-400 dark:text-neutral-500">
+                  <Mail size={16} />
                 </div>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="h-full flex-1 w-full bg-transparent border-none outline-none px-3.5 text-xs sm:text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                  placeholder="you@example.com"
+                  className="h-full flex-1 w-full bg-transparent border-none outline-none px-3.5 text-xs sm:text-sm text-neutral-950 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 font-normal font-sans"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] sm:text-[11px] uppercase tracking-widest font-mono text-[var(--text-muted)] mb-1.5 font-semibold">
-                Access Code / Password
+              <label className="block text-[10px] sm:text-[11px] uppercase tracking-widest font-mono text-neutral-500 dark:text-neutral-400 mb-1.5 font-semibold">
+                Password
               </label>
-              <div className="relative flex items-center h-11.5 sm:h-12 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/80 backdrop-blur-md focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 transition-all">
-                <div className="w-11 sm:w-12 shrink-0 border-r border-[var(--border-color)] h-full flex items-center justify-center text-[var(--text-muted)]">
-                  <Lock size={17} />
+              <div className="relative flex items-center h-11.5 sm:h-12 w-full rounded-xl border border-neutral-200/80 dark:border-white/10 bg-neutral-50/80 dark:bg-white/[0.04] focus-within:border-neutral-900 dark:focus-within:border-neutral-300 transition-colors">
+                <div className="w-11 sm:w-12 shrink-0 border-r border-neutral-200/80 dark:border-white/10 h-full flex items-center justify-center text-neutral-400 dark:text-neutral-500">
+                  <Lock size={16} />
                 </div>
                 <input
                   type="password"
@@ -276,7 +275,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="h-full flex-1 w-full bg-transparent border-none outline-none px-3.5 text-xs sm:text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                  className="h-full flex-1 w-full bg-transparent border-none outline-none px-3.5 text-xs sm:text-sm text-neutral-950 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 font-normal font-sans"
                 />
               </div>
             </div>
@@ -284,10 +283,12 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11.5 sm:h-12 mt-2.5 flex items-center justify-center gap-2 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--bg-card)] bg-[var(--text-main)] hover:opacity-90 active:scale-[0.99] disabled:opacity-50 transition-all shadow-md cursor-pointer"
+              className="w-full h-11.5 sm:h-12 mt-3 flex items-center justify-center gap-2 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-tight text-white bg-neutral-950 hover:bg-neutral-800 active:scale-[0.99] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-100 disabled:opacity-50 transition-all shadow-md cursor-pointer font-sans"
             >
-              <span>{loading ? 'Processing...' : mode === 'login' ? 'Authenticate' : 'Initialize Account'}</span>
-              <ArrowRight size={15} className="stroke-[2.5]" />
+              <span className="whitespace-nowrap font-bold">
+                {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+              </span>
+              <ArrowRight size={14} className="stroke-[2.2] flex-shrink-0" />
             </button>
           </form>
 
