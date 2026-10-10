@@ -448,8 +448,14 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             playClick();
             window.dispatchEvent(new CustomEvent('doab-trigger-particle-dissolve'));
             setTimeout(() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 300);
+              if ((window as any).lenis) {
+                (window as any).lenis.scrollTo(0, { duration: 1.2 });
+              } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+                document.body.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }, 320);
             setTimeout(() => {
               window.dispatchEvent(new CustomEvent('doab-reset-particles'));
             }, 1600);
