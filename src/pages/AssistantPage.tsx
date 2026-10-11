@@ -5,7 +5,6 @@ import {
   ChevronRight
 } from 'lucide-react';
 import AIOrbFace from '../components/AIOrbFace';
-import AIOrbIcon from '../components/AIOrbIcon';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import { useDOABChat } from '../hooks/useDOABChat';
@@ -234,19 +233,18 @@ export default function AssistantPage() {
               aria-hidden="true"
               className="absolute inset-0 -m-1.5 rounded-full bg-[var(--color-brand-accent)]/20 blur-md pointer-events-none"
             />
-            <div className="relative z-10 w-10 h-10 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center shadow-xs">
-              <AIOrbIcon size={22} className="text-[var(--color-brand-accent)]" />
+            <div className="relative z-10 w-11 h-11 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center shadow-xs overflow-hidden">
+              <AIOrbFace 
+                state={isListening ? 'listening' : isThinking ? 'thinking' : 'idle'} 
+                size={44} 
+                className="w-full h-full pointer-events-none" 
+              />
             </div>
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)] truncate">
-                DOAB Operational Assistant
-              </h1>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--color-brand-accent)]/15 text-[var(--color-brand-accent)] border border-[var(--color-brand-accent)]/30 shrink-0">
-                Civic AI
-              </span>
-            </div>
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)] truncate">
+              DOAB Operational Assistant
+            </h1>
             <p className="text-[11px] font-mono text-[var(--text-muted)] truncate">
               Dual-Climate Telemetry & Verified Emergency Routing
             </p>
