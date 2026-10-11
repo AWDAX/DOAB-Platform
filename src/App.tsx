@@ -112,7 +112,10 @@ function DashboardLayout({
     <div className="flex-1 min-h-0 w-full max-w-[1920px] 2xl:max-w-full mx-auto px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 flex flex-col md:flex-row gap-2.5 sm:gap-3 md:gap-4 z-10 overflow-hidden h-[calc(100dvh-4rem)] pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-2.5">
       <GlobalSidebar />
       
-      <main className="flex-1 min-h-0 h-full rounded-2xl sm:rounded-3xl neo-glass-card shadow-sm overflow-hidden flex flex-col transition-colors duration-200 relative border border-[var(--border-color)]">
+      <main 
+        data-lenis-prevent
+        className="flex-1 min-h-0 h-full rounded-2xl sm:rounded-3xl neo-glass-card shadow-sm overflow-hidden flex flex-col transition-colors duration-200 relative border border-[var(--border-color)]"
+      >
         {children}
       </main>
     </div>
@@ -457,6 +460,17 @@ function App() {
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         touchMultiplier: 1.5,
         infinite: false,
+        prevent: (node: any) => {
+          if (!node || !(node instanceof HTMLElement)) return false;
+          // Don't intercept scroll if node or any ancestor has data-lenis-prevent,
+          // custom-scrollbar, or is an overflow container inside main dashboard
+          return Boolean(
+            node.closest('[data-lenis-prevent]') ||
+            node.closest('.custom-scrollbar') ||
+            node.closest('main') ||
+            node.closest('#tour-assistant-chat')
+          );
+        }
       });
 
       (window as any).lenis = lenis;
