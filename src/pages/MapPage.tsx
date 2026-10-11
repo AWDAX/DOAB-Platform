@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { geocodePlace } from '../lib/amazonLocation';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, GeoJSON, Polyline } from 'react-leaflet';
 import L from 'leaflet';
@@ -1197,149 +1198,172 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           </button>
         </Tooltip>
 
-        {/* 6. Proximity & Telemetry Legend / Intelligence Card Toggle */}
-        <Tooltip content={showInfo ? "Close Telemetry Panel" : "Proximity Telemetry"} position="left">
+        {/* 6. Nearby Safety & Route Info Toggle */}
+        <Tooltip content={showInfo ? "Close Nearby Safety" : "Nearby Safety & Alerts"} position="left">
           <button
             type="button"
             onClick={() => { playClick(); setShowInfo(!showInfo); }}
-            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer relative overflow-hidden ${
               showInfo 
-                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
+                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md rotate-0' 
                 : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
             }`}
-            aria-label="Toggle Proximity Telemetry Panel"
+            aria-label={showInfo ? "Close Nearby Safety and Alerts Panel" : "View Nearby Safety and Alerts"}
           >
-            {showInfo ? <X size={15} /> : <Info size={15} />}
+            <div className="relative w-4 h-4 flex items-center justify-center">
+              <span
+                className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  showInfo ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-75 pointer-events-none'
+                }`}
+              >
+                <X size={15} />
+              </span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  !showInfo ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-75 pointer-events-none'
+                }`}
+              >
+                <Info size={15} />
+              </span>
+            </div>
           </button>
         </Tooltip>
       </div>
 
       {/* ── SAHNIRMAAN Floating Map Intelligence & Proximity Radar Card (Anchored to the left of the vertical toolbar) ── */}
-      {showInfo && (
-        <div className="absolute top-3 right-14 sm:top-4 sm:right-16 z-20 w-80 sm:w-96 p-4 rounded-3xl backdrop-blur-2xl bg-[var(--bg-card)]/95 dark:bg-[#12100e]/95 border border-[var(--border-color)] dark:border-white/15 shadow-2xl space-y-3.5 pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
-          
-          {/* Header */}
-          <div className="flex items-center justify-between pb-2.5 border-b border-[var(--border-color)] dark:border-white/10">
-            <div className="flex items-center space-x-2 text-xs font-bold text-[var(--text-main)]">
-              <Radar size={15} className="text-[var(--color-brand-accent)] animate-spin" style={{ animationDuration: '8s' }} />
-              <span>Proximity & Route Intelligence</span>
-            </div>
-            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-              proximityIntelligence.hasRealGps 
-                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' 
-                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
-            }`}>
-              {proximityIntelligence.hasRealGps ? 'GPS Ground Lock' : 'City Grid Lock'}
-            </span>
-          </div>
-
-          {/* Metric 1: Route Blockage / Inundation Probability Bar */}
-          <div className="p-3 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-[var(--text-main)] flex items-center gap-1.5">
-                <Navigation2 size={13} className="text-[var(--color-brand-accent)]" />
-                Transit Route Blockage Risk
-              </span>
-              <span className={`font-mono font-bold text-xs ${
-                proximityIntelligence.routeInundationProb > 50 
-                  ? 'text-rose-600 dark:text-rose-400' 
-                  : proximityIntelligence.routeInundationProb > 25 
-                    ? 'text-amber-600 dark:text-amber-400' 
-                    : 'text-emerald-600 dark:text-emerald-400'
+      <AnimatePresence>
+        {showInfo && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, x: 8 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.95, x: 8 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute top-3 right-14 sm:top-4 sm:right-16 z-20 w-80 sm:w-96 p-4 rounded-3xl backdrop-blur-2xl bg-[var(--bg-card)]/95 dark:bg-[#12100e]/95 border border-[var(--border-color)] dark:border-white/15 shadow-2xl space-y-3.5 pointer-events-auto"
+          >
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2.5 border-b border-[var(--border-color)] dark:border-white/10">
+              <div className="flex items-center space-x-2 text-xs font-bold text-[var(--text-main)]">
+                <Radar size={15} className="text-[var(--color-brand-accent)] animate-spin" style={{ animationDuration: '8s' }} />
+                <span>Nearby Safety & Routes</span>
+              </div>
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                proximityIntelligence.hasRealGps 
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' 
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
               }`}>
-                {proximityIntelligence.routeInundationProb}%
+                {proximityIntelligence.hasRealGps ? 'GPS Ground Lock' : 'City Grid Lock'}
               </span>
             </div>
 
-            {/* Progress Bar Track */}
-            <div className="w-full h-2 rounded-full bg-[var(--border-color)]/60 dark:bg-white/10 overflow-hidden">
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${
+            {/* Metric 1: Route Blockage / Inundation Probability Bar */}
+            <div className="p-3 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-[var(--text-main)] flex items-center gap-1.5">
+                  <Navigation2 size={13} className="text-[var(--color-brand-accent)]" />
+                  Transit Route Blockage Risk
+                </span>
+                <span className={`font-mono font-bold text-xs ${
                   proximityIntelligence.routeInundationProb > 50 
-                    ? 'bg-rose-500' 
+                    ? 'text-rose-600 dark:text-rose-400' 
                     : proximityIntelligence.routeInundationProb > 25 
-                      ? 'bg-amber-500' 
-                      : 'bg-emerald-500'
-                }`}
-                style={{ width: `${Math.max(6, proximityIntelligence.routeInundationProb)}%` }}
-              />
+                      ? 'text-amber-600 dark:text-amber-400' 
+                      : 'text-emerald-600 dark:text-emerald-400'
+                }`}>
+                  {proximityIntelligence.routeInundationProb}%
+                </span>
+              </div>
+
+              {/* Progress Bar Track */}
+              <div className="w-full h-2 rounded-full bg-[var(--border-color)]/60 dark:bg-white/10 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    proximityIntelligence.routeInundationProb > 50 
+                      ? 'bg-rose-500' 
+                      : proximityIntelligence.routeInundationProb > 25 
+                        ? 'bg-amber-500' 
+                        : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.max(6, proximityIntelligence.routeInundationProb)}%` }}
+                />
+              </div>
+
+              <p className="text-[10px] text-[var(--text-muted)] font-mono leading-tight">
+                {proximityIntelligence.routeInundationProb > 50 
+                  ? 'High probability of stalled traffic or deep water on standard arterials.' 
+                  : proximityIntelligence.routeInundationProb > 25 
+                    ? 'Moderate ponding risk. Consider high-elevation bypass roads.' 
+                    : 'Low inundation risk along your immediate perimeter corridors.'}
+              </p>
             </div>
 
-            <p className="text-[10px] text-[var(--text-muted)] font-mono leading-tight">
-              {proximityIntelligence.routeInundationProb > 50 
-                ? 'High probability of stalled traffic or deep water on standard arterials.' 
-                : proximityIntelligence.routeInundationProb > 25 
-                  ? 'Moderate ponding risk. Consider high-elevation bypass roads.' 
-                  : 'Low inundation risk along your immediate perimeter corridors.'}
-            </p>
-          </div>
-
-          {/* Metric 2: Live Counts Around You (3km and 5km Rings) */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2.5 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
-              <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
-                <Droplets size={11} className="text-sky-500" />
-                <span>Within 3 km</span>
-              </div>
-              <div className="font-bold text-[var(--text-main)] text-sm mt-1 flex items-baseline gap-1">
-                <span>{proximityIntelligence.nearbyTotalWithin3km}</span>
-                <span className="text-[10px] font-mono text-[var(--text-muted)] font-normal">choke points</span>
-              </div>
-              <div className="text-[10px] font-mono text-rose-500 font-semibold mt-0.5">
-                {proximityIntelligence.nearbyCritical} critical severe
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
-              <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
-                <ShieldAlert size={11} className="text-amber-500" />
-                <span>Within 5 km</span>
-              </div>
-              <div className="font-bold text-[var(--text-main)] text-sm mt-1 flex items-baseline gap-1">
-                <span>{proximityIntelligence.nearbyTotalWithin5km}</span>
-                <span className="text-[10px] font-mono text-[var(--text-muted)] font-normal">total hotspots</span>
-              </div>
-              <div className="text-[10px] font-mono text-amber-500 font-semibold mt-0.5">
-                {proximityIntelligence.nearbyHigh} warning nodes
-              </div>
-            </div>
-          </div>
-
-          {/* Metric 3: Nearest Hazard Distance Callout */}
-          {proximityIntelligence.nearestDistanceKm && (
-            <div className="p-2.5 rounded-2xl bg-[var(--text-main)]/5 border border-[var(--border-color)] flex items-center justify-between text-xs">
-              <div className="min-w-0 pr-2">
-                <div className="text-[10px] font-mono uppercase text-[var(--text-muted)] font-bold">
-                  Nearest Hazard Node
+            {/* Metric 2: Live Counts Around You (3km and 5km Rings) */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2.5 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
+                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
+                  <Droplets size={11} className="text-sky-500" />
+                  <span>Within 3 km</span>
                 </div>
-                <div className="font-bold text-[var(--text-main)] truncate text-xs mt-0.5">
-                  {proximityIntelligence.nearestNodeTitle}
+                <div className="font-bold text-[var(--text-main)] text-sm mt-1 flex items-baseline gap-1">
+                  <span>{proximityIntelligence.nearbyTotalWithin3km}</span>
+                  <span className="text-[10px] font-mono text-[var(--text-muted)] font-normal">choke points</span>
+                </div>
+                <div className="text-[10px] font-mono text-rose-500 font-semibold mt-0.5">
+                  {proximityIntelligence.nearbyCritical} critical severe
                 </div>
               </div>
-              <span className="px-2 py-1 rounded-xl bg-[var(--bg-card)] font-mono font-bold text-xs text-[var(--color-brand-accent)] border border-[var(--border-color)] shrink-0 shadow-2xs">
-                {proximityIntelligence.nearestDistanceKm} km away
+
+              <div className="p-2.5 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
+                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
+                  <ShieldAlert size={11} className="text-amber-500" />
+                  <span>Within 5 km</span>
+                </div>
+                <div className="font-bold text-[var(--text-main)] text-sm mt-1 flex items-baseline gap-1">
+                  <span>{proximityIntelligence.nearbyTotalWithin5km}</span>
+                  <span className="text-[10px] font-mono text-[var(--text-muted)] font-normal">total hotspots</span>
+                </div>
+                <div className="text-[10px] font-mono text-amber-500 font-semibold mt-0.5">
+                  {proximityIntelligence.nearbyHigh} warning nodes
+                </div>
+              </div>
+            </div>
+
+            {/* Metric 3: Nearest Hazard Distance Callout */}
+            {proximityIntelligence.nearestDistanceKm && (
+              <div className="p-2.5 rounded-2xl bg-[var(--text-main)]/5 border border-[var(--border-color)] flex items-center justify-between text-xs">
+                <div className="min-w-0 pr-2">
+                  <div className="text-[10px] font-mono uppercase text-[var(--text-muted)] font-bold">
+                    Nearest Hazard Node
+                  </div>
+                  <div className="font-bold text-[var(--text-main)] truncate text-xs mt-0.5">
+                    {proximityIntelligence.nearestNodeTitle}
+                  </div>
+                </div>
+                <span className="px-2 py-1 rounded-xl bg-[var(--bg-card)] font-mono font-bold text-xs text-[var(--color-brand-accent)] border border-[var(--border-color)] shrink-0 shadow-2xs">
+                  {proximityIntelligence.nearestDistanceKm} km away
+                </span>
+              </div>
+            )}
+
+            {/* Footer Metadata */}
+            <div className="pt-2 border-t border-[var(--border-color)] dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)]">
+              <span className="flex items-center gap-1">
+                <CheckCircle2 size={11} className="text-emerald-500" />
+                <span>Municipal Data Synced</span>
               </span>
+              <Link 
+                to="/routes/best"
+                onClick={() => playClick()}
+                className="font-bold text-[var(--color-brand-accent)] hover:underline flex items-center gap-0.5"
+              >
+                <span>Safe Routes</span>
+                <RouteIcon size={10} />
+              </Link>
             </div>
-          )}
 
-          {/* Footer Metadata */}
-          <div className="pt-2 border-t border-[var(--border-color)] dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)]">
-            <span className="flex items-center gap-1">
-              <CheckCircle2 size={11} className="text-emerald-500" />
-              <span>Municipal Telemetry Synced</span>
-            </span>
-            <Link 
-              to="/routes/best"
-              onClick={() => playClick()}
-              className="font-bold text-[var(--color-brand-accent)] hover:underline flex items-center gap-0.5"
-            >
-              <span>Safe Routes</span>
-              <RouteIcon size={10} />
-            </Link>
-          </div>
-
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Dual-Engine Interactive Map View ── */}
       <div className="absolute inset-0 h-full w-full">
