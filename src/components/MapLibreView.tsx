@@ -631,7 +631,7 @@ export default function MapLibreView({
 
         {/* 3D Z-Rotation & Orbit Drag Button (Hold & Drag to Orbit, Click to Toggle Tilt) */}
         <div className="relative">
-          <Tooltip content={isDraggingZ ? `Orbiting Z: ${bearing}°` : "Hold & Drag for 3D Z-Rotation • Click to Tilt"} position="left">
+          <Tooltip content="Hold & Drag for 3D Z-Rotation • Click to Tilt" position="left" disabled={isDraggingZ}>
             <button
               type="button"
               onPointerDown={handleZPointerDown}
@@ -644,7 +644,6 @@ export default function MapLibreView({
                   : 'text-[var(--text-main)] hover:bg-[var(--text-main)]/10'
               }`}
               aria-label="Hold and drag to rotate 3D camera around Z-axis"
-              title="Hold & Drag for 3D Z-Rotation"
             >
               <div 
                 className="w-5 h-5 flex items-center justify-center transition-transform duration-75"

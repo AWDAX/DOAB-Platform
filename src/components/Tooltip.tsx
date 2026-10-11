@@ -8,6 +8,7 @@ interface TooltipProps {
   position?: 'top' | 'bottom' | 'left' | 'right';
   children: React.ReactNode;
   className?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -20,7 +21,8 @@ export default function Tooltip({
   shortcut,
   position = 'bottom',
   children,
-  className = ''
+  className = '',
+  disabled = false
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number }>({ 
@@ -109,8 +111,14 @@ export default function Tooltip({
     );
   }, []);
 
+  React.useEffect(() => {
+    if (disabled && isVisible) {
+      setIsVisible(false);
+    }
+  }, [disabled, isVisible]);
+
   const handleMouseEnter = () => {
-    if (isTouchDevice()) return;
+    if (disabled || isTouchDevice()) return;
     calculatePosition();
     setIsVisible(true);
   };
@@ -120,7 +128,7 @@ export default function Tooltip({
   };
 
   const handleFocus = () => {
-    if (isTouchDevice()) return;
+    if (disabled || isTouchDevice()) return;
     calculatePosition();
     setIsVisible(true);
   };
@@ -131,10 +139,10 @@ export default function Tooltip({
 
   // Re-calculate accurately once tooltip DOM node renders to account for exact rendered width
   useLayoutEffect(() => {
-    if (isVisible && !isTouchDevice()) {
+    if (!disabled && isVisible && !isTouchDevice()) {
       calculatePosition();
     }
-  }, [isVisible, calculatePosition, isTouchDevice]);
+  }, [disabled, isVisible, calculatePosition, isTouchDevice]);
 
   return (
     <>
