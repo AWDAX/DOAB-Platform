@@ -183,7 +183,7 @@ export default function BestRoutesPage() {
                   <th className="py-4 px-6 text-center">Distance</th>
                   <th className="py-4 px-6 text-center">Time</th>
                   <th className="py-4 px-6 text-center">{copy.risk}</th>
-                  <th className="py-4 px-6 text-right w-36">Link</th>
+                  <th className="py-4 px-6 text-right w-44 whitespace-nowrap">Link</th>
                 </tr>
               </thead>
               <tbody className="text-xs divide-y divide-[var(--border-color)]">
@@ -202,7 +202,12 @@ export default function BestRoutesPage() {
                     <td className="py-4 px-6 text-center font-mono tabular-nums">{formatMinutes(route.duration_seconds)}</td>
                     <td className="py-4 px-6 text-center font-mono tabular-nums">{riskLabel(route, copy)}</td>
                     <td id={index === 0 ? 'tour-best-engage' : undefined} className="py-4 px-6 text-right">
-                      <a href={route.maps_url} target="_blank" rel="noopener noreferrer" className="inline-flex w-32 min-w-[8rem] justify-center px-3 py-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold">
+                      <a 
+                        href={route.maps_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="inline-flex items-center justify-center whitespace-nowrap px-4 py-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
+                      >
                         {copy.openMaps}
                       </a>
                     </td>

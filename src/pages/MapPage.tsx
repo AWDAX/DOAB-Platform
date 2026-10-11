@@ -464,8 +464,8 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
         )}
       </div>
 
-      {/* ── Top-Right SAHNIRMAAN Floating Neo-Glass Map Controls Toolbar ── */}
-      <div id="tour-map-controls" className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">
+      {/* ── Top-Right SAHNIRMAAN Floating Neo-Glass Map Controls Toolbar (Vertical Column) ── */}
+      <div id="tour-map-controls" className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">
         {/* 1. My Location FAB with AnimatedCrosshair */}
         <button
           type="button"
@@ -529,9 +529,9 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
         </button>
       </div>
 
-      {/* ── SAHNIRMAAN Floating Map Intelligence & Legend Card (Anchored below toolbar) ── */}
+      {/* ── SAHNIRMAAN Floating Map Intelligence & Legend Card (Anchored to the left of the vertical toolbar) ── */}
       {showInfo && (
-        <div className="absolute top-16 right-3 sm:right-4 z-20 w-72 sm:w-80 p-4 rounded-2xl backdrop-blur-2xl bg-[var(--bg-card)]/95 dark:bg-[#12100e]/95 border border-[var(--border-color)] dark:border-white/15 shadow-2xl space-y-3 pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute top-3 right-14 sm:top-4 sm:right-16 z-20 w-72 sm:w-80 p-4 rounded-2xl backdrop-blur-2xl bg-[var(--bg-card)]/95 dark:bg-[#12100e]/95 border border-[var(--border-color)] dark:border-white/15 shadow-2xl space-y-3 pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between pb-2 border-b border-[var(--border-color)] dark:border-white/10">
             <div className="flex items-center space-x-1.5 text-xs font-bold text-neutral-900 dark:text-white">
               <Radar size={14} className="text-[var(--color-brand-accent)]" />
@@ -623,20 +623,22 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
             )
           ))}
 
-          {/* User Live GPS Marker */}
-          <Marker position={userCoords} icon={USER_LIVE_ICON}>
-            <Popup className="neo-glass-popup">
-              <div className="p-1 text-xs">
-                <div className="font-bold text-neutral-900 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
-                  {hasRealLocation ? 'Your Real Live GPS Location' : 'Default Municipal Center'}
+          {/* User Live GPS Marker: ONLY rendered when actual live coordinates have been fetched */}
+          {hasRealLocation && (
+            <Marker position={userCoords} icon={USER_LIVE_ICON}>
+              <Popup className="neo-glass-popup">
+                <div className="p-1 text-xs">
+                  <div className="font-bold text-neutral-900 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
+                    Your Real Live GPS Location
+                  </div>
+                  <div className="text-[10px] text-neutral-500 font-mono mt-1">
+                    {userCoords[0].toFixed(4)}° N, {userCoords[1].toFixed(4)}° E
+                  </div>
                 </div>
-                <div className="text-[10px] text-neutral-500 font-mono mt-1">
-                  {userCoords[0].toFixed(4)}° N, {userCoords[1].toFixed(4)}° E
-                </div>
-              </div>
-            </Popup>
-          </Marker>
+              </Popup>
+            </Marker>
+          )}
 
           {/* Focused Risk Halo: Rendered ONLY for the currently inspected incident */}
           {showHeatLayer && selectedIncident && (
