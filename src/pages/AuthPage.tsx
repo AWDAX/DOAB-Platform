@@ -43,6 +43,13 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
+    document.documentElement.classList.add('auth-page');
+    return () => {
+      document.documentElement.classList.remove('auth-page');
+    };
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = onDOABAuthStateChanged((currentUser) => {
       setUser(currentUser);
       if (currentUser) {

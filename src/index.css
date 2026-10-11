@@ -111,6 +111,8 @@
     background: rgba(148, 163, 184, 0.48);
   }
 
+  /* Scrollbar gutter isolated strictly to login page */
+  html.auth-page,
   .login-page-container {
     scrollbar-gutter: stable;
   }
