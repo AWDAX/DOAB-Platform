@@ -233,6 +233,48 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Subtle & Butter-Smooth Gradient Cross-Fade Back Button (Light Mode)
+   ══════════════════════════════════════════════════════════════════════════ */
+.subtle-gradient-back-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: color 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.subtle-gradient-back-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+html:not(.dark) .subtle-gradient-back-btn:hover::before {
+  opacity: 1;
+}
+
+html:not(.dark) .subtle-gradient-back-btn:hover {
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2) !important;
+}
+
+.dark .subtle-gradient-back-btn:hover {
+  background-color: #ffffff !important;
+  color: #0a0a0a !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    Zero-Jerk Route Transition (SAHNIRMAAN & SWATVA Standard)
    ══════════════════════════════════════════════════════════════════════════ */
 @keyframes route-enter {

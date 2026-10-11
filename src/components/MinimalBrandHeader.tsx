@@ -76,7 +76,7 @@ export default function MinimalBrandHeader({
         <button
           type="button"
           onClick={handleBack}
-          className="my-0.5 ml-0.5 sm:ml-0 px-3.5 sm:px-4 py-1.5 min-h-[38px] sm:min-h-[40px] rounded-full text-xs font-semibold flex items-center gap-2 transition-all duration-200 bg-transparent border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%)] hover:text-white dark:hover:!bg-white dark:hover:!text-neutral-950 dark:hover:!bg-none cursor-pointer shadow-xs active:scale-95 flex-shrink-0"
+          className="my-0.5 ml-0.5 sm:ml-0 px-3.5 sm:px-4 py-1.5 min-h-[38px] sm:min-h-[40px] rounded-full text-xs font-semibold flex items-center gap-2 bg-transparent border border-[var(--border-color)] text-[var(--text-main)] subtle-gradient-back-btn cursor-pointer shadow-xs active:scale-95 flex-shrink-0"
           title={backLabel}
           aria-label={backLabel}
         >
