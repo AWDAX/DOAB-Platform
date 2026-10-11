@@ -320,14 +320,14 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
               <div>
                 {/* Skill Tags */}
                 <div className="flex flex-wrap gap-1 mb-4 pt-3 border-t border-[var(--border-color)]/70">
-                  {member.tags.slice(0, 3).map((tag, idx) => (
+                  {member.tags.slice(0, 4).map((tag, idx) => (
                     <span key={idx} className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
                       {tag}
                     </span>
                   ))}
-                  {member.tags.length > 3 && (
+                  {member.tags.length > 4 && (
                     <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-md text-[var(--text-muted)] font-bold">
-                      +{member.tags.length - 3}
+                      +{member.tags.length - 4}
                     </span>
                   )}
                 </div>
