@@ -34,6 +34,7 @@ export default function VoiceAssistant() {
     setActiveSessionId,
     newChat,
     deleteSession,
+    clearAllSessions,
     sendMessage,
     isThinking
   } = useDOABChat();
@@ -550,19 +551,54 @@ export default function VoiceAssistant() {
                     transition={{ duration: 0.16 }}
                     className="absolute inset-y-0 left-0 w-72 z-20 bg-[var(--bg-card)] border-r border-[var(--border-color)] p-4 flex flex-col shadow-2xl"
                   >
-                    <div className="flex justify-between items-center mb-3.5 pb-2.5 border-b border-[var(--border-color)]">
-                      <span className="text-xs font-mono uppercase font-bold text-[var(--text-muted)]">Mission History</span>
-                      <button 
-                        onClick={() => {
-                          playClick();
-                          newChat();
-                          setIsHistoryOpen(false);
-                          setTimeout(() => inputRef.current?.focus(), 80);
-                        }} 
-                        className="px-2.5 py-1 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] flex items-center gap-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> New Mission
-                      </button>
+                    <div className="flex justify-between items-center mb-3 pb-2.5 border-b border-[var(--border-color)] gap-1.5">
+                      <span className="text-[11px] font-mono uppercase font-bold text-[var(--text-muted)] tracking-wider truncate">
+                        Missions
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={() => {
+                            playClick();
+                            newChat();
+                            setIsHistoryOpen(false);
+                            setTimeout(() => inputRef.current?.focus(), 80);
+                          }} 
+                          className="px-2 py-1 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] flex items-center gap-1 text-[11px] font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none"
+                          title="New Mission"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>New</span>
+                        </button>
+
+                        {sessions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm('Clear all consultation history?')) {
+                                clearAllSessions();
+                              }
+                            }}
+                            className="p-1 px-1.5 rounded-full text-rose-500 hover:text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 text-[10px] font-medium border border-rose-500/20 active:scale-98 transition-all cursor-pointer select-none flex items-center gap-1"
+                            title="Clear consultation history"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            <span className="hidden sm:inline">Clear</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClick();
+                            setIsHistoryOpen(false);
+                          }}
+                          className="p-1 rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+                          title="Close History"
+                          aria-label="Close History"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1.5">

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { 
   Send, Mic, MicOff, Plus, Clock, Download, Copy, Check, 
   Volume2, VolumeX, Maximize2, Minimize2, Trash2, Search,
-  ChevronRight
+  ChevronRight, X
 } from 'lucide-react';
 import AIOrbFace from '../components/AIOrbFace';
 import { PageTourButton } from '../components/GuidedTour';
@@ -331,7 +331,7 @@ export default function AssistantPage() {
                 <Clock size={14} className="text-[var(--color-brand-accent)] shrink-0" />
                 <span>Mission & Consultation History</span>
               </span>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -340,7 +340,7 @@ export default function AssistantPage() {
                     newChat();
                     setTimeout(() => inputRef.current?.focus(), 80);
                   }}
-                  className="px-2.5 py-1 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] flex items-center gap-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none"
                 >
                   <Plus size={13} />
                   <span>New Session</span>
@@ -353,18 +353,25 @@ export default function AssistantPage() {
                         clearAllSessions();
                       }
                     }}
-                    className="text-[11px] font-mono text-red-500 hover:text-red-600 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border border-rose-500/20 text-rose-500 hover:text-rose-600 bg-rose-500/5 hover:bg-rose-500/15 active:scale-98 transition-all cursor-pointer select-none"
+                    title="Clear consultation history"
                   >
-                    <Trash2 size={11} />
+                    <Trash2 size={12} />
                     <span>Clear All</span>
                   </button>
                 )}
                 <button
                   type="button"
-                  onClick={() => setIsHistoryOpen(false)}
-                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5"
+                  onClick={() => {
+                    playClick();
+                    setIsHistoryOpen(false);
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/30 hover:bg-[var(--text-main)]/5 active:scale-98 transition-all cursor-pointer select-none"
+                  aria-label="Close History"
+                  title="Close History"
                 >
-                  Close
+                  <X size={13} />
+                  <span>Close</span>
                 </button>
               </div>
             </div>
