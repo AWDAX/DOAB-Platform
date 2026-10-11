@@ -1,7 +1,20 @@
 import { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, GeoJSON, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// Haversine formula from SAHNIRMAAN to compute high-precision spatial distance (km) between GPS coordinates
+export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  if (!Number.isFinite(lat1) || !Number.isFinite(lon1) || !Number.isFinite(lat2) || !Number.isFinite(lon2)) return 0;
+  const R = 6371; // Earth radius in kilometers
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
 import { 
   AlertTriangle, 
   Route as RouteIcon, 
@@ -23,6 +36,7 @@ import {
 import { Link } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
 import AnimatedCrosshair from '../components/AnimatedCrosshair';
+import Tooltip from '../components/Tooltip';
 import { WATERLOGGING_DATASET_INCIDENTS, type TelemetryIncident } from '../data/waterloggingIncidents';
 import { useForecast } from '../hooks/useForecast';
 import { getPredictionCopy } from '../i18n/predictionCopy';
@@ -287,6 +301,62 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
       hasRealGps: hasRealLocation
     };
   }, [userCoords, incidentSource, hasRealLocation]);
+
+  // SAHNIRMAAN Cluster Engine: Group incidents by Ward / Corridor into macro danger clusters
+  const recurringClusters = useMemo(() => {
+    const clusterMap = new Map<string, {
+      ward: string;
+      category: string;
+      count: number;
+      highestSeverity: 'Critical' | 'High' | 'Medium' | 'Low';
+      points: { lat: number; lng: number }[];
+    }>();
+
+    const SEVERITY_RANK: Record<string, number> = { 'Critical': 3, 'High': 2, 'Medium': 1, 'Low': 0 };
+
+    incidentSource.forEach((inc) => {
+      const key = `${inc.ward || 'Bengaluru'}::${inc.category || 'waterlogging'}`;
+      if (!clusterMap.has(key)) {
+        clusterMap.set(key, {
+          ward: inc.ward || 'Bengaluru',
+          category: inc.category || 'waterlogging',
+          count: 0,
+          highestSeverity: inc.severity,
+          points: []
+        });
+      }
+      const item = clusterMap.get(key)!;
+      item.count += 1;
+      item.points.push({ lat: inc.lat, lng: inc.lng });
+      if ((SEVERITY_RANK[inc.severity] || 0) > (SEVERITY_RANK[item.highestSeverity] || 0)) {
+        item.highestSeverity = inc.severity;
+      }
+    });
+
+    return Array.from(clusterMap.values()).map((c) => {
+      // Calculate max spatial span between reports in this ward/sector cluster using SAHNIRMAAN haversine
+      let maxDist = 0;
+      for (let i = 0; i < c.points.length; i++) {
+        for (let j = i + 1; j < c.points.length; j++) {
+          const d = haversineKm(c.points[i].lat, c.points[i].lng, c.points[j].lat, c.points[j].lng);
+          if (d > maxDist) maxDist = d;
+        }
+      }
+      const centerLat = c.points.reduce((acc, p) => acc + p.lat, 0) / c.points.length;
+      const centerLng = c.points.reduce((acc, p) => acc + p.lng, 0) / c.points.length;
+      const distFromUser = hasRealLocation
+        ? haversineKm(userCoords[0], userCoords[1], centerLat, centerLng)
+        : null;
+
+      return {
+        ...c,
+        lat: centerLat,
+        lng: centerLng,
+        clusterRadiusKm: maxDist > 0 ? Math.max(maxDist, 1.2) : 2.5,
+        distFromUser
+      };
+    }).sort((a, b) => b.count - a.count);
+  }, [incidentSource, userCoords, hasRealLocation]);
 
   const handleSelectIncident = (incident: TelemetryIncident) => {
     playClick();
@@ -585,66 +655,70 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
       {/* ── Top-Right SAHNIRMAAN Floating Neo-Glass Map Controls Toolbar (Vertical Column) ── */}
       <div id="tour-map-controls" className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">
         {/* 1. My Location FAB with AnimatedCrosshair */}
-        <button
-          type="button"
-          onClick={handleRecenter}
-          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer relative group ${
-            isLocating
-              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md animate-pulse'
-              : isViewingMyLocation
-                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md'
-                : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
-          }`}
-          title={isViewingMyLocation ? "Viewing My Location (Click to zoom out)" : "Go to My Location"}
-          aria-label={isViewingMyLocation ? "Zoom out to regional map overview" : "Fly map to my current GPS location"}
-        >
-          <AnimatedCrosshair size={16} locating={isLocating} active={isViewingMyLocation} />
-        </button>
+        <Tooltip content={isViewingMyLocation ? "City Overview (Zoom Out)" : "Fly to My GPS Location"} position="left">
+          <button
+            type="button"
+            onClick={handleRecenter}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer relative group ${
+              isLocating
+                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md animate-pulse'
+                : isViewingMyLocation
+                  ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md'
+                  : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+            }`}
+            aria-label={isViewingMyLocation ? "Zoom out to regional map overview" : "Fly map to my current GPS location"}
+          >
+            <AnimatedCrosshair size={16} locating={isLocating} active={isViewingMyLocation} />
+          </button>
+        </Tooltip>
 
         {/* 2. Focused Risk Halo / Telemetry Layer Toggle */}
-        <button
-          type="button"
-          onClick={() => { playClick(); setShowHeatLayer(!showHeatLayer); }}
-          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
-            showHeatLayer
-              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md'
-              : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
-          }`}
-          title="Toggle Risk Halo & Prediction Cells"
-          aria-label="Toggle Risk Halo"
-        >
-          <Layers size={15} />
-        </button>
+        <Tooltip content={showHeatLayer ? "Hide Risk Halos & Clusters" : "Show Risk Halos & Clusters"} position="left">
+          <button
+            type="button"
+            onClick={() => { playClick(); setShowHeatLayer(!showHeatLayer); }}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
+              showHeatLayer
+                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md'
+                : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+            }`}
+            aria-label="Toggle Risk Halo"
+          >
+            <Layers size={15} />
+          </button>
+        </Tooltip>
 
         {/* 3. Fullscreen Toggle Button */}
-        <button
-          type="button"
-          onClick={handleToggleFullscreen}
-          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
-            isFullScreen 
-              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
-              : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
-          }`}
-          title={isFullScreen ? "Exit Fullscreen" : "Toggle Fullscreen Map"}
-          aria-label="Toggle Fullscreen"
-        >
-          {isFullScreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-        </button>
+        <Tooltip content={isFullScreen ? "Exit Fullscreen" : "Fullscreen Map"} position="left">
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
+              isFullScreen 
+                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
+                : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+            }`}
+            aria-label="Toggle Fullscreen"
+          >
+            {isFullScreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+          </button>
+        </Tooltip>
 
         {/* 4. Map Telemetry Info / Legend Button */}
-        <button
-          type="button"
-          onClick={() => { playClick(); setShowInfo(!showInfo); }}
-          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
-            showInfo 
-              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
-              : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
-          }`}
-          title={showInfo ? "Close Map Intelligence" : "Open Map Intelligence"}
-          aria-label="Toggle Map Intelligence"
-        >
-          {showInfo ? <X size={15} /> : <Info size={15} />}
-        </button>
+        <Tooltip content={showInfo ? "Close Map Intelligence" : "Map Intelligence"} position="left">
+          <button
+            type="button"
+            onClick={() => { playClick(); setShowInfo(!showInfo); }}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
+              showInfo 
+                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
+                : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+            }`}
+            aria-label="Toggle Map Intelligence"
+          >
+            {showInfo ? <X size={15} /> : <Info size={15} />}
+          </button>
+        </Tooltip>
       </div>
 
       {/* ── SAHNIRMAAN Floating Map Intelligence & Proximity Radar Card (Anchored to the left of the vertical toolbar) ── */}
@@ -844,17 +918,49 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
             </Marker>
           )}
 
-          {/* Focused Risk Halo: Rendered ONLY for the currently inspected incident */}
+          {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
+          {showHeatLayer && recurringClusters.slice(0, 8).map((cluster, cIdx) => (
+            <Circle
+              key={`cluster-halo-${cIdx}`}
+              center={[cluster.lat, cluster.lng]}
+              radius={Math.max(cluster.clusterRadiusKm * 500, 1600)}
+              pathOptions={{
+                color: cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706',
+                fillColor: cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706',
+                fillOpacity: 0.07,
+                weight: 1.8,
+                dashArray: '6, 8',
+              }}
+            />
+          ))}
+
+          {/* Focused Risk Halo: Rendered for the currently inspected incident */}
           {showHeatLayer && selectedIncident && (
             <Circle
               center={[selectedIncident.lat, selectedIncident.lng]}
-              radius={selectedIncident.severity === 'Critical' ? 320 : selectedIncident.severity === 'High' ? 220 : 140}
+              radius={selectedIncident.severity === 'Critical' ? 480 : selectedIncident.severity === 'High' ? 320 : 180}
               pathOptions={{
                 color: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
                 fillColor: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
-                fillOpacity: 0.14,
-                weight: 1.5,
+                fillOpacity: 0.16,
+                weight: 2,
                 dashArray: '4, 4',
+              }}
+            />
+          )}
+
+          {/* SAHNIRMAAN Spatial Proximity Vector from User GPS to Inspected Incident */}
+          {hasRealLocation && selectedIncident && (
+            <Polyline
+              positions={[
+                userCoords,
+                [selectedIncident.lat, selectedIncident.lng]
+              ]}
+              pathOptions={{
+                color: selectedIncident.severity === 'Critical' ? '#E11D48' : '#D97706',
+                weight: 2,
+                dashArray: '5, 8',
+                opacity: 0.75,
               }}
             />
           )}

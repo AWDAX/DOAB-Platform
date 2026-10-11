@@ -497,11 +497,11 @@ export default function PreferencesModal({
                 </div>
               </div>
 
-              {/* SECTION 5: Stakeholder Session & Identity */}
+              {/* SECTION 5: Logged In Account & Profile */}
               <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
                   <User size={12} className="text-[var(--color-brand-accent)]" />
-                  Operator Session & Authentication
+                  Your Logged In Account
                 </span>
 
                 {user ? (
