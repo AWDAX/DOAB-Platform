@@ -668,9 +668,12 @@ body.dark .cursor-grab:active {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Leaflet Map Engine, Smooth Hold & Drag Physics & Adaptive Cursors
+   Leaflet & MapLibre Map Engine Smooth Hold & Drag Custom SVG Cursors
    ══════════════════════════════════════════════════════════════════════════ */
-.leaflet-container {
+.leaflet-container,
+.maplibregl-map,
+.maplibregl-canvas-container,
+.maplibregl-canvas {
   width: 100% !important;
   height: 100% !important;
   min-height: 400px;
@@ -678,17 +681,31 @@ body.dark .cursor-grab:active {
   font-family: inherit !important;
   z-index: 1 !important;
   outline: none;
-  cursor: grab !important;
-  cursor: -webkit-grab !important;
+  cursor: url('/cursors/cover_hand_grab.svg') 12 8, grab !important;
   user-select: none;
   -webkit-user-select: none;
   touch-action: pan-x pan-y pinch-zoom;
 }
 
+/* Dark Mode Grab Cursor */
+.dark .leaflet-container,
+.dark .maplibregl-map,
+.dark .maplibregl-canvas-container,
+.dark .maplibregl-canvas,
+html.dark .leaflet-container,
+html.dark .maplibregl-map {
+  cursor: url('/cursors/cover_hand_grab_dark.svg') 12 8, grab !important;
+}
+
 /* Default grab state when hovering over map */
-.leaflet-grab {
-  cursor: grab !important;
-  cursor: -webkit-grab !important;
+.leaflet-grab,
+.maplibregl-canvas.maplibregl-interactive {
+  cursor: url('/cursors/cover_hand_grab.svg') 12 8, grab !important;
+}
+
+.dark .leaflet-grab,
+.dark .maplibregl-canvas.maplibregl-interactive {
+  cursor: url('/cursors/cover_hand_grab_dark.svg') 12 8, grab !important;
 }
 
 /* Grabbing state when holding mouse down & dragging across map */
@@ -700,9 +717,28 @@ body.dark .cursor-grab:active {
 .leaflet-dragging .leaflet-interactive,
 .leaflet-dragging .leaflet-tile,
 .leaflet-dragging .leaflet-marker-pane,
-.leaflet-dragging .leaflet-overlay-pane {
-  cursor: grabbing !important;
-  cursor: -webkit-grabbing !important;
+.leaflet-dragging .leaflet-overlay-pane,
+.maplibregl-canvas:active,
+.maplibregl-canvas-container.maplibregl-interactive:active,
+.maplibregl-map.maplibregl-touch-zoom-rotate:active,
+.maplibregl-map.maplibregl-track-resize:active {
+  cursor: url('/cursors/cover_hand_grab.svg') 12 8, grabbing !important;
+}
+
+.dark .leaflet-container:active,
+.dark .leaflet-grab:active,
+.dark .leaflet-dragging,
+.dark .leaflet-dragging .leaflet-container,
+.dark .leaflet-dragging .leaflet-grab,
+.dark .leaflet-dragging .leaflet-interactive,
+.dark .leaflet-dragging .leaflet-tile,
+.dark .leaflet-dragging .leaflet-marker-pane,
+.dark .leaflet-dragging .leaflet-overlay-pane,
+.dark .maplibregl-canvas:active,
+.dark .maplibregl-canvas-container.maplibregl-interactive:active,
+html.dark .leaflet-dragging,
+html.dark .leaflet-container:active {
+  cursor: url('/cursors/cover_hand_grab_dark.svg') 12 8, grabbing !important;
 }
 
 /* Interactive Marker Pins have crisp pointer cursor */
