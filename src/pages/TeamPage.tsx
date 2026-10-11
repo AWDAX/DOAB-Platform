@@ -55,6 +55,14 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    // Ensure viewport immediately resets to absolute top when entering team page
+    if ((window as any).lenis) {
+      (window as any).lenis.scrollTo(0, { immediate: true });
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
     const handleScroll = () => {
       const scrollPos = window.scrollY || document.documentElement.scrollTop || window.pageYOffset || 0;
       setScrolled(scrollPos > 24);
