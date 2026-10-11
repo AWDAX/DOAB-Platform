@@ -9,6 +9,7 @@ import { FormattedChatText } from '../components/FormattedChatText';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import { useDOABChat } from '../hooks/useDOABChat';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const ROTATING_SUGGESTIONS = [
   { label: 'Safe Route to MG Road', query: 'What is the safest route to MG Road avoiding flooded wards?' },
@@ -26,6 +27,8 @@ export default function AssistantPage() {
   const [historySearch, setHistorySearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [isClearAllConfirmOpen, setIsClearAllConfirmOpen] = useState(false);
 
   const {
     messages,
@@ -358,9 +361,8 @@ export default function AssistantPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm('Clear all consultation history?')) {
-                        clearAllSessions();
-                      }
+                      playClick();
+                      setIsClearAllConfirmOpen(true);
                     }}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border border-rose-500/20 text-rose-500 hover:text-rose-600 bg-rose-500/5 hover:bg-rose-500/15 active:scale-98 transition-all cursor-pointer select-none"
                     title="Clear consultation history"
@@ -424,9 +426,10 @@ export default function AssistantPage() {
                     onClick={(e) => {
                       e.stopPropagation();
                       playClick();
-                      deleteSession(session.id);
+                      setSessionToDelete({ id: session.id, title: session.title || 'Civic Inundation Query' });
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                    title="Delete this consultation session"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -588,6 +591,38 @@ export default function AssistantPage() {
           </button>
         </form>
       </div>
+
+      {/* Confirmation Modal: Delete Single Session */}
+      <ConfirmationModal
+        isOpen={sessionToDelete !== null}
+        title="Delete Consultation Session?"
+        message={`Are you sure you want to delete "${sessionToDelete?.title}"? All telemetry dialogue in this session will be permanently erased.`}
+        confirmLabel="Delete Session"
+        cancelLabel="Keep Session"
+        variant="danger"
+        onConfirm={() => {
+          if (sessionToDelete) {
+            deleteSession(sessionToDelete.id);
+            setSessionToDelete(null);
+          }
+        }}
+        onCancel={() => setSessionToDelete(null)}
+      />
+
+      {/* Confirmation Modal: Clear All Sessions */}
+      <ConfirmationModal
+        isOpen={isClearAllConfirmOpen}
+        title="Clear All Consultation History?"
+        message="This will permanently wipe all your past mission inquiries and AI consultation history from this device."
+        confirmLabel="Clear All History"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          clearAllSessions();
+          setIsClearAllConfirmOpen(false);
+        }}
+        onCancel={() => setIsClearAllConfirmOpen(false)}
+      />
     </div>
   );
 }

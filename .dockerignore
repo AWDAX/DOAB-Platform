@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+dist
+android
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+*.apk

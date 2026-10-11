@@ -44,15 +44,18 @@ Developed by **Team Contrarians** for WeMakeDevs Hackathon.
 - npm or pnpm
 
 ### Installation & Local Run
+See [`DOCKER_AND_LOCAL_SETUP.md`](./DOCKER_AND_LOCAL_SETUP.md) for full Docker Compose and local multi-service startup instructions.
+
 ```bash
 # Clone the repository
 git clone https://github.com/AWDAX/DOAB-Platform-.git
 cd DOAB-Platform-
 
-# Install dependencies
-npm install
+# Run all services (DB + Backend + Frontend) using Docker:
+docker compose up --build -d
 
-# Start development server
+# Or run frontend development server natively:
+npm install
 npm run dev
 ```
 

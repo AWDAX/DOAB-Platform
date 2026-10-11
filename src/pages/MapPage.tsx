@@ -1072,22 +1072,25 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
                     <input 
                       type="text" 
-                      placeholder="Search any place in India via ALS..."
-                      className="w-full pl-8.5 pr-16 py-1.5 text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                      placeholder="Search any locality, city or landmark in India..."
+                      className="w-full pl-8.5 pr-14 py-1.5 text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
                       value={destination}
                       onChange={(e) => handleSearchChange(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Escape') { setAlsSuggestions([]); setDestination(''); }
                       }}
                     />
-                    {/* ALS badge */}
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                      {alsLoading && <span className="h-2 w-2 rounded-full border border-[var(--color-brand-accent)] border-t-transparent animate-spin" />}
-                      <span className="text-[8px] font-mono font-bold text-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/10 px-1 py-0.5 rounded">ALS</span>
+                    {/* Live search indicator */}
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+                      {alsLoading ? (
+                        <span className="h-2.5 w-2.5 rounded-full border border-[var(--color-brand-accent)] border-t-transparent animate-spin" />
+                      ) : (
+                        <span className="text-[9px] font-mono font-semibold text-[var(--text-muted)] opacity-70">Search</span>
+                      )}
                     </span>
                   </div>
 
-                  {/* ALS Autocomplete Suggestions Dropdown */}
+                  {/* Autocomplete Suggestions Dropdown */}
                   {alsSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg overflow-hidden">
                       {alsSuggestions.map((place, idx) => (
@@ -1101,8 +1104,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           <span className="text-[10px] text-[var(--text-muted)] truncate">{place.region ? `${place.region}, India` : place.label}</span>
                         </button>
                       ))}
-                      <div className="px-3 py-1 text-[9px] text-[var(--text-muted)] font-mono flex items-center gap-1 bg-[var(--bg-main)]">
-                        <span className="text-[var(--color-brand-accent)] font-bold">Powered by Amazon Location Service</span>
+                      <div className="px-3 py-1 text-[9px] text-[var(--text-muted)] font-mono flex items-center justify-between bg-[var(--bg-main)]">
+                        <span className="font-semibold">Civic Address Registry</span>
+                        <span>{alsSuggestions.length} matches</span>
                       </div>
                     </div>
                   )}
@@ -1789,14 +1793,14 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               </Marker>
             )}
 
-            {/* Amazon Location Service Search Result Pin */}
+            {/* Search Result Pin */}
             {geocodedPin && (
               <Marker position={geocodedPin} icon={ALS_GEOCODED_ICON}>
                 <Popup className="neo-glass-popup">
                   <div className="p-1 text-xs">
                     <div className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                       <Globe2 className="h-3.5 w-3.5" />
-                      Amazon Location Service Pin
+                      Geocoded Landmark
                     </div>
                     <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
                       {destination}

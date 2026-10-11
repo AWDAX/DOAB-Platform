@@ -10,6 +10,7 @@ import { FormattedChatText } from './FormattedChatText';
 import Tooltip from './Tooltip';
 import { playClick } from '../utils/soundFx';
 import { useDOABChat } from '../hooks/useDOABChat';
+import ConfirmationModal from './ConfirmationModal';
 
 const ROTATING_SUGGESTIONS = [
   { label: 'Safe Route to MG Road', query: 'What is the safest route to MG Road avoiding flooded wards?' },
@@ -27,6 +28,8 @@ export default function VoiceAssistant() {
   const [isListening, setIsListening] = useState(false);
   const [inputVal, setInputVal] = useState('');
   const [suggestionIdx, setSuggestionIdx] = useState(0);
+  const [sessionToDelete, setSessionToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [isClearAllConfirmOpen, setIsClearAllConfirmOpen] = useState(false);
 
   const {
     messages,
@@ -577,9 +580,8 @@ export default function VoiceAssistant() {
                           <button
                             type="button"
                             onClick={() => {
-                              if (confirm('Clear all consultation history?')) {
-                                clearAllSessions();
-                              }
+                              playClick();
+                              setIsClearAllConfirmOpen(true);
                             }}
                             className="p-1 px-1.5 rounded-full text-rose-500 hover:text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 text-[10px] font-medium border border-rose-500/20 active:scale-98 transition-all cursor-pointer select-none flex items-center gap-1"
                             title="Clear consultation history"
@@ -618,8 +620,13 @@ export default function VoiceAssistant() {
                           <span className="truncate flex-1 font-medium">{s.title}</span>
                           {sessions.length > 1 && (
                             <button 
-                              onClick={(e) => { e.stopPropagation(); playClick(); deleteSession(s.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                playClick();
+                                setSessionToDelete({ id: s.id, title: s.title });
+                              }}
                               className="p-1 hover:text-[var(--danger-text)] opacity-60 hover:opacity-100 cursor-pointer ml-1.5 transition-colors"
+                              title="Delete session"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -865,6 +872,38 @@ export default function VoiceAssistant() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Confirmation Modal: Delete Single Session */}
+      <ConfirmationModal
+        isOpen={sessionToDelete !== null}
+        title="Delete Consultation Session?"
+        message={`Are you sure you want to delete "${sessionToDelete?.title}"? All telemetry dialogue in this session will be permanently erased.`}
+        confirmLabel="Delete Session"
+        cancelLabel="Keep Session"
+        variant="danger"
+        onConfirm={() => {
+          if (sessionToDelete) {
+            deleteSession(sessionToDelete.id);
+            setSessionToDelete(null);
+          }
+        }}
+        onCancel={() => setSessionToDelete(null)}
+      />
+
+      {/* Confirmation Modal: Clear All Sessions */}
+      <ConfirmationModal
+        isOpen={isClearAllConfirmOpen}
+        title="Clear All Consultation History?"
+        message="This will permanently wipe all your past mission inquiries and AI consultation history from this device."
+        confirmLabel="Clear All History"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          clearAllSessions();
+          setIsClearAllConfirmOpen(false);
+        }}
+        onCancel={() => setIsClearAllConfirmOpen(false)}
+      />
     </>
   );
 }

@@ -5,6 +5,7 @@ import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predic
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // High-fidelity Google Maps Pin SVG icon
 function GoogleMapsIcon({ className = 'h-3.5 w-3.5' }: { className?: string }) {
@@ -108,6 +109,7 @@ export default function BestRoutesPage() {
   const [usingFallback, setUsingFallback] = useState(false);
   const [savedOffline, setSavedOffline] = useState(false);
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
+  const [routePendingDelete, setRoutePendingDelete] = useState<{ index: number; summary: string } | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [customOrigin, setCustomOrigin] = useState('');
   const [customDest, setCustomDest] = useState('');
@@ -133,23 +135,32 @@ export default function BestRoutesPage() {
   });
   const current = routes[active];
 
-  // Handler to delete a safe computed path
-  const handleDeleteRoute = (indexToDelete: number) => {
+  // Prompt delete with accessible ConfirmationModal
+  const promptDeleteRoute = (indexToDelete: number) => {
     playClick();
     const routeToDelete = routes[indexToDelete];
     if (!routeToDelete) return;
+    setRoutePendingDelete({ index: indexToDelete, summary: routeToDelete.summary });
+  };
 
-    const routeKey = `${routeToDelete.summary}-${indexToDelete}`;
+  // Confirm delete handler
+  const confirmDeleteRoute = () => {
+    if (!routePendingDelete) return;
+    playClick();
+    const { index, summary } = routePendingDelete;
+
+    const routeKey = `${summary}-${index}`;
     setDeletedIds(prev => [...prev, routeKey]);
 
     // If it was a custom route, remove from localStorage
-    const updatedCustom = customRoutes.filter(r => r.summary !== routeToDelete.summary);
+    const updatedCustom = customRoutes.filter(r => r.summary !== summary);
     setCustomRoutes(updatedCustom);
     localStorage.setItem('doab_custom_created_routes', JSON.stringify(updatedCustom));
 
     if (active >= routes.length - 1) {
       setActive(Math.max(0, routes.length - 2));
     }
+    setRoutePendingDelete(null);
   };
 
   // Handler to create a custom safe computed path
@@ -373,18 +384,22 @@ export default function BestRoutesPage() {
                 {routes.map((route, index) => (
                   <tr key={`${route.summary}-${index}`} className="bg-[var(--bg-card)] hover:bg-[var(--bg-main)]/40 transition-colors">
                     <td className="py-4 px-6 font-semibold text-[var(--text-main)]">
-                      <span className="inline-flex items-center gap-2">
-                        {route.rank === 'safest' ? <ShieldCheck className="h-4 w-4 text-emerald-500" /> : <ShieldAlert className="h-4 w-4 text-amber-500" />}
-                        <span className="line-clamp-1">{route.summary}</span>
-                        <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full border border-[var(--border-color)]">
-                          {route.rank === 'safest' ? copy.safest : route.rank}
+                      <div className="flex flex-wrap items-center gap-2 max-w-xl">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {route.rank === 'safest' ? <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" /> : <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0" />}
+                          <span className="mono-badge text-[9px] font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] whitespace-nowrap shrink-0">
+                            {route.rank === 'safest' ? copy.safest : route.rank}
+                          </span>
+                        </div>
+                        <span className="text-xs text-[var(--text-main)] leading-snug break-words">
+                          {route.summary}
                         </span>
-                      </span>
+                      </div>
                     </td>
-                    <td className="py-4 px-6 text-center font-mono tabular-nums">{formatKm(route.distance_meters)}</td>
-                    <td className="py-4 px-6 text-center font-mono tabular-nums">{formatMinutes(route.duration_seconds)}</td>
-                    <td className="py-4 px-6 text-center font-mono tabular-nums">{riskLabel(route, copy)}</td>
-                    <td id={index === 0 ? 'tour-best-engage' : undefined} className="py-4 px-6 text-right">
+                    <td className="py-4 px-6 text-center font-mono tabular-nums whitespace-nowrap">{formatKm(route.distance_meters)}</td>
+                    <td className="py-4 px-6 text-center font-mono tabular-nums whitespace-nowrap">{formatMinutes(route.duration_seconds)}</td>
+                    <td className="py-4 px-6 text-center font-mono tabular-nums whitespace-nowrap">{riskLabel(route, copy)}</td>
+                    <td id={index === 0 ? 'tour-best-engage' : undefined} className="py-4 px-6 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
                         <a 
                           href={route.maps_url} 
@@ -398,7 +413,7 @@ export default function BestRoutesPage() {
                         </a>
                         <button
                           type="button"
-                          onClick={() => handleDeleteRoute(index)}
+                          onClick={() => promptDeleteRoute(index)}
                           className="p-1.5 rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] hover:text-rose-500 hover:border-rose-500/40 hover:bg-rose-500/10 transition-colors cursor-pointer"
                           title="Delete this safe path"
                         >
@@ -416,11 +431,19 @@ export default function BestRoutesPage() {
             {routes.map((route, index) => (
               <div key={`${route.summary}-m-${index}`} className="p-4 rounded-2xl neo-glass-card border border-[var(--border-color)] space-y-3">
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-semibold text-sm text-[var(--text-main)] flex-1">{route.summary}</h2>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {route.rank === 'safest' ? <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" /> : <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0" />}
+                      <span className="mono-badge text-[9px] font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] whitespace-nowrap">
+                        {route.rank === 'safest' ? copy.safest : route.rank}
+                      </span>
+                    </div>
+                    <h2 className="font-semibold text-sm text-[var(--text-main)] leading-snug break-words">{route.summary}</h2>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => handleDeleteRoute(index)}
-                    className="p-1 text-[var(--text-muted)] hover:text-rose-500 cursor-pointer"
+                    onClick={() => promptDeleteRoute(index)}
+                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
                     title="Delete path"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -553,6 +576,18 @@ export default function BestRoutesPage() {
           </div>
         </div>
       )}
+
+      {/* ── Route Deletion Confirmation Modal (Industry Standard Safe Confirmation) ── */}
+      <ConfirmationModal
+        isOpen={routePendingDelete !== null}
+        title="Delete Safe Computed Path?"
+        message={`Are you sure you want to remove "${routePendingDelete?.summary || 'this route'}"? You can recompute or add it back at any time.`}
+        confirmLabel="Delete Path"
+        cancelLabel="Keep Path"
+        variant="danger"
+        onConfirm={confirmDeleteRoute}
+        onCancel={() => setRoutePendingDelete(null)}
+      />
 
     </div>
   );
