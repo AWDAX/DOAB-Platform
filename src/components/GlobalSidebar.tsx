@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Map, Route as RouteIcon, History, Bell, User, LogOut, PanelLeftClose, PanelLeftOpen, Users2, Compass } from 'lucide-react';
 import AIOrbIcon from './AIOrbIcon';
@@ -11,6 +11,54 @@ export default function GlobalSidebar() {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(true);
 
+  // Dynamic unread telemetry state:
+  const [hasUnreadAi, setHasUnreadAi] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('doab_has_unread_ai_response') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [hasUnreadAlerts, setHasUnreadAlerts] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('doab_notifications_read') !== 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleAiRead = () => setHasUnreadAi(false);
+    const handleAiNew = () => setHasUnreadAi(true);
+    const handleAlertsRead = () => setHasUnreadAlerts(false);
+
+    window.addEventListener('doab:ai-read', handleAiRead);
+    window.addEventListener('doab:ai-response-received', handleAiNew);
+    window.addEventListener('doab:alerts-read', handleAlertsRead);
+
+    return () => {
+      window.removeEventListener('doab:ai-read', handleAiRead);
+      window.removeEventListener('doab:ai-response-received', handleAiNew);
+      window.removeEventListener('doab:alerts-read', handleAlertsRead);
+    };
+  }, []);
+
+  // Clear unread indicator when navigating to that page
+  useEffect(() => {
+    if (location.pathname === '/assistant') {
+      setHasUnreadAi(false);
+      try {
+        localStorage.removeItem('doab_has_unread_ai_response');
+      } catch (_) {}
+    } else if (location.pathname === '/notifications') {
+      setHasUnreadAlerts(false);
+      try {
+        localStorage.setItem('doab_notifications_read', 'true');
+      } catch (_) {}
+    }
+  }, [location.pathname]);
+
   const handleSignOut = async () => {
     playClick();
     await firebaseSignOut();
@@ -21,13 +69,20 @@ export default function GlobalSidebar() {
     { id: 'map', path: '/', icon: Map, label: 'Live Map', shortcut: '1' },
     { id: 'best', path: '/routes/best', icon: RouteIcon, label: 'Safe Routes', shortcut: '2' },
     { id: 'history', path: '/routes/old', icon: History, label: 'History', shortcut: '3' },
-    { id: 'notifications', path: '/notifications', icon: Bell, label: 'All Alerts', badge: '3', shortcut: '4' },
+    { 
+      id: 'notifications', 
+      path: '/notifications', 
+      icon: Bell, 
+      label: 'All Alerts', 
+      hasUnread: hasUnreadAlerts,
+      shortcut: '4' 
+    },
     { 
       id: 'assistant', 
       path: '/assistant',
       icon: AIOrbIcon, 
       label: 'DOAB Assistant', 
-      badge: 'AI', 
+      hasUnread: hasUnreadAi,
       shortcut: 'A',
     },
   ];
@@ -40,6 +95,7 @@ export default function GlobalSidebar() {
   const renderLink = (item: any) => {
     const isActive = location.pathname === item.path;
     const Icon = item.icon;
+    const showIndicator = item.hasUnread && !isActive;
 
     if (item.isAction) {
       const buttonContent = (
@@ -59,11 +115,6 @@ export default function GlobalSidebar() {
             </div>
             {isExpanded && <span className="truncate text-left font-medium">{item.label}</span>}
           </div>
-          {isExpanded && item.badge && (
-            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-brand-accent)]/20 text-[var(--color-brand-accent)] border border-[var(--color-brand-accent)]/30 shrink-0">
-              {item.badge}
-            </span>
-          )}
         </button>
       );
 
@@ -94,30 +145,27 @@ export default function GlobalSidebar() {
         }`}
       >
         <div className={`flex items-center gap-3 min-w-0 ${!isExpanded ? 'justify-center w-full' : ''}`}>
-          <div className="w-5 h-5 flex items-center justify-center shrink-0">
+          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
             <Icon className={`h-4.5 w-4.5 transition-colors ${isActive ? 'text-current' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`} />
+            
+            {/* Minimalist, subtle unread indicator dot directly anchored to icon (Thin professional hairline ring) */}
+            {showIndicator && (
+              <span 
+                className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[var(--color-brand-accent)] ring-1 ring-[var(--bg-card)] ring-offset-[0.5px] ring-offset-transparent pointer-events-none"
+                title="Unread updates available"
+              />
+            )}
           </div>
           {isExpanded && <span className="truncate text-left font-medium">{item.label}</span>}
         </div>
         
-        {/* Theme-Adaptive Notification Badge (Flood & Drought, Light & Dark) */}
-        {isExpanded && item.badge && (
+        {/* Subtle Pill Counter for Expanded Mode (Only shown if unread and not active) */}
+        {isExpanded && showIndicator && (
           <span 
-            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border transition-all duration-200 shadow-2xs shrink-0 ${
-              isActive 
-                ? 'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-color)]' 
-                : 'bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] border-[var(--color-brand-accent)]/25'
-            }`}
+            className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded-full border border-[var(--color-brand-accent)]/20 bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all shadow-2xs shrink-0"
           >
-            {item.badge}
+            New
           </span>
-        )}
-
-        {/* Theme-Adaptive Collapsed Indicator Dot */}
-        {!isExpanded && item.badge && (
-          <span className={`absolute top-1.5 right-1.5 h-2 w-2 rounded-full border border-[var(--border-color)] ring-2 ring-[var(--bg-card)] transition-colors ${
-            isActive ? 'bg-[var(--text-main)]' : 'bg-[var(--color-brand-accent)]'
-          }`} />
         )}
       </Link>
     );

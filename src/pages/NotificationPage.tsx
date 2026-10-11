@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, Clock, ShieldAlert, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForecast } from '../hooks/useForecast';
@@ -11,6 +11,14 @@ export default function NotificationPage() {
   const copy = getPredictionCopy();
   const { forecast, status, stale, reload } = useForecast();
   const [filterSeverity, setFilterSeverity] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
+
+  // Mark alerts as read when user visits Notification Page
+  useEffect(() => {
+    try {
+      localStorage.setItem('doab_notifications_read', 'true');
+      window.dispatchEvent(new CustomEvent('doab:alerts-read'));
+    } catch (_) {}
+  }, []);
 
   // Ground truth / realistic mock alerts derived from Bengaluru BBMP dataset
   const mockAlerts = WATERLOGGING_DATASET_INCIDENTS.slice(0, 8).map((inc, i) => ({
