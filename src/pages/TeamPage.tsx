@@ -158,8 +158,8 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
 
       {/* ── Dynamic Floating Morphing Navbar (SAHNIRMAAN / SWATVA Standard) ── */}
       <header className={`portfolio-header ${scrolled ? 'scrolled' : ''}`}>
-        {/* Left: Back Button with SAHNIRMAAN Oval Styling & Brand */}
-        <div className="flex items-center gap-2.5 flex-shrink-0">
+        {/* Left: Back Button with SAHNIRMAAN Oval Styling */}
+        <div className="flex items-center flex-shrink-0">
           <button
             type="button"
             onClick={handleBack}
@@ -170,49 +170,24 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
             <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
             <span className="hidden sm:inline">Back</span>
           </button>
-
-          <Link to="/" onClick={() => playClick()} className="flex items-center gap-2 group cursor-pointer ml-1">
-            <BrandLogo size="sm" />
-            <div className={`flex flex-col overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              scrolled ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none' : 'max-w-[140px] opacity-100 translate-x-0'
-            }`}>
-              <span className="font-bold text-xs tracking-tight text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] transition-colors whitespace-nowrap">
-                DOAB
-              </span>
-              <span className="text-[9px] text-[var(--text-muted)] tracking-tight leading-none whitespace-nowrap">
-                Contrarians
-              </span>
-            </div>
-          </Link>
         </div>
 
-        {/* Center: Clean Minimalist Section Jumps (Architects, Stats, Pillars) with Dotted Animated Underlines */}
-        <nav className="hidden md:flex items-center gap-5 text-xs font-semibold text-[var(--text-muted)]">
-          <button 
-            type="button" 
-            onClick={() => { playClick(); document.getElementById('tour-team-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} 
-            className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5"
-          >
-            <Users2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>Architects</span>
-          </button>
-          <button 
-            type="button" 
-            onClick={() => { playClick(); document.getElementById('tour-team-stats')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} 
-            className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5"
-          >
-            <ShieldCheck className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>Benchmarks</span>
-          </button>
-          <button 
-            type="button" 
-            onClick={() => { playClick(); document.getElementById('tour-team-pillars')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} 
-            className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5"
-          >
-            <Radio className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>Pillars</span>
-          </button>
-        </nav>
+        {/* Center: Brand Logo Only at Center with Luminous Aura */}
+        <Link 
+          to="/" 
+          onClick={() => playClick()} 
+          className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center group cursor-pointer"
+          title="DOAB Platform"
+          aria-label="DOAB Platform"
+        >
+          <div className="relative flex items-center justify-center flex-shrink-0">
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 -m-2 rounded-full bg-sky-500/20 blur-lg dark:block hidden pointer-events-none group-hover:scale-125 transition-transform"
+            />
+            <BrandLogo size="sm" />
+          </div>
+        </Link>
 
         {/* Right: Clean Theme Toggle */}
         <div className="flex items-center gap-2 flex-shrink-0">
