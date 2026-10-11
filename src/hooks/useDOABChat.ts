@@ -149,7 +149,7 @@ export function useDOABChat() {
       messages: [{
         id: 'msg-welcome',
         role: 'assistant',
-        content: 'DOAB Assistant online. Real-time GPS location tracking and sensor hazard feeds active. Ask me for the safest route to your destination, nearby flood depths, or bypass corridors.',
+        content: 'Namaste! Main aapka DOAB Civic Copilot hoon. Live GPS aur municipal waterlogging sensor telemetry active hai. Aap kisi bhi raaste ka haal, underpass waterlogging, ya safest bypass route pooch sakte hain.',
         timestamp: Date.now()
       }],
       updatedAt: Date.now()
@@ -240,18 +240,27 @@ export function useDOABChat() {
     const { promptContext, nearestIncidents, userLocation } = buildLocalizedLiveContext();
     const locString = userLocation ? `${userLocation.lat.toFixed(3)}, ${userLocation.lng.toFixed(3)}` : 'Bengaluru Urban';
 
-    const enrichedSystemPrompt = `You are DOAB Assistant, an intelligent operational voice and text assistant for civic water emergency response in Indian cities.
-Your mission is to provide accurate, street-level guidance on safe paths and flood avoidance using the live geospatial telemetry provided.
+    const enrichedSystemPrompt = `You are "DOAB Civic Copilot" (दोआब सिविक साथी), an empathetic, street-smart, and highly reliable operational assistant for Indian citizens, drivers, and municipal teams navigating water emergencies, flash floods, and waterlogging.
+
+Personality & Tone:
+- Natural, warm, polite, and respectful Indian civic tone (use respectful markers like "Ji" when fitting, or polite conversational English/Hinglish).
+- Practical and street-smart like an experienced Indian municipal navigator or traffic warden who knows the real ground reality of Indian roads, monsoon overflows, and low-lying junctions.
+- Fully fluent in Indian English and everyday Hinglish. Understand common terms naturally:
+  * "paani bhara hai" / "waterlogging" / "jal-jamaav"
+  * "underpass" / "subway" / "flyover" / "bridge" / "pulia"
+  * "nallah" / "stormwater drain" / "raasta" / "gali" / "bypass"
+  * "tanker" / "borewell" / "drinking water supply"
+- If the user asks in Hindi or Hinglish (e.g., "Koramangala underpass mein kitna paani hai?", "MG Road ka safe rasta batao"), respond naturally in comfortable Hinglish/Hindi with clear, actionable advice. If the user asks in English, reply in natural Indian English.
 
 ${promptContext}
 
-Instructions:
-1. When the user asks for the safest route or best path to any destination:
-   - Reference their current GPS coordinates and the nearest detected waterlogging hazards.
-   - Advise them on which corridors are safe vs. which junctions (e.g., underpasses, low-clearance roads) to avoid based on the real-time sensor list.
-   - If a computed safe corridor exists in the context, recommend it and mention its distance and safety probability.
-2. Keep replies crisp, actionable, and formatted with clean bullet points.
-3. Be direct, authoritative, and life-safety oriented.`;
+Operational Directives:
+1. When asked about routes or best path:
+   - Always reference their current location (${locString}) and nearby flood checkpoints.
+   - Specifically name known high-risk waterlogging bottlenecks to avoid (e.g. underpasses with >30cm water).
+   - Recommend elevated corridors, ring roads, or flyovers. State distance and safety probability clearly.
+2. Keep instructions crisp, reassuring, and bulleted for fast reading during travel.
+3. Prioritize life safety: warn against driving two-wheelers or low-clearance hatchbacks through standing water over 30cm.`;
 
     try {
       let assistantReply = '';
@@ -368,24 +377,24 @@ Instructions:
         const lower = userText.toLowerCase();
         const primaryHazard = nearestIncidents[0];
 
-        if (lower.includes('route') || lower.includes('path') || lower.includes('reach') || lower.includes('go to')) {
-          assistantReply = `Based on your live location (${locString}):
-• Avoid ${primaryHazard ? `${primaryHazard.ward} (${primaryHazard.title})` : 'low-lying underpasses'} due to ${primaryHazard?.waterDepthCm || 65}cm standing water depth.
-• Take elevated arterial corridors (Ring Road High-Elevation Bypass or Outer Radial).
-• For turn-by-turn navigation with real-time elevation scoring, open the **Safe Routes Optimizer** from the sidebar.`;
-        } else if (lower.includes('waterlog') || lower.includes('flood') || lower.includes('depth') || lower.includes('risk')) {
-          assistantReply = `Ground-Truth Telemetry for your sector:
-• Nearest Incident: ${primaryHazard ? `${primaryHazard.ward} — ${primaryHazard.title}` : 'No active blockage in 2km radius'}.
-• Estimated Depth: ${primaryHazard?.waterDepthCm || 40} cm.
-• Severity: ${primaryHazard?.severity || 'Moderate'}.
-• Sensor Status: Ground-truth verified via municipal telemetry mesh.`;
-        } else if (lower.includes('tanker') || lower.includes('drought')) {
-          assistantReply = 'Drought telemetry grid active. Tanker allocations and groundwater deficit metrics are routed through municipal ward desks.';
+        if (lower.includes('route') || lower.includes('path') || lower.includes('reach') || lower.includes('go to') || lower.includes('rasta') || lower.includes('raasta')) {
+          assistantReply = `Ji, aapki live location (${locString}) ke hisaab se:
+• **Caution Point:** ${primaryHazard ? `${primaryHazard.ward} (${primaryHazard.title})` : 'Koramangala/MG Road underpasses'} mein ${primaryHazard?.waterDepthCm || 65}cm paani bhara hua hai. Low-clearance gaadi bilkul na le jaayein.
+• **Safe Recommended Path:** Flyover ya Ring Road elevated arterial bypass pakdein — yeh elevated hain aur yahan water accumulation 0% hai.
+• **Turn-by-turn Navigation:** Sidebar se **Safe Routes Optimizer** kholein jahan real-time elevation contours calculate ho rahe hain.`;
+        } else if (lower.includes('waterlog') || lower.includes('flood') || lower.includes('depth') || lower.includes('risk') || lower.includes('paani')) {
+          assistantReply = `Aapke area ka Live Ground-Truth Sensor Report:
+• **Nearest Incident:** ${primaryHazard ? `${primaryHazard.ward} — ${primaryHazard.title}` : '2km radius mein sabhi main corridors clear hain'}.
+• **Water Depth (Paani ka Jamaav):** Lagbhag ${primaryHazard?.waterDepthCm || 40} cm.
+• **Alert Level:** ${primaryHazard?.severity || 'Moderate'} (${primaryHazard?.severity === 'High' ? '🚨 Do not cross' : '⚠️ Go slow'}).
+• **Sensor Verification:** Municipal ground telemetry mesh se verified.`;
+        } else if (lower.includes('tanker') || lower.includes('drought') || lower.includes('peene ka paani')) {
+          assistantReply = 'Ji, Drought & Water Stress Grid active hai. Ward level emergency tanker allocation aur borewell replenishment status civic operations desk se real-time update ho raha hai.';
         } else {
-          assistantReply = `DOAB Telemetry Active at ${locString}:
-• Monitoring ${nearestIncidents.length} active sensor checkpoints nearby.
-• Nearest bottleneck: ${primaryHazard ? `${primaryHazard.ward} (${primaryHazard.title})` : 'Clear'}.
-• Ask me for the safest bypass route or open the Live Command Map for satellite elevation overlays.`;
+          assistantReply = `DOAB Civic Copilot live at ${locString}:
+• Nearby ${nearestIncidents.length} municipal sensors live monitor ho rahe hain.
+• Current nearest waterlogging spot: ${primaryHazard ? `${primaryHazard.ward} (${primaryHazard.title})` : 'Clear'}.
+• Kisi bhi junction ya underpass ka safe bypass raasta poochne ke liye query karein.`;
         }
       }
 

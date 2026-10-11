@@ -12,11 +12,11 @@ import { useDOABChat } from '../hooks/useDOABChat';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 const ROTATING_SUGGESTIONS = [
-  { label: 'Safe Route to MG Road', query: 'What is the safest route to MG Road avoiding flooded wards?' },
-  { label: 'Drought Tanker Dispatch', query: 'Are there any active water tanker work orders in Ward 08?' },
-  { label: 'Verify Road Clearance', query: 'Show me citizen back-check verification for Ring Road North.' },
-  { label: 'Precipitation Telemetry', query: 'What is the current rainfall probability for Ward 14?' },
-  { label: 'Emergency Drainage Reroute', query: 'Compute bypass corridor around waterlogged MG Road junction.' }
+  { label: 'Safe Bypass to MG Road', query: 'MG Road underpass avoid karne ke liye safest bypass corridor kaunsa hai?' },
+  { label: 'Koramangala Waterlogging Depth', query: 'Koramangala 4th Block mein current waterlogging depth aur hazard level kya hai?' },
+  { label: 'Ward Tanker Supply Status', query: 'Are there any emergency water tanker allocations scheduled for my ward today?' },
+  { label: 'Silk Board Inundation Risk', query: 'Is Silk Board junction clear or is there waterlogging on the service road?' },
+  { label: 'Drainage Overflow Alert', query: 'Nearest stormwater nallah overflow status and rainfall forecast for my area.' }
 ];
 
 export default function AssistantPage() {
