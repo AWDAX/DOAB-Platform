@@ -157,9 +157,9 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
       </div>
 
       {/* ── Dynamic Floating Morphing Navbar (SAHNIRMAAN / SWATVA Standard) ── */}
-      <header className={`portfolio-header ${scrolled ? 'scrolled' : ''}`}>
+      <header className={`portfolio-header relative ${scrolled ? 'scrolled' : ''}`}>
         {/* Left: Back Button with SAHNIRMAAN Oval Styling */}
-        <div className="flex items-center flex-shrink-0">
+        <div className="flex items-center flex-shrink-0 z-10">
           <button
             type="button"
             onClick={handleBack}
@@ -172,25 +172,27 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
           </button>
         </div>
 
-        {/* Center: Brand Logo Only at Center with Luminous Aura */}
-        <Link 
-          to="/" 
-          onClick={() => playClick()} 
-          className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center group cursor-pointer"
-          title="DOAB Platform"
-          aria-label="DOAB Platform"
-        >
-          <div className="relative flex items-center justify-center flex-shrink-0">
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 -m-2 rounded-full bg-sky-500/20 blur-lg dark:block hidden pointer-events-none group-hover:scale-125 transition-transform"
-            />
-            <BrandLogo size="sm" />
-          </div>
-        </Link>
+        {/* Center: Brand Logo True Dead-Center with Luminous Aura */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <Link 
+            to="/" 
+            onClick={() => playClick()} 
+            className="pointer-events-auto flex items-center justify-center group cursor-pointer"
+            title="DOAB Platform"
+            aria-label="DOAB Platform"
+          >
+            <div className="relative flex items-center justify-center flex-shrink-0">
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 -m-2 rounded-full bg-sky-500/20 blur-lg dark:block hidden pointer-events-none group-hover:scale-125 transition-transform"
+              />
+              <BrandLogo size="md" />
+            </div>
+          </Link>
+        </div>
 
         {/* Right: Clean Theme Toggle */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0 z-10">
           <Tooltip content={isDarkMode ? "Light Mode" : "Dark Mode"} shortcut="Shift+T" position="bottom">
             <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
           </Tooltip>
