@@ -656,6 +656,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         const realCoords: [number, number] = [liveLat, liveLng];
         setUserCoords(realCoords);
         setHasRealLocation(true);
+        try {
+          localStorage.setItem('doab_user_coords_v1', JSON.stringify({ lat: liveLat, lng: liveLng, timestamp: Date.now() }));
+        } catch {}
         setMapCenter(realCoords);
         setMapZoom(15);
         setIsLocating(false);
