@@ -22,15 +22,20 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const alertsContainerRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on click outside
+  // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setIsFocused(false);
+      }
+      if (alertsContainerRef.current && !alertsContainerRef.current.contains(e.target as Node)) {
+        setIsAlertsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -46,7 +51,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
       { id: 'map', title: 'Live Command Map', subtitle: 'View IoT sensor telemetry & risk corridors', path: '/', icon: MapPin, type: 'Page' },
       { id: 'routes', title: 'Safe Route Optimizer', subtitle: 'Multi-modal bypass routes & flood avoidance', path: '/routes/best', icon: RouteIcon, type: 'Page' },
       { id: 'history', title: 'Route Audit History', subtitle: 'Verified sensor receipts & trip logs', path: '/routes/old', icon: RouteIcon, type: 'Page' },
-      { id: 'alerts', title: 'Civic Alerts Feed', subtitle: 'Ward-level danger alerts & tanker orders', path: '/notifications', icon: Bell, type: 'Page' },
+      { id: 'alerts', title: 'All Alerts', subtitle: 'Ward-level danger alerts & tanker orders', path: '/notifications', icon: Bell, type: 'Page' },
       { id: 'profile', title: 'Stakeholder Profile', subtitle: 'Manage operator roles & credentials', path: '/profile', icon: User, type: 'Page' },
       { id: 'action-permissions', title: 'Life-Safety & Permissions Suite', subtitle: 'Manage GPS, Civic Notifications, Geofencing, & SOS', action: () => window.dispatchEvent(new CustomEvent('doab:open-permissions')), icon: ShieldAlert, type: 'Action' },
       { id: 'action-tour', title: 'Start Guided Platform Tour', subtitle: 'Interactive walkthrough of active workspace', action: () => onOpenTour?.(), icon: Compass, type: 'Action' },
@@ -253,8 +258,128 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
             </AnimatePresence>
           </div>
 
-          {/* Action Controls & Navigation Utilities: Minimal Theme & Settings Only */}
+          {/* Action Controls & Navigation Utilities: Bell Alerts, Theme & Settings */}
           <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Quick Alerts Dropdown Window */}
+            <div ref={alertsContainerRef} className="relative">
+              <Tooltip content="All Alerts & Telemetry" shortcut="4" position="bottom">
+                <button
+                  type="button"
+                  id="tour-nav-bell"
+                  onClick={() => {
+                    playClick();
+                    setIsAlertsOpen((prev) => !prev);
+                  }}
+                  className={`w-9 h-9 rounded-full border transition-all flex items-center justify-center cursor-pointer shadow-2xs relative ${
+                    isAlertsOpen
+                      ? 'border-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/15 text-[var(--color-brand-accent)] ring-2 ring-[var(--color-brand-accent)]/20'
+                      : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/40'
+                  }`}
+                  aria-label="Open Alerts Feed Window"
+                  aria-expanded={isAlertsOpen}
+                >
+                  <Bell className="h-4.5 w-4.5" />
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-500 text-white font-mono font-bold text-[9px] shadow-xs">
+                    3
+                  </span>
+                </button>
+              </Tooltip>
+
+              {/* Popover Window: Small window of All Alerts */}
+              <AnimatePresence>
+                {isAlertsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute right-0 top-full mt-2 w-80 sm:w-92 bg-[var(--bg-card)]/95 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col"
+                  >
+                    {/* Header */}
+                    <div className="p-3 bg-[var(--bg-main)]/90 border-b border-[var(--border-color)] flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Bell className="h-4 w-4 text-[var(--color-brand-accent)]" />
+                        <span className="text-xs font-bold text-[var(--text-main)]">Active Civic Alerts</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold uppercase">
+                        Mockup Feed
+                      </span>
+                    </div>
+
+                    {/* Micro Explanatory Banner */}
+                    <div className="px-3 py-1.5 bg-amber-500/5 border-b border-amber-500/15 text-[10px] text-amber-800 dark:text-amber-200/90 leading-tight">
+                      Model estimates & Bengaluru BBMP incident reports.
+                    </div>
+
+                    {/* Quick Items List */}
+                    <div className="p-1.5 flex flex-col gap-1 max-h-72 overflow-y-auto custom-scrollbar">
+                      {CIVIC_INCIDENTS.slice(0, 4).map((inc) => {
+                        const isCrit = inc.severity === 'Critical';
+                        return (
+                          <Link
+                            key={inc.id}
+                            to={`/routes/best?lat=${inc.lat}&lng=${inc.lng}`}
+                            onClick={() => {
+                              playClick();
+                              setIsAlertsOpen(false);
+                            }}
+                            className="p-2 rounded-xl hover:bg-[var(--bg-main)] transition-colors flex items-start gap-2.5 group cursor-pointer"
+                          >
+                            <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 ${
+                              isCrit
+                                ? 'bg-rose-500/15 text-rose-600 border-rose-500/30'
+                                : 'bg-amber-500/15 text-amber-600 border-amber-500/30'
+                            }`}>
+                              <ShieldAlert className="h-3.5 w-3.5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-xs font-bold text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] truncate transition-colors">
+                                  {inc.title}
+                                </span>
+                                <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border shrink-0 ${
+                                  isCrit
+                                    ? 'bg-rose-500/10 text-rose-600 border-rose-500/30'
+                                    : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                                }`}>
+                                  {inc.severity}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-[var(--text-muted)] font-mono block truncate mt-0.5">
+                                {inc.ward} • {inc.waterDepthCm || 45}cm water
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+
+                    {/* Footer View All Link */}
+                    <div className="p-2 border-t border-[var(--border-color)] bg-[var(--bg-main)]/60 flex items-center justify-between text-xs">
+                      <Link
+                        to="/notifications"
+                        onClick={() => {
+                          playClick();
+                          setIsAlertsOpen(false);
+                        }}
+                        className="text-[11px] font-bold text-[var(--color-brand-accent)] hover:underline flex items-center gap-1"
+                      >
+                        <span>View All Alerts Page</span>
+                        <span>→</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setIsAlertsOpen(false)}
+                        className="text-[10px] font-mono text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {/* Desktop Theme Toggle */}
             <div className="hidden md:flex items-center">
               <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
@@ -376,7 +501,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                   >
                     <div className="flex items-center gap-3">
                       <Bell className="h-4 w-4 text-[var(--color-brand-accent)]" />
-                      <span>Civic Alerts</span>
+                      <span>All Alerts</span>
                     </div>
                     <span className="mono-badge text-[9px] px-1.5 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)]">
                       3

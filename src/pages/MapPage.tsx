@@ -35,7 +35,8 @@ import {
   Compass,
   Activity,
   ExternalLink,
-  Cpu
+  Cpu,
+  RefreshCw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
@@ -181,7 +182,7 @@ function MapViewController({ center, zoom }: { center: [number, number]; zoom: n
 
 export default function MapPage({ envMode = 'flood', isDarkMode = false }: { envMode?: 'flood' | 'drought'; isDarkMode?: boolean }) {
   const copy = getPredictionCopy();
-  const { forecast, incidents: apiIncidents, boundaries, status, usingDemo, stale, reload } = useForecast();
+  const { forecast, incidents: apiIncidents, boundaries, status, usingDemo, reload } = useForecast();
   const [destination, setDestination] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
   const [showHeatLayer, setShowHeatLayer] = useState(true);
@@ -678,27 +679,41 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               {activeLeftTab === 'forecast' && (
                 <div id="tour-map-forecast" className="flex flex-col gap-2 p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[11px] leading-relaxed animate-in fade-in duration-150">
                   <div className="flex items-center justify-between gap-2 border-b border-[var(--border-color)] pb-1.5">
-                    <span className="font-mono text-[10px] uppercase font-bold text-[var(--text-main)] flex items-center gap-1.5">
-                      <Activity className="h-3 w-3 text-[var(--color-brand-accent)]" />
-                      {copy.estimate}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-mono text-[10px] uppercase font-bold text-[var(--text-main)] flex items-center gap-1">
+                        <Activity className="h-3 w-3 text-[var(--color-brand-accent)]" />
+                        {copy.estimate}
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold uppercase">
+                        Mockup
+                      </span>
+                    </div>
                     <button 
                       type="button" 
                       onClick={() => { playClick(); void reload(); }} 
-                      className="text-[10px] font-bold text-[var(--color-brand-accent)] hover:underline cursor-pointer"
+                      className="text-[10px] font-bold text-[var(--color-brand-accent)] hover:underline cursor-pointer flex items-center gap-1"
                     >
-                      {copy.refresh}
+                      <RefreshCw className={`h-2.5 w-2.5 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                      <span>{copy.refresh}</span>
                     </button>
                   </div>
                   
-                  <p className="text-[var(--text-muted)] text-[11px]">
-                    {status === 'loading' && copy.loading}
-                    {status === 'error' && copy.error}
-                    {status === 'insufficient' && (envMode === 'drought' ? copy.droughtNote : copy.insufficient)}
-                    {status === 'ready' && copy.notASensor}
-                    {usingDemo && ` ${copy.offlineDemo}`}
-                    {stale && status === 'ready' && ` ${copy.stale}`}
-                  </p>
+                  <div className="text-[var(--text-muted)] text-[11px] space-y-1">
+                    <p>
+                      {status === 'loading' && copy.loading}
+                      {status === 'error' && (
+                        <span>
+                          <strong className="text-amber-600 dark:text-amber-400">{copy.error}</strong>{' '}
+                          {copy.offlineDemo}
+                        </span>
+                      )}
+                      {status === 'insufficient' && (envMode === 'drought' ? copy.droughtNote : copy.insufficient)}
+                      {status === 'ready' && copy.notASensor}
+                    </p>
+                    <p className="text-[10px] text-[var(--text-muted)]/80 italic">
+                      This is a student prototype ML estimate from elevation and historic complaints, not an official municipal warning.
+                    </p>
+                  </div>
 
                   {forecast?.cells[0]?.target_time && (
                     <div className="pt-1 border-t border-[var(--border-color)]/60 text-[10px] font-mono text-[var(--text-muted)] flex items-center justify-between">

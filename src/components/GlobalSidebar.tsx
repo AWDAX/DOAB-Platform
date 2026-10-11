@@ -21,7 +21,7 @@ export default function GlobalSidebar() {
     { id: 'map', path: '/', icon: Map, label: 'Live Map', shortcut: '1' },
     { id: 'best', path: '/routes/best', icon: RouteIcon, label: 'Safe Routes', shortcut: '2' },
     { id: 'history', path: '/routes/old', icon: History, label: 'History', shortcut: '3' },
-    { id: 'notifications', path: '/notifications', icon: Bell, label: 'Alerts', badge: '3', shortcut: '4' },
+    { id: 'notifications', path: '/notifications', icon: Bell, label: 'All Alerts', badge: '3', shortcut: '4' },
     { 
       id: 'assistant', 
       path: '/assistant',

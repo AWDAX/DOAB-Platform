@@ -50,7 +50,7 @@ function BottomNav() {
     { path: '/', icon: Map, label: 'Map' },
     { path: '/routes/best', icon: RouteIcon, label: 'Routes' },
     { path: '/assistant', icon: AIOrbIcon, label: 'Assistant', badge: 'AI' },
-    { path: '/notifications', icon: Bell, label: 'Alerts', badge: '3' },
+    { path: '/notifications', icon: Bell, label: 'All Alerts', badge: '3' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
 
@@ -97,6 +97,7 @@ import { onDOABAuthStateChanged } from './lib/firebase';
 import PermissionsModal from './components/PermissionsModal';
 import EmergencyDangerBroadcast from './components/EmergencyDangerBroadcast';
 import GuidedTour, { WelcomeTourPromptModal } from './components/GuidedTour';
+import VoiceAssistant from './components/VoiceAssistant';
 
 function DashboardLayout({ 
   children,
@@ -431,6 +432,9 @@ function AppContent({
           setIsTourOpen(true);
         }}
       />
+
+      {/* Global Draggable AI Orb & Adaptive Voice/Text Assistant Window */}
+      <VoiceAssistant />
     </div>
   );
 }

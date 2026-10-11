@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
   Mic, MicOff, Send, X, Maximize2, Minimize2, 
   Minus, History, Plus, Trash2, Compass, Volume2, VolumeX
@@ -18,6 +19,7 @@ const ROTATING_SUGGESTIONS = [
 ];
 
 export default function VoiceAssistant() {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -277,24 +279,30 @@ export default function VoiceAssistant() {
   const activeOrbState = isListening ? 'listening' : isThinking ? 'thinking' : 'idle';
   const currentSuggestion = ROTATING_SUGGESTIONS[suggestionIdx];
 
+  const isOnAssistantPage = location.pathname === '/assistant';
+  const isAuthOrLanding = location.pathname === '/login' || location.pathname === '/landing' || location.pathname === '/team';
+  const shouldHideOrb = isOnAssistantPage || isAuthOrLanding || isOpen;
+
   return (
     <>
       {/* Touch & Desktop Draggable Floating Action Button (AI Orb FAB) */}
-      <motion.button 
-        id="tour-ai-copilot"
-        drag
-        dragMomentum={false}
-        dragElastic={0.1}
-        whileDrag={{ scale: 1.08, cursor: 'grabbing' }}
-        onClick={() => { playClick(); setIsOpen(true); }}
-        className={`fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] md:bottom-6 right-3 sm:right-6 md:right-8 h-[52px] w-[52px] sm:h-[54px] sm:w-[54px] rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.18)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-grab touch-none ${
-          isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
-        }`}
-        aria-label="Open DOAB Assistant (Draggable)"
-        title="Open DOAB Assistant (Draggable)"
-      >
-        <AIOrbFace state="idle" size={54} className="w-full h-full pointer-events-none" />
-      </motion.button>
+      {!isOnAssistantPage && !isAuthOrLanding && (
+        <motion.button 
+          id="tour-ai-copilot"
+          drag
+          dragMomentum={false}
+          dragElastic={0.1}
+          whileDrag={{ scale: 1.08, cursor: 'grabbing' }}
+          onClick={() => { playClick(); setIsOpen(true); }}
+          className={`fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] md:bottom-6 right-3 sm:right-6 md:right-8 h-[52px] w-[52px] sm:h-[54px] sm:w-[54px] rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.18)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-grab touch-none ${
+            shouldHideOrb ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
+          }`}
+          aria-label="Open DOAB Assistant (Draggable)"
+          title="Open DOAB Assistant (Draggable)"
+        >
+          <AIOrbFace state="idle" size={54} className="w-full h-full pointer-events-none" />
+        </motion.button>
+      )}
 
       {/* Assistant Draggable / Adaptive Window */}
       <AnimatePresence>
