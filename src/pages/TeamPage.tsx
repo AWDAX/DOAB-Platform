@@ -156,55 +156,66 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
         </span>
       </div>
 
-      {/* ── SAHNIRMAAN MinimalBrandHeader Standard ── */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-8 md:px-12 py-3 sm:py-4 border-b border-[var(--border-color)]/60 bg-[var(--bg-main)]/80 dark:bg-[#0c0a09]/80 backdrop-blur-xl transition-all pt-[env(safe-area-inset-top)] ${
-          scrolled ? 'shadow-md dark:shadow-black/40 border-[var(--border-color)]' : ''
-        }`}
-      >
-        {/* Left: Back Button with SAHNIRMAAN Oval Styling */}
-        <button
-          type="button"
-          onClick={handleBack}
-          className="px-3 sm:px-4 py-1.5 min-h-9 sm:min-h-10 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition-all duration-300 bg-transparent border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] cursor-pointer shadow-2xs touch-manipulation group"
-          title="Back to Platform"
-          aria-label="Back to Platform"
-        >
-          <ArrowLeft size={14} className="flex-shrink-0 transition-transform group-hover:-translate-x-0.5" />
-          <span className="hidden sm:inline">Back to Platform</span>
-          <span className="inline sm:hidden">Back</span>
-        </button>
+      {/* ── Dynamic Floating Morphing Navbar (SAHNIRMAAN / SWATVA Standard) ── */}
+      <header className={`portfolio-header ${scrolled ? 'scrolled' : ''}`}>
+        {/* Left: Back Button with SAHNIRMAAN Oval Styling & Brand */}
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] shadow-2xs hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-all cursor-pointer group"
+            aria-label="Back to previous page"
+            title="Back to Platform"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
 
-        {/* Center: Absolute Centered Logo with Luminous Glow (Exact SAHNIRMAAN Pattern) */}
-        <button
-          type="button"
-          onClick={() => { playClick(); navigate('/'); }}
-          className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center cursor-pointer touch-manipulation group"
-          title="DOAB Platform"
-          aria-label="DOAB Platform"
-        >
-          <div className="relative flex items-center justify-center flex-shrink-0">
-            {/* Luminous Brand Aura */}
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 -m-3 rounded-full bg-sky-500/20 blur-xl dark:block hidden pointer-events-none group-hover:scale-125 transition-transform"
-            />
-            <div className="flex items-center gap-2">
-              <BrandLogo size="md" />
-              <div className="hidden md:flex flex-col text-left">
-                <span className="font-extrabold text-sm tracking-tight text-[var(--text-main)] leading-none">
-                  DOAB
-                </span>
-                <span className="text-[9px] font-mono text-[var(--text-muted)] tracking-wider uppercase mt-0.5">
-                  Contrarians
-                </span>
-              </div>
+          <Link to="/" onClick={() => playClick()} className="flex items-center gap-2 group cursor-pointer ml-1">
+            <BrandLogo size="sm" />
+            <div className={`flex flex-col overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              scrolled ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none' : 'max-w-[140px] opacity-100 translate-x-0'
+            }`}>
+              <span className="font-bold text-xs tracking-tight text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] transition-colors whitespace-nowrap">
+                DOAB
+              </span>
+              <span className="text-[9px] text-[var(--text-muted)] tracking-tight leading-none whitespace-nowrap">
+                Contrarians
+              </span>
             </div>
-          </div>
-        </button>
+          </Link>
+        </div>
 
-        {/* Right: Theme Toggle Only (Clean, Uncluttered, Just like SAHNIRMAAN) */}
-        <div className="flex items-center space-x-2">
+        {/* Center: Clean Minimalist Section Jumps (Architects, Stats, Pillars) with Dotted Animated Underlines */}
+        <nav className="hidden md:flex items-center gap-5 text-xs font-semibold text-[var(--text-muted)]">
+          <button 
+            type="button" 
+            onClick={() => { playClick(); document.getElementById('tour-team-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} 
+            className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <Users2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+            <span>Architects</span>
+          </button>
+          <button 
+            type="button" 
+            onClick={() => { playClick(); document.getElementById('tour-team-stats')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} 
+            className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+            <span>Benchmarks</span>
+          </button>
+          <button 
+            type="button" 
+            onClick={() => { playClick(); document.getElementById('tour-team-pillars')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} 
+            className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <Radio className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+            <span>Pillars</span>
+          </button>
+        </nav>
+
+        {/* Right: Clean Theme Toggle */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Tooltip content={isDarkMode ? "Light Mode" : "Dark Mode"} shortcut="Shift+T" position="bottom">
             <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
           </Tooltip>
