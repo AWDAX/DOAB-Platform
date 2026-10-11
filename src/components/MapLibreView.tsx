@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { TelemetryIncident } from '../data/waterloggingIncidents';
@@ -30,17 +30,40 @@ export default function MapLibreView({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
 
-  // Choose appropriate basemap style
-  const styleUrl = isDarkMode
-    ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
-    : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+  // Choose appropriate basemap style (use DEMAG/Carto or OpenStreetMap raster fallback style spec)
+  const styleConfig = useMemo(() => {
+    return {
+      version: 8 as const,
+      sources: {
+        'osm-tiles': {
+          type: 'raster' as const,
+          tiles: [
+            isDarkMode 
+              ? 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+              : 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+          ],
+          tileSize: 256,
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        }
+      },
+      layers: [
+        {
+          id: 'osm-tiles-layer',
+          type: 'raster' as const,
+          source: 'osm-tiles',
+          minzoom: 0,
+          maxzoom: 19
+        }
+      ]
+    };
+  }, [isDarkMode]);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: styleUrl,
+      style: styleConfig as any,
       center: [center[1], center[0]], // MapLibre takes [lng, lat]
       zoom: zoom,
       pitch: 45, // 3D tilt
@@ -49,9 +72,19 @@ export default function MapLibreView({
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 
+    map.on('load', () => {
+      map.resize();
+    });
+
+    // Multiple micro-delays to guarantee canvas resize within parent absolute bounds
+    const r1 = setTimeout(() => map.resize(), 60);
+    const r2 = setTimeout(() => map.resize(), 300);
+
     mapRef.current = map;
 
     return () => {
+      clearTimeout(r1);
+      clearTimeout(r2);
       map.remove();
       mapRef.current = null;
     };
@@ -60,9 +93,10 @@ export default function MapLibreView({
   // Update style when theme changes
   useEffect(() => {
     if (mapRef.current) {
-      mapRef.current.setStyle(styleUrl);
+      mapRef.current.setStyle(styleConfig as any);
+      setTimeout(() => mapRef.current?.resize(), 60);
     }
-  }, [isDarkMode]);
+  }, [styleConfig]);
 
   // Update center & zoom if changed from outside
   useEffect(() => {

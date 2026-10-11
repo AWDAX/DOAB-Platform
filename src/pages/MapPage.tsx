@@ -36,7 +36,8 @@ import {
   Activity,
   ExternalLink,
   Cpu,
-  RefreshCw
+  RefreshCw,
+  Globe2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
@@ -513,17 +514,17 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 role="tablist"
                 aria-label="Map rendering engine mode"
               >
-                {/* Smooth Animated Sliding Background Pill */}
+                {/* Smooth Animated Sliding Background Pill with Consistent Brand/Theme Background */}
                 <span
                   aria-hidden="true"
-                  className={`absolute top-0.5 bottom-0.5 rounded-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-xs pointer-events-none ${
+                  className={`absolute top-0.5 bottom-0.5 rounded-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-xs pointer-events-none bg-[var(--text-main)] ${
                     mapEngine === 'leaflet'
-                      ? 'left-0.5 w-[calc(50%-2px)] bg-[var(--text-main)]'
-                      : 'left-[calc(50%+1px)] w-[calc(50%-2px)] bg-cyan-500'
+                      ? 'left-0.5 w-[calc(50%-2px)]'
+                      : 'left-[calc(50%+1px)] w-[calc(50%-2px)]'
                   }`}
                 />
 
-                {/* Option 1: 2D Standard / Low Data (Leaflet) */}
+                {/* Option 1: 2D Standard / Low Data (Leaflet) with Globe2 SVG */}
                 <button
                   type="button"
                   role="tab"
@@ -541,11 +542,12 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   }`}
                   title="2D Standard Engine (Leaflet): Ultra-low battery, fast raster rendering"
                 >
+                  <Globe2 size={10} className={mapEngine === 'leaflet' ? 'text-[var(--bg-card)]' : ''} />
                   <span>2D</span>
                   <span className="hidden sm:inline font-normal opacity-80">Lite</span>
                 </button>
 
-                {/* Option 2: 3D Vector GPU / High Detail (MapLibre) */}
+                {/* Option 2: 3D Vector GPU / High Detail (MapLibre) with Cpu SVG */}
                 <button
                   type="button"
                   role="tab"
@@ -558,12 +560,12 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   }}
                   className={`relative z-10 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold transition-colors duration-200 cursor-pointer flex items-center gap-1 ${
                     mapEngine === 'maplibre'
-                      ? 'text-white'
+                      ? 'text-[var(--bg-card)]'
                       : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                   }`}
                   title="3D GPU Vector Engine (MapLibre GL): Hardware-accelerated, 3D tilt & bearing"
                 >
-                  <Cpu size={10} className={mapEngine === 'maplibre' ? 'animate-pulse' : ''} />
+                  <Cpu size={10} className={mapEngine === 'maplibre' ? 'text-[var(--bg-card)] animate-pulse' : ''} />
                   <span>3D</span>
                   <span className="hidden sm:inline font-normal opacity-90">GPU</span>
                 </button>
