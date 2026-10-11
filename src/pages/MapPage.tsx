@@ -191,6 +191,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [mapEngine, setMapEngine] = useState<'leaflet' | 'maplibre'>('leaflet');
 
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(() => WATERLOGGING_DATASET_INCIDENTS[0] || null);
+  const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
 
   // Default Coordinates: WaterLogging Urban Corridor Center
   const defaultCenter: [number, number] = [12.9716, 77.5946];
@@ -797,6 +798,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   {/* Micro Table of Hotspot Clusters */}
                   <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto custom-scrollbar pr-0.5">
                     {recurringClusters.slice(0, 10).map((cluster, cIdx) => {
+                      const clusterKey = `${cluster.ward}-${cIdx}`;
+                      const isSelected = selectedClusterKey === clusterKey;
                       const isCrit = cluster.highestSeverity === 'Critical';
                       const isHigh = cluster.highestSeverity === 'High';
                       return (
@@ -804,17 +807,38 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           key={`cluster-row-${cIdx}`}
                           onClick={() => {
                             playClick();
+                            setSelectedClusterKey(clusterKey);
                             setMapCenter([cluster.lat, cluster.lng]);
                             setMapZoom(13);
                           }}
-                          className="p-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] hover:border-[var(--color-brand-accent)]/50 transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs group"
+                          className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs group ${
+                            isSelected
+                              ? 'bg-[var(--text-main)]/5 border-[var(--color-brand-accent)] ring-1 ring-[var(--color-brand-accent)]/30'
+                              : 'bg-[var(--bg-main)] border-[var(--border-color)] hover:border-[var(--color-brand-accent)]/50'
+                          }`}
                         >
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              <span className={`w-2 h-2 rounded-full shrink-0 ${
-                                isCrit ? 'bg-rose-500 animate-ping' : isHigh ? 'bg-amber-500' : 'bg-sky-500'
-                              }`} />
-                              <span className="font-bold text-xs text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] truncate">
+                              {/* Indicator dot: subtle and small, only blinks when selected */}
+                              <span className="relative flex items-center justify-center w-2 h-2 shrink-0">
+                                {isSelected && isCrit && (
+                                  <span className="absolute inline-flex w-full h-full rounded-full bg-rose-400 opacity-60 animate-ping" />
+                                )}
+                                <span className={`relative inline-flex rounded-full shrink-0 ${
+                                  isSelected ? 'w-1.5 h-1.5' : 'w-1.5 h-1.5'
+                                } ${
+                                  isCrit 
+                                    ? isSelected ? 'bg-rose-500 animate-pulse' : 'bg-rose-500/80' 
+                                    : isHigh 
+                                      ? 'bg-amber-500' 
+                                      : 'bg-sky-500'
+                                }`} />
+                              </span>
+                              <span className={`font-bold text-xs truncate ${
+                                isSelected 
+                                  ? 'text-[var(--color-brand-accent)]' 
+                                  : 'text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)]'
+                              }`}>
                                 {cluster.ward}
                               </span>
                             </div>
