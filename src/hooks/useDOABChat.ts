@@ -135,9 +135,9 @@ export function useDOABChat() {
 
       if (GROQ_API_KEY) {
         // Live Groq API Call with reliable multi-model fallback chain
+        // Note: llama3-8b-8192 is deprecated/decommissioned by Groq; llama-3.1-8b-instant is the current active replacement.
         const candidateModels = [
           'llama-3.1-8b-instant',
-          'llama3-8b-8192',
           'mixtral-8x7b-32768',
           'gemma2-9b-it'
         ];
@@ -173,13 +173,15 @@ export function useDOABChat() {
             } else {
               const errJson = await response.json().catch(() => ({}));
               lastError = errJson.error?.message || response.statusText || `HTTP ${response.status}`;
-              // If it's a 404 model error, try the next model in the fallback chain
-              if (response.status !== 404) {
+              // If it's a 404 (not found) or 400 (decommissioned / model error), try next candidate
+              const isModelIssue = response.status === 404 || (response.status === 400 && lastError.toLowerCase().includes('model'));
+              if (!isModelIssue) {
                 throw new Error(`Groq API error (${response.status}): ${lastError}`);
               }
             }
           } catch (err: any) {
-            if (!err.message?.includes('404')) {
+            const isModelErr = err.message?.includes('404') || err.message?.toLowerCase().includes('model');
+            if (!isModelErr) {
               throw err;
             }
           }

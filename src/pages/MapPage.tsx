@@ -1171,10 +1171,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               attribution='&copy; <a href="https://www.esri.com/">Esri</a> &copy; OpenStreetMap'
               url={
                 isDarkMode
-                  ? 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+                  ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
                   : 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
               }
-              maxZoom={16}
+              maxZoom={18}
             />
 
             <MapViewController center={mapCenter} zoom={mapZoom} />
