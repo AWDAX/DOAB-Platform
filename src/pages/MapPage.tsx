@@ -226,6 +226,55 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
     setMapZoom(14);
   };
 
+  // Automatically start fetching user live location on MapPage mount
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    setIsLocating(true);
+    let isCancelled = false;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (isCancelled) return;
+        const liveLat = position.coords.latitude;
+        const liveLng = position.coords.longitude;
+        const realCoords: [number, number] = [liveLat, liveLng];
+        setUserCoords(realCoords);
+        setHasRealLocation(true);
+        setMapCenter(realCoords);
+        setMapZoom(15);
+        setIsLocating(false);
+        setIsViewingMyLocation(true);
+      },
+      () => {
+        if (isCancelled) return;
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 15000 }
+    );
+
+    // Continuous watch to keep location live as user moves
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        if (isCancelled) return;
+        const liveLat = position.coords.latitude;
+        const liveLng = position.coords.longitude;
+        const realCoords: [number, number] = [liveLat, liveLng];
+        setUserCoords(realCoords);
+        setHasRealLocation(true);
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
+    );
+
+    return () => {
+      isCancelled = true;
+      if (watchId != null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+
   const handleRecenter = () => {
     playClick();
     if (isViewingMyLocation) {
