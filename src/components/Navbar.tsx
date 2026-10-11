@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Tooltip from './Tooltip';
 import BrandLogo from './BrandLogo';
 import ThemeToggle from './ThemeToggle';
-import EnvToggle from './EnvToggle';
 import { playClick } from '../utils/soundFx';
 import { CIVIC_INCIDENTS } from '../pages/MapPage';
 
@@ -254,34 +253,12 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
             </AnimatePresence>
           </div>
 
-          {/* Action Controls & Navigation Utilities */}
+          {/* Action Controls & Navigation Utilities: Minimal Theme & Settings Only */}
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Desktop Environmental Dual-Climate Mode Toggle */}
-            <div className="hidden md:flex items-center" id="tour-env-toggle">
-              <Tooltip content={envMode === 'flood' ? "Drought" : "Flood"} shortcut="Shift+E" position="bottom">
-                <EnvToggle envMode={envMode} toggleEnvMode={toggleEnvMode} />
-              </Tooltip>
-            </div>
-
             {/* Desktop Theme Toggle */}
             <div className="hidden md:flex items-center">
               <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
             </div>
-
-            {/* Guided Tour Trigger Button (Always accessible on each page) */}
-            {onOpenTour && (
-              <Tooltip content="Start Page Tour" shortcut="Shift+T" position="bottom">
-                <button
-                  type="button"
-                  id="tour-guide-btn"
-                  onClick={() => { playClick(); onOpenTour(); }}
-                  className="w-9 h-9 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
-                  aria-label="Start Page Guided Tour"
-                >
-                  <Compass className="h-4.5 w-4.5 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-45" />
-                </button>
-              </Tooltip>
-            )}
 
             {onOpenPreferences && (
               <Tooltip content="Preferences & Controls" shortcut="Shift+S" position="bottom">

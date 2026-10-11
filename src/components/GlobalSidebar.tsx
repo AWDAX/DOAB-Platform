@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Map, Route as RouteIcon, History, Bell, User, LogOut, PanelLeftClose, PanelLeftOpen, Users2 } from 'lucide-react';
+import { Map, Route as RouteIcon, History, Bell, User, LogOut, PanelLeftClose, PanelLeftOpen, Users2, Sparkles, Compass } from 'lucide-react';
 import { playClick } from '../utils/soundFx';
 import { firebaseSignOut } from '../lib/firebase';
 import Tooltip from './Tooltip';
@@ -21,6 +21,18 @@ export default function GlobalSidebar() {
     { id: 'best', path: '/routes/best', icon: RouteIcon, label: 'Safe Routes', shortcut: '2' },
     { id: 'history', path: '/routes/old', icon: History, label: 'History', shortcut: '3' },
     { id: 'notifications', path: '/notifications', icon: Bell, label: 'Alerts', badge: '3', shortcut: '4' },
+    { 
+      id: 'assistant', 
+      icon: Sparkles, 
+      label: 'DOAB Assistant', 
+      badge: 'AI', 
+      shortcut: 'A',
+      isAction: true,
+      onClick: () => {
+        playClick();
+        window.dispatchEvent(new CustomEvent('doab:open-assistant'));
+      }
+    },
   ];
 
   const bottomItems = [
@@ -31,6 +43,42 @@ export default function GlobalSidebar() {
   const renderLink = (item: any) => {
     const isActive = location.pathname === item.path;
     const Icon = item.icon;
+
+    if (item.isAction) {
+      const buttonContent = (
+        <button
+          key={item.id}
+          type="button"
+          onClick={item.onClick}
+          className={`group relative flex items-center h-10 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
+            !isExpanded 
+              ? 'w-10 h-10 justify-center mx-auto p-0' 
+              : 'w-full justify-between px-3 py-2'
+          } text-[var(--color-brand-accent)] hover:bg-[var(--color-brand-accent)]/10`}
+        >
+          <div className={`flex items-center gap-3 min-w-0 ${!isExpanded ? 'justify-center w-full' : ''}`}>
+            <div className="w-5 h-5 flex items-center justify-center shrink-0">
+              <Icon className="h-4.5 w-4.5 text-[var(--color-brand-accent)]" />
+            </div>
+            {isExpanded && <span className="truncate text-left font-medium">{item.label}</span>}
+          </div>
+          {isExpanded && item.badge && (
+            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-brand-accent)]/20 text-[var(--color-brand-accent)] border border-[var(--color-brand-accent)]/30 shrink-0">
+              {item.badge}
+            </span>
+          )}
+        </button>
+      );
+
+      if (!isExpanded) {
+        return (
+          <Tooltip key={item.id} content={item.label} shortcut={item.shortcut} position="right" className="w-full flex justify-center">
+            {buttonContent}
+          </Tooltip>
+        );
+      }
+      return buttonContent;
+    }
 
     const linkContent = (
       <Link
@@ -94,33 +142,65 @@ export default function GlobalSidebar() {
         !isExpanded ? 'w-14' : 'w-56'
       }`}
     >
-      {/* Top Header Toggle Button */}
-      <div className={`flex items-center mb-3 h-10 ${!isExpanded ? 'justify-center' : 'justify-between px-3'}`}>
+      {/* Top Header Toggle Button with Tour Guide Button alongside Collapse Button */}
+      <div className={`flex items-center mb-3 h-10 ${!isExpanded ? 'flex-col gap-1 h-auto py-1' : 'justify-between px-3'}`}>
         {isExpanded ? (
           <>
             <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold truncate">
               Civic Dashboard
             </span>
-            <button
-              type="button"
-              onClick={() => { playClick(); setIsExpanded(false); }}
-              className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
-              aria-label="Collapse Sidebar"
-            >
-              <PanelLeftClose className="h-4.5 w-4.5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <Tooltip content="Start Page Tour" shortcut="Shift+T" position="bottom">
+                <button
+                  type="button"
+                  id="tour-guide-btn"
+                  onClick={() => {
+                    playClick();
+                    window.dispatchEvent(new CustomEvent('doab:open-tour'));
+                  }}
+                  className="p-1.5 rounded-xl text-[var(--color-brand-accent)] hover:bg-[var(--color-brand-accent)]/10 transition-colors cursor-pointer"
+                  aria-label="Start Page Guided Tour"
+                >
+                  <Compass className="h-4.5 w-4.5 text-[var(--color-brand-accent)] transition-transform duration-500 hover:rotate-45" />
+                </button>
+              </Tooltip>
+              <button
+                type="button"
+                onClick={() => { playClick(); setIsExpanded(false); }}
+                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
+                aria-label="Collapse Sidebar"
+              >
+                <PanelLeftClose className="h-4.5 w-4.5" />
+              </button>
+            </div>
           </>
         ) : (
-          <Tooltip content="Expand Sidebar" shortcut="[" position="right" className="w-full flex justify-center">
-            <button
-              type="button"
-              onClick={() => { playClick(); setIsExpanded(true); }}
-              className="w-10 h-10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors flex items-center justify-center cursor-pointer mx-auto"
-              aria-label="Expand Sidebar"
-            >
-              <PanelLeftOpen className="h-4.5 w-4.5" />
-            </button>
-          </Tooltip>
+          <div className="flex flex-col items-center gap-1.5 w-full">
+            <Tooltip content="Start Page Tour" shortcut="Shift+T" position="right" className="w-full flex justify-center">
+              <button
+                type="button"
+                id="tour-guide-btn"
+                onClick={() => {
+                  playClick();
+                  window.dispatchEvent(new CustomEvent('doab:open-tour'));
+                }}
+                className="w-10 h-10 rounded-xl text-[var(--color-brand-accent)] hover:bg-[var(--color-brand-accent)]/10 transition-colors flex items-center justify-center cursor-pointer mx-auto"
+                aria-label="Start Page Guided Tour"
+              >
+                <Compass className="h-4.5 w-4.5 text-[var(--color-brand-accent)]" />
+              </button>
+            </Tooltip>
+            <Tooltip content="Expand Sidebar" shortcut="[" position="right" className="w-full flex justify-center">
+              <button
+                type="button"
+                onClick={() => { playClick(); setIsExpanded(true); }}
+                className="w-10 h-10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors flex items-center justify-center cursor-pointer mx-auto"
+                aria-label="Expand Sidebar"
+              >
+                <PanelLeftOpen className="h-4.5 w-4.5" />
+              </button>
+            </Tooltip>
+          </div>
         )}
       </div>
 
