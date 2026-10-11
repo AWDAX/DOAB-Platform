@@ -988,8 +988,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 group relative"
             aria-label="Open DOAB AI Intelligence Assistant"
           >
-            <div className="w-5 h-5 rounded-full overflow-hidden bg-black/5 dark:bg-white/10 flex items-center justify-center border border-[var(--border-color)] dark:border-white/20 group-hover:scale-110 transition-transform">
-              <AIOrbFace state="idle" size={20} />
+            <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center border border-[var(--border-color)] dark:border-white/20 group-hover:scale-110 transition-transform shadow-2xs">
+              <AIOrbFace state="idle" size={24} />
             </div>
             {hasNewAiResponse && (
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--color-brand-accent)] ring-2 ring-[var(--bg-card)] animate-pulse" />

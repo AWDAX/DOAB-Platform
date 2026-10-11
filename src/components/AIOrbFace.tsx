@@ -207,18 +207,18 @@ export default function AIOrbFace({
       {/* 4. Expressive Face SVG Layer with Gaze Cursor Tracking */}
       <svg
         viewBox="0 0 100 100"
-        className="w-full h-full p-2 relative z-10 transition-transform duration-200 ease-out"
+        className={`w-full h-full relative z-10 transition-transform duration-200 ease-out ${size <= 32 ? 'p-0.5' : 'p-2'}`}
         style={{
           transform: `translate(${eyePos.x}px, ${eyePos.y}px)`
         }}
       >
         {state === 'done' || state === 'giggle' || (isSmilingActive && state === 'happy') ? (
-          <g className="stroke-neutral-950" strokeWidth="4.2" strokeLinecap="round" fill="none">
+          <g className="stroke-neutral-900 dark:stroke-neutral-950" strokeWidth={size <= 32 ? "6" : "4.2"} strokeLinecap="round" fill="none">
             {/* Happy, joyful crescent laughing eyes (child-like giggle) */}
             <path d="M 31 46 Q 38 36 45 46" className="transition-all duration-200" />
             <path d="M 55 46 Q 62 36 69 46" className="transition-all duration-200" />
             {/* Sweet open child smile / giggle mouth */}
-            <path d="M 38 62 Q 50 75 62 62" strokeWidth="3.6" fill="rgba(0,0,0,0.85)" />
+            <path d="M 38 62 Q 50 75 62 62" strokeWidth={size <= 32 ? "5" : "3.6"} fill="rgba(0,0,0,0.85)" />
             {/* Cute pink rosy cheeks on giggle */}
             <ellipse cx="28" cy="54" rx="4.5" ry="2.5" fill="rgba(244,63,94,0.35)" stroke="none" />
             <ellipse cx="72" cy="54" rx="4.5" ry="2.5" fill="rgba(244,63,94,0.35)" stroke="none" />
@@ -234,16 +234,16 @@ export default function AIOrbFace({
             <ellipse
               cx="38"
               cy="46"
-              rx={state === 'thinking' ? 6 : 5.5}
-              ry={5.5 * eyeScaleY}
-              className="transition-all duration-150 fill-neutral-950"
+              rx={state === 'thinking' ? 6 : size <= 32 ? 6.5 : 5.5}
+              ry={(size <= 32 ? 6.5 : 5.5) * eyeScaleY}
+              className="transition-all duration-150 fill-neutral-900 dark:fill-neutral-950"
             />
             <ellipse
               cx="62"
               cy="46"
-              rx={state === 'thinking' ? 6 : 5.5}
-              ry={5.5 * eyeScaleY}
-              className="transition-all duration-150 fill-neutral-950"
+              rx={state === 'thinking' ? 6 : size <= 32 ? 6.5 : 5.5}
+              ry={(size <= 32 ? 6.5 : 5.5) * eyeScaleY}
+              className="transition-all duration-150 fill-neutral-900 dark:fill-neutral-950"
             />
             {state === 'listening' ? (
               <ellipse cx="50" cy="65" rx="3.5" ry="3.5" className="fill-neutral-950" opacity="0.95" />
