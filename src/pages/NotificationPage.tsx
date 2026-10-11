@@ -2,6 +2,7 @@ import { Bell, Clock, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForecast } from '../hooks/useForecast';
 import { getPredictionCopy } from '../i18n/predictionCopy';
+import { PageTourButton } from '../components/GuidedTour';
 
 export default function NotificationPage() {
   const copy = getPredictionCopy();
@@ -13,12 +14,17 @@ export default function NotificationPage() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto custom-scrollbar flex flex-col items-center">
-      <div id="tour-alerts-header" className="mb-6 w-full max-w-3xl mx-auto">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
-          <Bell className="h-6 w-6 text-[var(--color-brand-accent)]" />
-          All Civic Alerts
-        </h1>
-        <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">{copy.notASensor}</p>
+      <div id="tour-alerts-header" className="mb-6 w-full max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
+            <Bell className="h-6 w-6 text-[var(--color-brand-accent)]" />
+            All Civic Alerts
+          </h1>
+          <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">{copy.notASensor}</p>
+        </div>
+        <div className="self-start sm:self-auto shrink-0">
+          <PageTourButton pageKey="notifications" label="Alerts Guide" />
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 w-full max-w-3xl mx-auto">

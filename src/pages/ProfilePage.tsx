@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Truck, Shield, LogOut, Clock, Settings, Users2, Award } from 'lucide-react';
 import { signInWithGoogle, firebaseSignOut, onDOABAuthStateChanged } from '../lib/firebase';
+import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import BrandLogo from '../components/BrandLogo';
 
@@ -67,15 +68,19 @@ export default function ProfilePage() {
           <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">Manage stakeholder roles, dispatch partner verification, and telemetry parameters.</p>
         </div>
         
-        {user && (
-          <button 
-            onClick={handleLogout}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold btn-danger-subtle cursor-pointer shadow-2xs shrink-0 self-start sm:self-auto"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <PageTourButton pageKey="profile" label="Profile Guide" />
+
+          {user && (
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold btn-danger-subtle cursor-pointer shadow-2xs shrink-0"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
+          )}
+        </div>
       </div>
       
       {/* Authentication Card */}

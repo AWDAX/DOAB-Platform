@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { History, Route, Camera, CheckCircle, Download, FileSpreadsheet } from 'lucide-react';
+import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 
 const SAMPLE_TRAVERSED_HISTORY = [
@@ -105,18 +106,22 @@ export default function OldRoutesPage() {
           </p>
         </div>
 
-        {/* Export CSV / Export History Button (SAHNIRMAAN / SWATVA Standard) */}
-        <button
-          type="button"
-          onClick={handleExportCSV}
-          disabled={isExporting}
-          className="self-start sm:self-auto px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-bold transition-all duration-200 shadow-2xs flex items-center gap-2 cursor-pointer group shrink-0 active:scale-95"
-          title="Export traversed paths and risk history to CSV"
-        >
-          <FileSpreadsheet className="h-4 w-4 text-[var(--color-brand-accent)] group-hover:text-current transition-colors" />
-          <span>{isExporting ? 'Generating CSV...' : 'Export History (CSV)'}</span>
-          <Download className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors" />
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <PageTourButton pageKey="routes_old" label="History Guide" />
+
+          {/* Export CSV / Export History Button (SAHNIRMAAN / SWATVA Standard) */}
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            disabled={isExporting}
+            className="px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-bold transition-all duration-200 shadow-2xs flex items-center gap-2 cursor-pointer group active:scale-95"
+            title="Export traversed paths and risk history to CSV"
+          >
+            <FileSpreadsheet className="h-4 w-4 text-[var(--color-brand-accent)] group-hover:text-current transition-colors" />
+            <span>{isExporting ? 'Generating CSV...' : 'Export History (CSV)'}</span>
+            <Download className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors" />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
+import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 
 const ORIGIN = { lat: 12.9716, lng: 77.5946 };
@@ -115,6 +116,8 @@ export default function BestRoutesPage() {
           <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">{copy.notASensor}</p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          <PageTourButton pageKey="routes_best" label="Routes Guide" />
+
           {/* Share Route Button (SWATVA / SAHNIRMAAN Standard) */}
           <button
             type="button"

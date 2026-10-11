@@ -80,7 +80,7 @@ export default function GlobalSidebar() {
     const linkContent = (
       <Link
         key={item.path}
-        id={item.id === 'best' ? 'tour-nav-routes' : item.id === 'assistant' ? 'tour-ai-copilot' : undefined}
+        id={`tour-nav-${item.id}`}
         to={item.path}
         onClick={() => playClick()}
         className={`group relative flex items-center h-10 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${

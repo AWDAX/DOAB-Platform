@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import AIOrbFace from '../components/AIOrbFace';
 import AIOrbIcon from '../components/AIOrbIcon';
+import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import { useDOABChat } from '../hooks/useDOABChat';
 
@@ -192,7 +193,7 @@ export default function AssistantPage() {
         : 'h-[calc(100dvh-5.5rem)] max-w-6xl p-3 sm:p-5 md:p-6 pb-2'
     }`}>
       {/* Page Header Bar */}
-      <div className="flex items-center justify-between gap-3 mb-4 shrink-0">
+      <div id="tour-assistant-header" className="flex items-center justify-between gap-3 mb-4 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex items-center justify-center shrink-0">
             <span
@@ -219,7 +220,9 @@ export default function AssistantPage() {
         </div>
 
         {/* Action Controls Toolbar */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div id="tour-assistant-actions" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <PageTourButton pageKey="assistant" label="Copilot Guide" />
+
           <button
             type="button"
             onClick={() => {
@@ -367,7 +370,7 @@ export default function AssistantPage() {
         )}
 
         {/* Conversation Stream Scroll View */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 space-y-5 custom-scrollbar min-h-0">
+        <div id="tour-assistant-chat" className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 space-y-5 custom-scrollbar min-h-0">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-10">
               <AIOrbFace size={78} state={orbState} className="mb-4" />
@@ -466,6 +469,7 @@ export default function AssistantPage() {
 
         {/* Input Bar Form */}
         <form
+          id="tour-assistant-input"
           onSubmit={handleSubmit}
           className="p-3 sm:p-4 border-t border-[var(--border-color)] bg-[var(--bg-main)]/60 shrink-0 flex items-center gap-2"
         >

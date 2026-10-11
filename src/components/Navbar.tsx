@@ -127,7 +127,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
         <div className="w-full max-w-[1800px] 2xl:max-w-full mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           
           {/* Logo Area with Animated Video Badge */}
-          <Link to="/" onClick={() => playClick()} className="flex items-center gap-3 group cursor-pointer shrink-0">
+          <Link id="tour-brand" to="/" onClick={() => playClick()} className="flex items-center gap-3 group cursor-pointer shrink-0">
             <BrandLogo size="md" />
             <div className="flex flex-col">
               <span className="font-bold text-sm tracking-tight leading-none text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] transition-colors">DOAB</span>
@@ -136,7 +136,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
           </Link>
 
           {/* Desktop Interactive Search Bar */}
-          <div ref={searchContainerRef} className="hidden md:flex flex-1 max-w-md mx-8 relative">
+          <div id="tour-search" ref={searchContainerRef} className="hidden md:flex flex-1 max-w-md mx-8 relative">
             <div 
               onClick={() => inputRef.current?.focus()}
               className={`w-full bg-[var(--bg-card)] border rounded-xl px-3.5 py-1.5 flex items-center justify-between gap-2.5 text-xs shadow-2xs transition-all cursor-text ${

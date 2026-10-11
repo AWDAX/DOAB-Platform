@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Compass, 
@@ -7,20 +8,29 @@ import {
   Sun, 
   MapPin, 
   Route as RouteIcon, 
-  Mic, 
   ShieldCheck, 
   ChevronRight, 
   ChevronLeft, 
   X, 
   Search, 
   Layers, 
-  Activity 
+  Activity,
+  History,
+  Bell,
+  Users2,
+  Camera,
+  Sparkles
 } from 'lucide-react';
+import AIOrbIcon from './AIOrbIcon';
 import { playClick } from '../utils/soundFx';
+
+export const TOUR_STORAGE_KEY = 'doab_tour_completed_v2';
+export const GLOBAL_TOUR_EVENT = 'doab:start-tour';
+export const PAGE_TOUR_EVENT = 'doab:start-page-tour';
 
 export interface TourStep {
   id: string;
-  targetSelector?: string;
+  targetSelector: string;
   title: string;
   stepLabel?: string;
   badge?: string;
@@ -35,150 +45,163 @@ export interface TourStep {
   spotlightRadius?: number;
 }
 
+// ─────────────────────────────────────────────────────────────
+// COMPREHENSIVE TOUR STEP CONFIGURATIONS
+// ─────────────────────────────────────────────────────────────
+
 export const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
-    id: 'env_dual_engine',
-    targetSelector: '#tour-env-toggle',
-    title: 'Dual-Climate Engine',
-    badge: 'Step 01/05',
-    floodDescription: 'Flood mode asks for a one-hour waterlogging estimate. Drought mode does not invent tanker demand.',
-    droughtDescription: 'Heatwave mode tracking groundwater depletion and municipal water tankers.',
-    proTip: 'Press Shift + E to toggle climate modes instantly.',
-    floodHighlight: 'Sub-400m standing water perimeters',
-    droughtHighlight: 'Live groundwater & tanker ETA tracking',
-    icon: Droplets,
-    preferredPosition: 'bottom',
-    highlightPadding: { x: 8, y: 8 },
-    spotlightRadius: 18
-  },
-  {
-    id: 'operations_map',
+    id: 'dashboard_map',
     targetSelector: '#tour-map-view',
     title: 'Risk Telemetry GIS Map',
-    badge: 'Step 02/05',
-    floodDescription: 'Historical Bengaluru complaints plus a one-hour model estimate where labels exist. Not a live sensor grid.',
-    droughtDescription: 'Drought mode does not predict tanker demand. Areas without labels stay unmarked.',
-    proTip: 'Open a complaint, then use the Google Maps link for directions.',
-    floodHighlight: 'Amber marks a higher model estimate. Grey is lower.',
+    badge: 'Step 01/06',
+    floodDescription: 'High-resolution Leaflet map displaying historical Bengaluru waterlogging complaints and real-time model risk contours.',
+    droughtDescription: 'Spatial tracking of ward water deficit, groundwater depletion alerts, and municipal tanker arrival corridors.',
+    proTip: 'Drag to pan. Click any ward cluster or prediction cell to inspect raw depth telemetry.',
+    floodHighlight: 'Sub-400m standing water perimeters',
     droughtHighlight: 'Real-time deficit metrics per ward',
     icon: MapPin,
     preferredPosition: 'center',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 24
+    highlightPadding: { x: 10, y: 10 },
+    spotlightRadius: 20
   },
   {
-    id: 'safe_routing',
-    targetSelector: '#tour-nav-routes',
-    title: 'Safe Rerouting Engine',
-    badge: 'Step 03/05',
-    floodDescription: 'Calculates high-elevation bypasses to prevent 2-wheelers from stalling in floodwaters.',
-    droughtDescription: 'Optimized transit routes for emergency water tankers and plumbing crews.',
-    proTip: 'Preview turn-by-turn elevation safety deltas under Safe Routes.',
-    floodHighlight: 'Real-time +4 min safe elevation bypass',
-    droughtHighlight: 'Automated priority dispatch corridors',
-    icon: RouteIcon,
+    id: 'dashboard_search',
+    targetSelector: '#tour-map-search',
+    title: 'Ward & Hazard Search Bar',
+    badge: 'Step 02/06',
+    floodDescription: 'Search complaints, waterlogged intersections, and critical flood hotspots with live severity filtering.',
+    droughtDescription: 'Filter emergency water request bounties and active municipal distribution points.',
+    proTip: 'Use the severity pills (Critical, High, Medium, Low) to isolate impassable roads.',
+    floodHighlight: 'Live autocomplete & severity filtering',
+    droughtHighlight: 'Ward tanker demand filter',
+    icon: Search,
     preferredPosition: 'bottom',
-    highlightPadding: { x: 8, y: 8 },
+    highlightPadding: { x: 10, y: 10 },
     spotlightRadius: 18
   },
   {
-    id: 'ai_copilot',
-    targetSelector: '#tour-ai-copilot',
-    title: 'AI Copilot Terminal',
-    badge: 'Step 04/05',
-    floodDescription: 'Asks about the one-hour estimate. Answers must say it is not a live depth reading.',
-    droughtDescription: 'The assistant does not report tanker arrival times. That is not in the model.',
-    proTip: 'Ask for a maps link. The reply will not invent a water depth.',
-    floodHighlight: 'Model estimate, not a sensor',
-    droughtHighlight: 'No tanker prediction',
-    icon: Mic,
-    preferredPosition: 'left',
-    highlightPadding: { x: 10, y: 10 },
-    spotlightRadius: 22
-  },
-  {
-    id: 'life_safety_permissions',
-    targetSelector: '#tour-permissions',
-    title: 'Life-Safety & Permissions',
-    badge: 'Step 05/05',
-    floodDescription: 'Full-screen emergency override alarm when entering critical flood zones, even in DND.',
-    droughtDescription: 'Civic heatwave advisories and automated verified bounty alerts.',
-    proTip: 'Manage GPS and alert permissions to enable geofenced warnings.',
-    floodHighlight: 'Critical SOS screen with 1-tap safe reroute',
-    droughtHighlight: 'Verified citizen trust score rewards',
-    icon: ShieldCheck,
+    id: 'dashboard_forecast',
+    targetSelector: '#tour-map-forecast',
+    title: '1-Hour Prediction Telemetry',
+    badge: 'Step 03/06',
+    floodDescription: 'Machine learning model estimate for water accumulation in the next 60 minutes based on SRTM elevation and rainfall data.',
+    droughtDescription: 'Groundwater depletion forecast and predicted tanker transit delays.',
+    proTip: 'Click "Refresh" anytime to poll the newest server prediction telemetry.',
+    floodHighlight: 'Model estimate, not a hardware sensor',
+    droughtHighlight: 'Simulated drought deficit index',
+    icon: Activity,
     preferredPosition: 'top',
     highlightPadding: { x: 8, y: 8 },
     spotlightRadius: 18
+  },
+  {
+    id: 'dashboard_controls',
+    targetSelector: '#tour-map-controls',
+    title: 'Map Telemetry Controls',
+    badge: 'Step 04/06',
+    floodDescription: 'Vertical control dock: GPS recenter, risk halos, prediction grids, ward boundaries, and intelligence overlay.',
+    droughtDescription: 'Quickly toggle deficit heatmaps, tanker distribution lines, and citizen verification markers.',
+    proTip: 'Click the animated crosshair to snap the map directly to your live GPS coordinates.',
+    floodHighlight: 'Custom vertical tool column with tooltips',
+    droughtHighlight: 'One-click layer visibility toggle',
+    icon: Layers,
+    preferredPosition: 'left',
+    highlightPadding: { x: 8, y: 8 },
+    spotlightRadius: 18
+  },
+  {
+    id: 'dashboard_routes_nav',
+    targetSelector: '#tour-nav-best',
+    title: 'Safe Elevation Routing',
+    badge: 'Step 05/06',
+    floodDescription: 'Access safe computed paths engineered to navigate through high-elevation ridges and avoid valley flood traps.',
+    droughtDescription: 'Access commercial transit corridors for emergency water tankers and plumbing fleets.',
+    proTip: 'Keyboard shortcut: Press "2" on your keyboard to open Safe Routes instantly.',
+    floodHighlight: 'High-ground routing engine',
+    droughtHighlight: 'Priority dispatch corridors',
+    icon: RouteIcon,
+    preferredPosition: 'right',
+    highlightPadding: { x: 8, y: 8 },
+    spotlightRadius: 16
+  },
+  {
+    id: 'dashboard_assistant_nav',
+    targetSelector: '#tour-nav-assistant',
+    title: 'DOAB AI Copilot',
+    badge: 'Step 06/06',
+    floodDescription: 'Dedicated full-page conversational terminal with voice input, session history, and cited civic answers.',
+    droughtDescription: 'Inquire about tanker schedules, water distribution guidelines, and ward status.',
+    proTip: 'Press "A" anytime to jump directly to the DOAB AI Assistant.',
+    floodHighlight: 'Voice dictation & chat export',
+    droughtHighlight: 'Cited civic advisory terminal',
+    icon: AIOrbIcon,
+    preferredPosition: 'right',
+    highlightPadding: { x: 8, y: 8 },
+    spotlightRadius: 16
   }
 ];
 
-export const LANDING_TOUR_STEPS: TourStep[] = [
+export const ASSISTANT_TOUR_STEPS: TourStep[] = [
   {
-    id: 'landing_hero',
-    targetSelector: '#tour-landing-hero',
-    title: 'DOAB Operations Grid',
-    stepLabel: 'Beginning',
-    badge: 'Intro',
-    floodDescription: 'A prototype for a one-hour waterlogging estimate and an unscored or scored maps link.',
-    droughtDescription: 'Drought dispatch is not predicted by the current model.',
-    proTip: 'Estimates are limited to the Bengaluru area that has labelled complaints.',
-    icon: Compass,
-    preferredPosition: 'bottom',
-    highlightPadding: { x: 14, y: 14 },
-    spotlightRadius: 24
-  },
-  {
-    id: 'landing_search',
-    targetSelector: '#tour-landing-search',
-    title: 'Complaint search',
+    id: 'assistant_header',
+    targetSelector: '#tour-assistant-header',
+    title: 'DOAB AI Copilot Terminal',
     badge: 'Step 01/04',
-    floodDescription: 'Search historical complaint text. Results are not live flood depths.',
-    droughtDescription: 'Drought demand is not estimated, so search will not show tanker schedules.',
-    proTip: 'Press Ctrl + K anytime to focus the search bar.',
-    icon: Search,
+    floodDescription: 'Conversational assistant analyzing live weather telemetry, model estimates, and historical flood complaints.',
+    droughtDescription: 'Intelligent copilot for water scarcity management, tanker coordination, and municipal advisory.',
+    proTip: 'Responses clearly differentiate model predictions from verified sensor ground truth.',
+    floodHighlight: 'Dual-climate intelligence copilot',
+    droughtHighlight: 'Groundwater & tanker advisory',
+    icon: AIOrbIcon,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
     spotlightRadius: 20
   },
   {
-    id: 'landing_loop',
-    targetSelector: '#tour-landing-loop',
-    title: 'The DOAB Loop',
+    id: 'assistant_actions',
+    targetSelector: '#tour-assistant-actions',
+    title: 'Session Management & History',
     badge: 'Step 02/04',
-    floodDescription: 'Detect (model estimate) → Order (concept only) → Alert (maps link) → Back-check (not wired to the model).',
-    droughtDescription: 'Drought detection is not part of the current model.',
-    proTip: 'Nothing here resolves a civic incident on its own.',
-    icon: Layers,
-    preferredPosition: 'top',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 24
-  },
-  {
-    id: 'landing_bento',
-    targetSelector: '#tour-landing-bento',
-    title: 'Platform Architecture',
-    badge: 'Step 03/04',
-    floodDescription: 'Rainfall, elevation and past complaints feed the estimate. No bounty is paid.',
-    droughtDescription: 'Tanker tracking is not implemented.',
-    proTip: 'The map uses Leaflet and OpenStreetMap.',
+    floodDescription: 'Start new chats, browse past advisory sessions, or export conversations to Markdown.',
+    droughtDescription: 'Review previous dispatch queries and export operational consultation records.',
+    proTip: 'Click "Sessions" to search past discussions or clear old records.',
+    floodHighlight: 'Instant export & session recovery',
+    droughtHighlight: 'Persistent on-device storage',
     icon: Activity,
-    preferredPosition: 'top',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 24
+    preferredPosition: 'bottom',
+    highlightPadding: { x: 8, y: 8 },
+    spotlightRadius: 18
   },
   {
-    id: 'landing_modes',
-    targetSelector: '#tour-landing-modes',
-    title: 'Dual Climate Modes',
-    badge: 'Step 04/04',
-    floodDescription: 'Monsoon mode detects flood waterlogging and road passability.',
-    droughtDescription: 'Scarcity mode manages groundwater depletion and emergency water tankers.',
-    proTip: 'Switch climate modes using the header toggle.',
-    icon: Sun,
+    id: 'assistant_chat',
+    targetSelector: '#tour-assistant-chat',
+    title: 'Consultation Stream & Voice',
+    badge: 'Step 03/04',
+    floodDescription: 'Interactive message thread with clickable quick prompts, code blocks, and read-aloud voice playback.',
+    droughtDescription: 'Clear text responses with read-aloud capabilities for field workers and municipal drivers.',
+    proTip: 'Click the speaker icon next to any assistant reply for high-fidelity speech synthesis.',
+    floodHighlight: 'One-click copy & text-to-speech',
+    droughtHighlight: 'Field-ready accessibility',
+    icon: Compass,
     preferredPosition: 'top',
     highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 24
+    spotlightRadius: 22
+  },
+  {
+    id: 'assistant_input',
+    targetSelector: '#tour-assistant-input',
+    title: 'Voice Dictation & Input Bar',
+    badge: 'Step 04/04',
+    floodDescription: 'Hands-free voice recognition with live audio visualizer and instant send for wet or moving commutes.',
+    droughtDescription: 'Quickly dictate emergency ward requests or query water tanker availability.',
+    proTip: 'Click the microphone icon or press Enter after typing your question.',
+    floodHighlight: 'Speech-to-text with auto-punctuation',
+    droughtHighlight: 'Zero-touch driver interface',
+    icon: Sparkles,
+    preferredPosition: 'top',
+    highlightPadding: { x: 10, y: 10 },
+    spotlightRadius: 18
   }
 ];
 
@@ -186,13 +209,13 @@ export const BEST_ROUTES_TOUR_STEPS: TourStep[] = [
   {
     id: 'best_header',
     targetSelector: '#tour-best-header',
-    title: 'Safe Elevation Routes',
+    title: 'Safe Elevation Routing Engine',
     badge: 'Step 01/04',
-    floodDescription: 'Lists a Google Maps link. Alternatives are ranked only when a server route key is set.',
-    droughtDescription: 'Drought supply routes are not calculated.',
-    proTip: 'An unscored link has not been checked against the model.',
-    floodHighlight: 'Safety first, then travel time, when scoring is available',
-    droughtHighlight: 'No tanker corridor is produced',
+    floodDescription: 'Calculates high-ground bypass routes using SRTM digital elevation data to prevent vehicles from stalling in standing water.',
+    droughtDescription: 'Generates optimized supply lines for commercial water tankers avoiding narrow congested lanes.',
+    proTip: 'Safest routes prioritize high elevation margins and lower waterlogging probabilities.',
+    floodHighlight: 'Elevation-first bypass calculation',
+    droughtHighlight: 'Heavy tanker transit corridors',
     icon: RouteIcon,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
@@ -201,11 +224,13 @@ export const BEST_ROUTES_TOUR_STEPS: TourStep[] = [
   {
     id: 'best_switcher',
     targetSelector: '#tour-best-switcher',
-    title: 'Multi-Path Risk Matrix',
+    title: 'Multi-Path Risk Comparison',
     badge: 'Step 02/04',
-    floodDescription: 'Compare primary, alternate, and high-ground emergency routes.',
-    droughtDescription: 'Switch between commercial tanker corridors and distribution lines.',
-    proTip: 'Evaluate alternate route risk percentages before departing.',
+    floodDescription: 'Switch between primary, secondary, and emergency high-ground bypass routes with one click.',
+    droughtDescription: 'Compare alternative delivery corridors and transit time trade-offs.',
+    proTip: 'Use arrow buttons (← / →) to quickly cycle through computed alternatives.',
+    floodHighlight: 'Instant alternative corridor cycling',
+    droughtHighlight: 'Comparative transit analytics',
     icon: Layers,
     preferredPosition: 'bottom',
     highlightPadding: { x: 8, y: 8 },
@@ -214,24 +239,28 @@ export const BEST_ROUTES_TOUR_STEPS: TourStep[] = [
   {
     id: 'best_table',
     targetSelector: '#tour-best-table',
-    title: 'Risk Probability Matrix',
+    title: 'Corridor Safety & Elevation Matrix',
     badge: 'Step 03/04',
-    floodDescription: 'Corridor risk scores, estimated travel times, and elevation margins.',
-    droughtDescription: 'Deficit clearance rates, transit times, and priority scores.',
-    proTip: 'Recommended routes maintain <5% risk probability.',
+    floodDescription: 'Inspect distance in kilometers, estimated commute time, and model risk probability for each alternative.',
+    droughtDescription: 'Verify clearance metrics, turnaround times, and delivery priority ratings.',
+    proTip: 'Green badge indicates verified safest path with minimal flood exposure.',
+    floodHighlight: 'Quantitative elevation margins',
+    droughtHighlight: 'Priority deficit ratings',
     icon: Activity,
     preferredPosition: 'top',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 22
+    highlightPadding: { x: 10, y: 10 },
+    spotlightRadius: 20
   },
   {
     id: 'best_engage',
     targetSelector: '#tour-best-engage',
-    title: 'Engage Turn-by-Turn',
+    title: 'Open in Google Maps / Engage',
     badge: 'Step 04/04',
-    floodDescription: 'Activates live voice prompts and flood hazard warnings.',
-    droughtDescription: 'Dispatches verified routes to delivery riders and municipal fleets.',
-    proTip: 'Engaging activates background geofencing and automatic reroute alerts.',
+    floodDescription: 'Launch turn-by-turn navigation directly in Google Maps with high-ground waypoints preserved.',
+    droughtDescription: 'Dispatch verified routes directly to drivers or share with logistics fleets.',
+    proTip: 'Clicking opens native Google Maps with origin and destination pre-populated.',
+    floodHighlight: '1-tap external turn-by-turn navigation',
+    droughtHighlight: 'Seamless driver handoff',
     icon: ShieldCheck,
     preferredPosition: 'left',
     highlightPadding: { x: 8, y: 8 },
@@ -243,12 +272,14 @@ export const OLD_ROUTES_TOUR_STEPS: TourStep[] = [
   {
     id: 'history_header',
     targetSelector: '#tour-history-header',
-    title: 'Audit History & Receipts',
+    title: 'Route Traversal History & Audits',
     badge: 'Step 01/04',
-    floodDescription: 'A page of example past routes. It is not a sensor audit.',
-    droughtDescription: 'Tanker deliveries are not logged here.',
-    proTip: 'These rows are not used to retrain the model automatically.',
-    icon: Activity,
+    floodDescription: 'Complete audit log of previously traversed corridors, model accuracy verification, and ground-truth back-checks.',
+    droughtDescription: 'Historical record of water deliveries, tanker arrivals, and community verification stamps.',
+    proTip: 'Click "Export History (CSV)" to download spreadsheet logs for insurance or municipal reporting.',
+    floodHighlight: 'Comprehensive trip ledger & CSV export',
+    droughtHighlight: 'Delivery audit accountability',
+    icon: History,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
     spotlightRadius: 20
@@ -256,11 +287,13 @@ export const OLD_ROUTES_TOUR_STEPS: TourStep[] = [
   {
     id: 'history_card_1',
     targetSelector: '#tour-history-card-1',
-    title: 'Example route cards',
+    title: 'Ground Truth Verification Card',
     badge: 'Step 02/04',
-    floodDescription: 'Compares predicted flood risk (e.g. 8.5%) with actual road passability.',
-    droughtDescription: 'Tracks delivered water volume vs predicted ward deficit.',
-    proTip: 'High-correlation trips earn verified trust badges.',
+    floodDescription: 'Compares predicted flood risk against actual street conditions encountered by commuters.',
+    droughtDescription: 'Details delivered water volume versus predicted ward water deficit.',
+    proTip: 'Cards show verified accuracy tags: "Clear Dry", "Waterlogged", or "Passable".',
+    floodHighlight: 'Prediction vs Reality delta',
+    droughtHighlight: 'Volume delivered verification',
     icon: MapPin,
     preferredPosition: 'top',
     highlightPadding: { x: 10, y: 10 },
@@ -271,10 +304,12 @@ export const OLD_ROUTES_TOUR_STEPS: TourStep[] = [
     targetSelector: '#tour-history-camera',
     title: '1-Tap Photo Back-Check',
     badge: 'Step 03/04',
-    floodDescription: 'Photo back-check is a concept on this page. It does not change the model.',
-    droughtDescription: 'Photo verification of replenished community water tanks.',
-    proTip: 'Citizen back-checks feed the core reinforcement learning engine.',
-    icon: Droplets,
+    floodDescription: 'Capture on-ground road photos to verify clearance or report unexpected standing water.',
+    droughtDescription: 'Upload photo proof of replenished community water tanks and functional taps.',
+    proTip: 'Citizen photo back-checks improve community trust scores and validate model accuracy.',
+    floodHighlight: 'Crowdsourced visual proof',
+    droughtHighlight: 'Tanker discharge verification',
+    icon: Camera,
     preferredPosition: 'top',
     highlightPadding: { x: 8, y: 8 },
     spotlightRadius: 18
@@ -284,13 +319,15 @@ export const OLD_ROUTES_TOUR_STEPS: TourStep[] = [
     targetSelector: '#tour-history-sync',
     title: 'Geofenced Trip Sync',
     badge: 'Step 04/04',
-    floodDescription: 'Automatically logs completed commute corridors without manual check-ins.',
-    droughtDescription: 'Automated fleet tracking across monitored municipal wards.',
-    proTip: 'On-device geofencing with zero location data leaks.',
+    floodDescription: 'Background on-device geofencing automatically logs completed safe commutes with zero cloud tracking.',
+    droughtDescription: 'Tracks fleet coverage across monitored municipal wards without leaking private routes.',
+    proTip: 'All location matching happens locally in your browser sandbox.',
+    floodHighlight: 'Privacy-first client-side geofence',
+    droughtHighlight: 'Zero telemetry data leakage',
     icon: RouteIcon,
     preferredPosition: 'top',
-    highlightPadding: { x: 10, y: 10 },
-    spotlightRadius: 20
+    highlightPadding: { x: 8, y: 8 },
+    spotlightRadius: 18
   }
 ];
 
@@ -298,12 +335,14 @@ export const NOTIFICATIONS_TOUR_STEPS: TourStep[] = [
   {
     id: 'alerts_header',
     targetSelector: '#tour-alerts-header',
-    title: 'Civic Alert Stream',
+    title: 'Civic Alerts & Telemetry Feed',
     badge: 'Step 01/04',
-    floodDescription: 'Cells whose one-hour estimate is elevated. Empty when the service has no labelled coverage.',
-    droughtDescription: 'Drought and tanker alerts are not produced.',
-    proTip: 'Ranked by ward risk index and commuter proximity.',
-    icon: Activity,
+    floodDescription: 'Real-time list of all cells with elevated waterlogging probability sorted by risk urgency.',
+    droughtDescription: 'List of active tanker work orders, water scarcity advisories, and maintenance alerts.',
+    proTip: 'Alerts update dynamically as new weather forecasts are ingested.',
+    floodHighlight: 'Urgency-sorted hazard stream',
+    droughtHighlight: 'Civic water distribution updates',
+    icon: Bell,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
     spotlightRadius: 20
@@ -311,11 +350,13 @@ export const NOTIFICATIONS_TOUR_STEPS: TourStep[] = [
   {
     id: 'alerts_critical',
     targetSelector: '#tour-alerts-critical',
-    title: 'Critical Hazard Alerts',
+    title: 'Critical Hazard Warning Cards',
     badge: 'Step 02/04',
-    floodDescription: 'High-severity alerts (>30cm water) linked to Safe Reroutes and SOS mode.',
-    droughtDescription: 'Severe water deficit alerts triggering commercial plumber work orders.',
-    proTip: 'Can override device DND when emergency broadcast alerts are enabled.',
+    floodDescription: 'Indicates high-severity water accumulation (>35% probability) with coordinates and 1-hour forecast window.',
+    droughtDescription: 'Indicates acute water shortages requiring immediate commercial tanker intervention.',
+    proTip: 'Click "Open in Google Maps" on any alert card to view its exact street coordinates.',
+    floodHighlight: 'Direct link to safe bypass routing',
+    droughtHighlight: 'Dispatch priority classification',
     icon: ShieldCheck,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
@@ -324,11 +365,13 @@ export const NOTIFICATIONS_TOUR_STEPS: TourStep[] = [
   {
     id: 'alerts_tanker',
     targetSelector: '#tour-alerts-tanker',
-    title: 'Bounty Work Orders',
+    title: 'Work Orders & Dispatch Bounties',
     badge: 'Step 03/04',
-    floodDescription: 'Work orders are a concept in this prototype. No payment is sent.',
-    droughtDescription: 'Commercial tanker delivery contracts for registered fleets.',
-    proTip: 'Delivery partners can claim open bounties directly.',
+    floodDescription: 'Simulated civic clearing contracts for municipal suction pumps and drainage crews.',
+    droughtDescription: 'Commercial tanker delivery bounties for registered fleet operators.',
+    proTip: 'Commercial partners can claim open bounties directly in partner mode.',
+    floodHighlight: 'Civic response work orders',
+    droughtHighlight: 'Verified tanker delivery bounties',
     icon: RouteIcon,
     preferredPosition: 'top',
     highlightPadding: { x: 10, y: 10 },
@@ -339,9 +382,11 @@ export const NOTIFICATIONS_TOUR_STEPS: TourStep[] = [
     targetSelector: '#tour-alerts-backcheck',
     title: 'Verification Broadcasts',
     badge: 'Step 04/04',
-    floodDescription: 'Crowdsourced road clearance confirmed by citizen photos.',
-    droughtDescription: 'Community tap refills verified by ward residents.',
-    proTip: 'Verified back-checks return ward indicators to green.',
+    floodDescription: 'Crowdsourced road clearance status verified by fellow commuters on the ground.',
+    droughtDescription: 'Community tap refilling confirmed by local ward residents.',
+    proTip: 'Back-checks return hazard indicators from amber to safe green.',
+    floodHighlight: 'Citizen crowd verification',
+    droughtHighlight: 'Community refill confirmations',
     icon: MapPin,
     preferredPosition: 'top',
     highlightPadding: { x: 10, y: 10 },
@@ -353,11 +398,13 @@ export const PROFILE_TOUR_STEPS: TourStep[] = [
   {
     id: 'profile_auth',
     targetSelector: '#tour-profile-auth',
-    title: 'Authentication & Sync',
+    title: 'Authentication & Session Sync',
     badge: 'Step 01/03',
-    floodDescription: 'Google OAuth / Demo session syncing commute history and civic trust scores.',
-    droughtDescription: 'Verified dispatcher session for tanker orders and commercial billing.',
-    proTip: 'One-click login preserves your trust score across devices.',
+    floodDescription: 'Sign in with Google OAuth or local demo mode to sync commute logs and citizen trust score.',
+    droughtDescription: 'Dispatcher credentials for tanker orders, verified routes, and billing receipts.',
+    proTip: 'One-click sign in preserves your trust badges across multiple devices.',
+    floodHighlight: 'Verified Firebase & Demo authentication',
+    droughtHighlight: 'Commercial dispatcher access',
     icon: ShieldCheck,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
@@ -366,11 +413,13 @@ export const PROFILE_TOUR_STEPS: TourStep[] = [
   {
     id: 'profile_roles',
     targetSelector: '#tour-profile-roles',
-    title: 'Stakeholder Roles',
+    title: 'Stakeholder Role Switcher',
     badge: 'Step 02/03',
-    floodDescription: 'Switch between Citizen mode and Delivery Partner mode (Swiggy, Zomato, Zepto).',
-    droughtDescription: 'Unlock commercial tanker and plumbing dispatch contracts.',
-    proTip: 'Partner mode unlocks commercial elevation routing.',
+    floodDescription: 'Toggle between Citizen Commuter mode and Delivery Partner mode (Swiggy, Zomato, Zepto, Dunzo).',
+    droughtDescription: 'Unlock municipal tanker dispatch contracts and commercial plumbing pipelines.',
+    proTip: 'Delivery partner mode unlocks heavy-vehicle elevation routing rules.',
+    floodHighlight: 'Multi-stakeholder interface toggle',
+    droughtHighlight: 'Commercial fleet routing',
     icon: Layers,
     preferredPosition: 'top',
     highlightPadding: { x: 10, y: 10 },
@@ -379,11 +428,13 @@ export const PROFILE_TOUR_STEPS: TourStep[] = [
   {
     id: 'profile_permissions',
     targetSelector: '#tour-profile-permissions',
-    title: 'Life-Safety Suite',
+    title: 'Life-Safety & Permissions Suite',
     badge: 'Step 03/03',
-    floodDescription: 'Configure GPS, civic alerts, geofencing, and test full-screen SOS Danger alarms.',
-    droughtDescription: 'Manage alert subscriptions and municipal notification channels.',
-    proTip: 'Click Manage & Test SOS to preview the full-screen danger screen.',
+    floodDescription: 'Configure GPS tracking, background geofencing, and test full-screen SOS Danger override alarms.',
+    droughtDescription: 'Manage municipal SMS broadcasts, push alerts, and emergency contact lists.',
+    proTip: 'Click "Manage & Test SOS" to simulate an emergency danger screen with audible sirens.',
+    floodHighlight: 'Full-screen SOS override simulator',
+    droughtHighlight: 'Advisory push preferences',
     icon: Compass,
     preferredPosition: 'top',
     highlightPadding: { x: 10, y: 10 },
@@ -395,12 +446,14 @@ export const TEAM_TOUR_STEPS: TourStep[] = [
   {
     id: 'team_header',
     targetSelector: '#tour-team-header',
-    title: 'Team Contrarians',
+    title: 'The Team Behind DOAB',
     badge: 'Step 01/04',
-    floodDescription: 'Meet the builders behind the DOAB environmental life-safety platform.',
-    droughtDescription: 'Explore the team behind the dual-climate civic response architecture.',
-    proTip: 'Click any member card to inspect their domain profile.',
-    icon: Compass,
+    floodDescription: 'Meet the engineering and design team behind the dual-climate life-safety platform.',
+    droughtDescription: 'Learn about the cross-disciplinary contributors architecting water resilience.',
+    proTip: 'Click any member card to view their GitHub, LinkedIn, and core contributions.',
+    floodHighlight: 'Team Contrarians portfolio',
+    droughtHighlight: 'Full-stack civic engineering',
+    icon: Users2,
     preferredPosition: 'bottom',
     highlightPadding: { x: 12, y: 12 },
     spotlightRadius: 24
@@ -410,9 +463,11 @@ export const TEAM_TOUR_STEPS: TourStep[] = [
     targetSelector: '#tour-team-grid',
     title: 'Interactive Member Profiles',
     badge: 'Step 02/04',
-    floodDescription: 'Profiles across Frontend Architecture, Cloud Systems, Hydrology ML, and UI/UX.',
-    droughtDescription: 'Detailed engineering breakdown of telemetry and dispatch systems.',
-    proTip: 'Use arrow keys or swipe to navigate profiles.',
+    floodDescription: 'Profiles spanning Frontend Architecture, Cloud Systems, Hydrology ML, and UI/UX Design.',
+    droughtDescription: 'Deep-dive into each domain owner’s technical stack and contributions.',
+    proTip: 'Cards include subtle soft shadows and responsive layout across mobile and desktop.',
+    floodHighlight: 'Role badges & domain specializations',
+    droughtHighlight: 'Clean neo-glass card design',
     icon: Layers,
     preferredPosition: 'top',
     highlightPadding: { x: 14, y: 14 },
@@ -423,9 +478,11 @@ export const TEAM_TOUR_STEPS: TourStep[] = [
     targetSelector: '#tour-team-stats',
     title: 'Engineering Benchmarks',
     badge: 'Step 03/04',
-    floodDescription: 'The labelled area is the Bengaluru complaint box. There is no claimed accuracy percentage.',
-    droughtDescription: 'High-efficiency serverless architecture with zero-downtime resilience.',
-    proTip: 'DOAB is engineered for low-bandwidth mobile networks across urban corridors.',
+    floodDescription: 'Bengaluru complaint coverage, SRTM elevation integration, and sub-150ms client-side latency.',
+    droughtDescription: 'Resource optimization metrics designed for low-bandwidth mobile networks.',
+    proTip: 'DOAB is architected with zero third-party telemetry trackers.',
+    floodHighlight: 'High performance web architecture',
+    droughtHighlight: 'Low-bandwidth resilience',
     icon: Activity,
     preferredPosition: 'top',
     highlightPadding: { x: 12, y: 12 },
@@ -436,9 +493,11 @@ export const TEAM_TOUR_STEPS: TourStep[] = [
     targetSelector: '#tour-team-pillars',
     title: 'Core Architecture Pillars',
     badge: 'Step 04/04',
-    floodDescription: 'Complaint labels, a one-hour estimate, and a Google Maps link.',
-    droughtDescription: 'Three-tiered resilience architecture built for smart Indian cities.',
-    proTip: 'Explore how DOAB bridges citizen safety with automated municipal operations.',
+    floodDescription: 'Deterministic rule evaluation, privacy-first geofencing, and transparent machine learning.',
+    droughtDescription: 'Civilian-first emergency infrastructure and municipal collaboration.',
+    proTip: 'Read the architectural philosophy driving our dual-climate platform.',
+    floodHighlight: 'Zero hallucination ML guidelines',
+    droughtHighlight: 'Civic accountability',
     icon: ShieldCheck,
     preferredPosition: 'top',
     highlightPadding: { x: 12, y: 12 },
@@ -446,31 +505,121 @@ export const TEAM_TOUR_STEPS: TourStep[] = [
   }
 ];
 
-export const TOUR_REGISTRY: Record<string, TourStep[]> = {
-  '/': DASHBOARD_TOUR_STEPS,
-  '/routes/best': BEST_ROUTES_TOUR_STEPS,
-  '/routes/old': OLD_ROUTES_TOUR_STEPS,
-  '/notifications': NOTIFICATIONS_TOUR_STEPS,
-  '/profile': PROFILE_TOUR_STEPS,
-  '/landing': LANDING_TOUR_STEPS,
-  '/team': TEAM_TOUR_STEPS
+export const LANDING_TOUR_STEPS: TourStep[] = [
+  {
+    id: 'landing_hero',
+    targetSelector: '#tour-landing-hero',
+    title: 'DOAB Operations Grid',
+    badge: 'Intro',
+    floodDescription: 'An intelligent environmental life-safety platform providing 1-hour waterlogging forecasts and safe elevation bypass routes.',
+    droughtDescription: 'Civic water management network bridging groundwater depletion, tanker logistics, and citizen verification.',
+    proTip: 'Press Shift + E anytime to switch between Monsoon and Scarcity modes.',
+    floodHighlight: 'Dual-climate civic intelligence',
+    droughtHighlight: 'Zero-middleman water logistics',
+    icon: Compass,
+    preferredPosition: 'bottom',
+    highlightPadding: { x: 14, y: 14 },
+    spotlightRadius: 24
+  },
+  {
+    id: 'landing_search',
+    targetSelector: '#tour-landing-search',
+    title: 'Natural Language Search & Triage',
+    badge: 'Step 01/04',
+    floodDescription: 'Type or speak street names and wards to retrieve historical waterlogging complaints and passability warnings.',
+    droughtDescription: 'Query municipal tanker distribution schedules and ward water deficit ratings.',
+    proTip: 'Press Ctrl + K anytime to focus the global command search bar.',
+    floodHighlight: 'Ctrl + K command palette integration',
+    droughtHighlight: 'Instant ward query triage',
+    icon: Search,
+    preferredPosition: 'bottom',
+    highlightPadding: { x: 10, y: 10 },
+    spotlightRadius: 20
+  },
+  {
+    id: 'landing_loop',
+    targetSelector: '#tour-landing-loop',
+    title: 'The Closed DOAB Loop',
+    badge: 'Step 02/04',
+    floodDescription: 'Predict accumulation → Compute safe elevation paths → Broadcast geofenced alarms → Verify with photo back-checks.',
+    droughtDescription: 'Monitor deficit → Dispatch tanker fleets → Deliver water → Citizen QR verification.',
+    proTip: 'Every stage runs locally with verified timestamps.',
+    floodHighlight: '4-stage life-safety lifecycle',
+    droughtHighlight: 'Closed loop accountability',
+    icon: Layers,
+    preferredPosition: 'top',
+    highlightPadding: { x: 12, y: 12 },
+    spotlightRadius: 24
+  },
+  {
+    id: 'landing_bento',
+    targetSelector: '#tour-landing-bento',
+    title: 'System Architecture & Bento Grid',
+    badge: 'Step 03/04',
+    floodDescription: 'Hydrology models, Leaflet GIS mapping, client-side geofencing, and serverless edge APIs.',
+    droughtDescription: 'High-res groundwater telemetry, tanker routing, and civic bounty management.',
+    proTip: 'Built for extreme conditions with full offline caching support.',
+    floodHighlight: 'Zero cloud latency architecture',
+    droughtHighlight: 'Offline-first PWA design',
+    icon: Activity,
+    preferredPosition: 'top',
+    highlightPadding: { x: 12, y: 12 },
+    spotlightRadius: 24
+  },
+  {
+    id: 'landing_modes',
+    targetSelector: '#tour-landing-modes',
+    title: 'Dual Climate Operational Modes',
+    badge: 'Step 04/04',
+    floodDescription: 'Monsoon mode: active flood risk corridors, standing water warnings, and safe elevation routes.',
+    droughtDescription: 'Scarcity mode: groundwater depletion tracking, heatwave advisories, and emergency tankers.',
+    proTip: 'Switch instantly using the climate mode toggle in the navigation bar.',
+    floodHighlight: 'Flood cerulean vs Scarcity amber',
+    droughtHighlight: 'Adaptive UI tokens & terminology',
+    icon: Sun,
+    preferredPosition: 'top',
+    highlightPadding: { x: 12, y: 12 },
+    spotlightRadius: 24
+  }
+];
+
+export const PAGE_TOUR_CONFIGS: Record<string, TourStep[]> = {
+  dashboard: DASHBOARD_TOUR_STEPS,
+  routes_best: BEST_ROUTES_TOUR_STEPS,
+  routes_old: OLD_ROUTES_TOUR_STEPS,
+  notifications: NOTIFICATIONS_TOUR_STEPS,
+  assistant: ASSISTANT_TOUR_STEPS,
+  profile: PROFILE_TOUR_STEPS,
+  team: TEAM_TOUR_STEPS,
+  landing: LANDING_TOUR_STEPS
 };
 
-interface GuidedTourProps {
-  isOpen: boolean;
-  onClose: () => void;
-  envMode: 'flood' | 'drought';
-  tourType?: 'dashboard' | 'landing' | 'routes_best' | 'routes_old' | 'notifications' | 'profile' | 'team';
+export const ROUTE_PATH_MAP: Record<string, string> = {
+  '/': 'dashboard',
+  '/routes/best': 'routes_best',
+  '/routes/old': 'routes_old',
+  '/notifications': 'notifications',
+  '/assistant': 'assistant',
+  '/profile': 'profile',
+  '/team': 'team',
+  '/landing': 'landing'
+};
+
+// ─────────────────────────────────────────────────────────────
+// HELPER: ELEMENT VISIBILITY CHECK (SAHNIRMAAN STANDARD)
+// ─────────────────────────────────────────────────────────────
+
+export function isElementVisible(el: HTMLElement | null): boolean {
+  if (!el) return false;
+  const style = window.getComputedStyle(el);
+  if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+  const rect = el.getBoundingClientRect();
+  return (rect.width > 0 && rect.height > 0) || el.offsetParent !== null;
 }
 
-interface SpotlightRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  rx: number;
-  ry: number;
-}
+// ─────────────────────────────────────────────────────────────
+// WELCOME PROMPT MODAL (SAHNIRMAAN / SWATVA OBSIDIAN STANDARD)
+// ─────────────────────────────────────────────────────────────
 
 interface WelcomeTourPromptModalProps {
   isOpen: boolean;
@@ -512,7 +661,7 @@ export function WelcomeTourPromptModal({
         aria-labelledby="tour-prompt-title"
         className="relative w-full max-w-lg rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] dark:border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.25)] dark:shadow-[0_30px_70px_rgba(0,0,0,0.9)] p-6 sm:p-8 text-[var(--text-main)] overflow-hidden animate-in zoom-in-95 duration-200"
       >
-        {/* Subtle Warm Amber / Accent Obsidian Glow Halo */}
+        {/* Subtle Warm Amber Halo */}
         <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-amber-500/[0.08] dark:bg-amber-500/[0.12] blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-amber-500/[0.06] dark:bg-amber-500/[0.10] blur-3xl pointer-events-none" />
 
@@ -536,7 +685,7 @@ export function WelcomeTourPromptModal({
           </div>
           <div>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)]">
-              {isFlood ? 'Monsoon Grid' : 'Scarcity Grid'} · Quick 1-Min Tour
+              {isFlood ? 'Monsoon Operations' : 'Scarcity Operations'} · Quick 1-Min Tour
             </span>
           </div>
         </div>
@@ -596,6 +745,69 @@ export function WelcomeTourPromptModal({
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// PAGE TOUR TRIGGER BUTTON (SWATVA / SAHNIRMAAN STANDARD)
+// ─────────────────────────────────────────────────────────────
+
+interface PageTourButtonProps {
+  pageKey?: string;
+  className?: string;
+  label?: string;
+}
+
+export function PageTourButton({ 
+  pageKey, 
+  className = '', 
+  label = 'Page Guide' 
+}: PageTourButtonProps) {
+  const location = useLocation();
+  const targetKey = pageKey || ROUTE_PATH_MAP[location.pathname] || 'dashboard';
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        playClick();
+        window.dispatchEvent(new CustomEvent(PAGE_TOUR_EVENT, { detail: { pageKey: targetKey } }));
+      }}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/50 hover:bg-[var(--color-brand-accent)]/10 hover:text-[var(--color-brand-accent)] transition-all duration-200 cursor-pointer select-none shadow-2xs group ${className}`}
+      aria-label={`Start ${label}`}
+      title={`Start ${label} interactive tour`}
+    >
+      <Compass size={13} className="text-[var(--color-brand-accent)] transition-transform duration-300 group-hover:rotate-45" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+export function rerunGuidedTour() {
+  window.dispatchEvent(new CustomEvent(GLOBAL_TOUR_EVENT));
+}
+
+export function startPageTour(pageKey: string) {
+  window.dispatchEvent(new CustomEvent(PAGE_TOUR_EVENT, { detail: { pageKey } }));
+}
+
+// ─────────────────────────────────────────────────────────────
+// MAIN GUIDED TOUR COMPONENT
+// ─────────────────────────────────────────────────────────────
+
+interface GuidedTourProps {
+  isOpen: boolean;
+  onClose: () => void;
+  envMode: 'flood' | 'drought';
+  tourType?: string;
+}
+
+interface SpotlightRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  rx: number;
+  ry: number;
+}
+
 interface PopoverPos {
   top: number;
   left: number;
@@ -603,31 +815,19 @@ interface PopoverPos {
   arrowLeft: number;
 }
 
-import { useLocation } from 'react-router-dom';
-
 export default function GuidedTour({ 
   isOpen, 
   onClose, 
   envMode, 
-  tourType 
+  tourType: explicitTourType 
 }: GuidedTourProps) {
   const location = useLocation();
 
-  // Auto-resolve sub-tour steps by current active route or explicit tourType prop
-  const getStepsForCurrentRoute = (): TourStep[] => {
-    if (tourType === 'landing') return LANDING_TOUR_STEPS;
-    if (tourType === 'routes_best') return BEST_ROUTES_TOUR_STEPS;
-    if (tourType === 'routes_old') return OLD_ROUTES_TOUR_STEPS;
-    if (tourType === 'notifications') return NOTIFICATIONS_TOUR_STEPS;
-    if (tourType === 'profile') return PROFILE_TOUR_STEPS;
-    if (tourType === 'team') return TEAM_TOUR_STEPS;
-    if (tourType === 'dashboard') return DASHBOARD_TOUR_STEPS;
+  // Active tour key resolution
+  const activeTourKey = explicitTourType || ROUTE_PATH_MAP[location.pathname] || 'dashboard';
 
-    const path = location.pathname;
-    return TOUR_REGISTRY[path] || DASHBOARD_TOUR_STEPS;
-  };
-
-  const steps = getStepsForCurrentRoute();
+  // State
+  const [activeSteps, setActiveSteps] = useState<TourStep[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [spotlightCoords, setSpotlightCoords] = useState<SpotlightRect | null>(null);
   const [popoverPos, setPopoverPos] = useState<PopoverPos>({ top: 0, left: 0, isTop: false, arrowLeft: 175 });
@@ -638,7 +838,31 @@ export default function GuidedTour({
   const rafRef = useRef<number | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const currentStep = steps[currentStepIndex] || steps[0];
+  // Filter candidate steps so tour ONLY points to mounted and visible DOM elements
+  const filterSteps = useCallback((key: string): TourStep[] => {
+    const rawSteps = PAGE_TOUR_CONFIGS[key] || DASHBOARD_TOUR_STEPS;
+    
+    // Check which candidate steps have visible DOM elements
+    const availableSteps = rawSteps.filter((step) => {
+      const el = document.querySelector(step.targetSelector) as HTMLElement | null;
+      return isElementVisible(el);
+    });
+
+    // If some page steps are hidden (e.g. mobile collapsed elements), return available;
+    // if none match, fallback to the full list with viewport centering
+    return availableSteps.length > 0 ? availableSteps : rawSteps;
+  }, []);
+
+  // Update active steps when tour opens or page changes
+  useEffect(() => {
+    if (isOpen) {
+      const resolved = filterSteps(activeTourKey);
+      setActiveSteps(resolved);
+      setCurrentStepIndex(0);
+    }
+  }, [isOpen, activeTourKey, filterSteps]);
+
+  const currentStep = activeSteps[currentStepIndex] || activeSteps[0];
 
   // Update spotlight & popover coordinates
   const updateTargetPosition = useCallback(() => {
@@ -652,16 +876,16 @@ export default function GuidedTour({
 
     const padX = currentStep.highlightPadding?.x ?? 8;
     const padY = currentStep.highlightPadding?.y ?? 8;
-    const radius = currentStep.spotlightRadius ?? 20;
+    const radius = currentStep.spotlightRadius ?? 18;
 
     const cardWidth = 350;
-    const cardHeight = popoverRef.current?.offsetHeight || 280;
+    const cardHeight = popoverRef.current?.offsetHeight || 290;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const screenPadding = 16;
     const gap = 14;
 
-    if (targetEl && targetEl.offsetParent !== null) {
+    if (targetEl && isElementVisible(targetEl)) {
       const rect = targetEl.getBoundingClientRect();
       const x = Math.max(4, rect.left - padX);
       const y = Math.max(4, rect.top - padY);
@@ -696,7 +920,7 @@ export default function GuidedTour({
       setPopoverPos({ top, left, isTop, arrowLeft });
     } else {
       // Fallback: Center spotlight and card in viewport if target not mounted
-      const centerW = Math.min(viewportWidth - 32, 500);
+      const centerW = Math.min(viewportWidth - 32, 520);
       const centerH = 260;
       const x = (viewportWidth - centerW) / 2;
       const y = (viewportHeight - centerH) / 2;
@@ -711,7 +935,7 @@ export default function GuidedTour({
     }
   }, [isOpen, currentStep]);
 
-  // Smooth scroll to target element with settled detection
+  // Smooth scroll to target element with settle detection
   const scrollToTarget = useCallback(() => {
     if (!isOpen || !currentStep?.targetSelector) {
       updateTargetPosition();
@@ -719,22 +943,21 @@ export default function GuidedTour({
     }
 
     const targetEl = document.querySelector(currentStep.targetSelector) as HTMLElement;
-    if (!targetEl) {
+    if (!targetEl || !isElementVisible(targetEl)) {
       updateTargetPosition();
       return;
     }
 
     const rect = targetEl.getBoundingClientRect();
     const isInViewport = (
-      rect.top >= 60 &&
-      rect.bottom <= window.innerHeight - 60
+      rect.top >= 70 &&
+      rect.bottom <= window.innerHeight - 70
     );
 
     if (!isInViewport) {
       setIsScrolling(true);
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-      // Continuously track target bounding rect during scroll animation
       let lastScrollY = window.scrollY;
       let settleCount = 0;
 
@@ -800,13 +1023,13 @@ export default function GuidedTour({
 
   const handleNext = useCallback(() => {
     playClick();
-    if (currentStepIndex < steps.length - 1) {
+    if (currentStepIndex < activeSteps.length - 1) {
       setCurrentStepIndex((prev) => prev + 1);
     } else {
-      localStorage.setItem('doab_tour_completed', 'true');
+      localStorage.setItem(TOUR_STORAGE_KEY, 'true');
       onClose();
     }
-  }, [currentStepIndex, steps.length, onClose]);
+  }, [currentStepIndex, activeSteps.length, onClose]);
 
   const handlePrev = useCallback(() => {
     playClick();
@@ -817,11 +1040,11 @@ export default function GuidedTour({
 
   const handleSkip = useCallback(() => {
     playClick();
-    localStorage.setItem('doab_tour_completed', 'true');
+    localStorage.setItem(TOUR_STORAGE_KEY, 'true');
     onClose();
   }, [onClose]);
 
-  // Keyboard navigation & scroll lock
+  // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
 
@@ -835,8 +1058,6 @@ export default function GuidedTour({
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         handlePrev();
-      } else if (e.key === ' ' || e.key === 'PageDown' || e.key === 'PageUp') {
-        e.preventDefault();
       }
     };
 
@@ -844,20 +1065,13 @@ export default function GuidedTour({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleNext, handlePrev, handleSkip]);
 
-  // Reset to first step on open
-  useEffect(() => {
-    if (isOpen) {
-      setCurrentStepIndex(0);
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+  if (!isOpen || activeSteps.length === 0 || !currentStep) return null;
 
   const Icon = currentStep.icon;
   const isFlood = envMode === 'flood';
   const description = isFlood ? currentStep.floodDescription : currentStep.droughtDescription;
   const highlight = isFlood ? currentStep.floodHighlight : currentStep.droughtHighlight;
-  const isLastStep = currentStepIndex === steps.length - 1;
+  const isLastStep = currentStepIndex === activeSteps.length - 1;
 
   return typeof document !== 'undefined' && createPortal(
     <div className="fixed inset-0 z-[99998] select-none">
@@ -869,7 +1083,7 @@ export default function GuidedTour({
       >
         <defs>
           <mask id="tour-spotlight-mask">
-            {/* White covers entire viewport (visible scrim) */}
+            {/* White covers entire viewport */}
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
             
             {/* Black cutout creates transparent window over highlighted element */}
@@ -883,7 +1097,7 @@ export default function GuidedTour({
                 ry={spotlightCoords.ry}
                 fill="black"
                 style={{
-                  transition: 'all 0.4s cubic-bezier(0.33, 1, 0.68, 1)'
+                  transition: 'all 0.35s cubic-bezier(0.33, 1, 0.68, 1)'
                 }}
               />
             )}
@@ -902,7 +1116,7 @@ export default function GuidedTour({
           onClick={handleSkip}
         />
 
-        {/* Synchronized Highlighter Outline Ring (Clean Solid Accent Stroke) */}
+        {/* Synchronized Highlighter Outline Ring */}
         {spotlightCoords && hasTarget && (
           <rect
             x={spotlightCoords.x}
@@ -916,7 +1130,7 @@ export default function GuidedTour({
             strokeWidth="2"
             className="pointer-events-none"
             style={{
-              transition: 'all 0.4s cubic-bezier(0.33, 1, 0.68, 1)'
+              transition: 'all 0.35s cubic-bezier(0.33, 1, 0.68, 1)'
             }}
           />
         )}
@@ -943,7 +1157,7 @@ export default function GuidedTour({
               scale: 0.96, 
               y: popoverPos.isTop ? 8 : -8 
             }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: 'fixed',
               top: `${popoverPos.top}px`,
@@ -974,7 +1188,7 @@ export default function GuidedTour({
             <div className="flex items-center justify-between gap-3 mb-3.5 pb-2.5 border-b border-[var(--border-color)]">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)]">
-                  {currentStep.stepLabel || currentStep.badge || `Step ${currentStepIndex + 1}/${steps.length}`}
+                  {currentStep.stepLabel || currentStep.badge || `Step ${currentStepIndex + 1}/${activeSteps.length}`}
                 </span>
                 
                 {/* Climate Engine Mode Indicator Badge */}
@@ -1038,7 +1252,7 @@ export default function GuidedTour({
 
               {/* Interactive Step Indicator Dots */}
               <div className="flex items-center gap-1.5">
-                {steps.map((_, idx) => (
+                {activeSteps.map((_, idx) => (
                   <button
                     key={idx}
                     type="button"

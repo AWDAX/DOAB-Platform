@@ -199,22 +199,35 @@ function AppContent({
     }
   });
 
+  const [activeTourType, setActiveTourType] = useState<string | undefined>(undefined);
+
   // Global event listener for permissions, danger broadcast & tour
   useEffect(() => {
     const handleOpenPermissions = () => setIsPermissionsOpen(true);
     const handleTriggerDanger = () => setIsDangerBroadcastOpen(true);
-    const handleOpenTour = () => setIsTourOpen(true);
+    const handleOpenTour = () => {
+      setActiveTourType(undefined);
+      setIsTourOpen(true);
+    };
+    const handleOpenPageTour = (e: CustomEvent) => {
+      setActiveTourType(e.detail?.pageKey);
+      setIsTourOpen(true);
+    };
     const handleOpenPreferences = () => setIsPreferencesOpen(true);
 
     window.addEventListener('doab:open-permissions', handleOpenPermissions);
     window.addEventListener('doab:trigger-danger-broadcast', handleTriggerDanger);
     window.addEventListener('doab:open-tour', handleOpenTour);
+    window.addEventListener('doab:start-tour', handleOpenTour);
+    window.addEventListener('doab:start-page-tour', handleOpenPageTour as EventListener);
     window.addEventListener('doab:open-preferences', handleOpenPreferences);
 
     return () => {
       window.removeEventListener('doab:open-permissions', handleOpenPermissions);
       window.removeEventListener('doab:trigger-danger-broadcast', handleTriggerDanger);
       window.removeEventListener('doab:open-tour', handleOpenTour);
+      window.removeEventListener('doab:start-tour', handleOpenTour);
+      window.removeEventListener('doab:start-page-tour', handleOpenPageTour as EventListener);
       window.removeEventListener('doab:open-preferences', handleOpenPreferences);
     };
   }, [setIsPermissionsOpen, setIsDangerBroadcastOpen, setIsTourOpen, setIsPreferencesOpen]);
@@ -388,8 +401,12 @@ function AppContent({
       {/* Interactive Mode & Theme Aware Guided Product Tour */}
       <GuidedTour
         isOpen={isTourOpen}
-        onClose={() => setIsTourOpen(false)}
+        onClose={() => {
+          setIsTourOpen(false);
+          setActiveTourType(undefined);
+        }}
         envMode={envMode}
+        tourType={activeTourType}
       />
 
       {/* First-Time Login Welcome Guided Tour Prompt Modal (SAHNIRMAAN standard) */}

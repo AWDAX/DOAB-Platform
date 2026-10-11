@@ -31,7 +31,8 @@ import {
   ShieldAlert,
   Droplets,
   Navigation2,
-  CheckCircle2
+  CheckCircle2,
+  Compass
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
@@ -561,7 +562,7 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
           )}
         </div>
 
-        <div className="neo-glass-card p-3 rounded-2xl pointer-events-auto border border-[var(--border-color)] shadow-lg text-[11px] text-[var(--text-muted)] leading-relaxed">
+        <div id="tour-map-forecast" className="neo-glass-card p-3 rounded-2xl pointer-events-auto border border-[var(--border-color)] shadow-lg text-[11px] text-[var(--text-muted)] leading-relaxed">
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className="font-mono text-[10px] uppercase tracking-wider">{copy.estimate}</span>
             <button type="button" onClick={() => { playClick(); void reload(); }} className="font-semibold text-[var(--text-main)] cursor-pointer">
@@ -717,6 +718,21 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
             aria-label="Toggle Map Intelligence"
           >
             {showInfo ? <X size={15} /> : <Info size={15} />}
+          </button>
+        </Tooltip>
+
+        {/* 5. Start Map Page Tour Guide */}
+        <Tooltip content="Live Map Guide" position="left">
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              window.dispatchEvent(new CustomEvent('doab:start-page-tour', { detail: { pageKey: 'dashboard' } }));
+            }}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+            aria-label="Start Map Tour Guide"
+          >
+            <Compass size={15} />
           </button>
         </Tooltip>
       </div>
