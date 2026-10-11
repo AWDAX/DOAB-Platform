@@ -157,7 +157,14 @@ export function useDOABChat() {
           const data = await response.json();
           assistantReply = data.choices[0]?.message?.content || 'No response generated.';
         } else {
-          throw new Error(`Groq API error: ${response.statusText}`);
+          let errorDetail = response.statusText;
+          try {
+            const errJson = await response.json();
+            errorDetail = errJson.error?.message || errJson.message || JSON.stringify(errJson);
+          } catch (_) {
+            errorDetail = `HTTP ${response.status} ${response.statusText}`;
+          }
+          throw new Error(`Groq API error (${response.status}): ${errorDetail}`);
         }
       } else if (OPENROUTER_API_KEY) {
         // Live OpenRouter Call
