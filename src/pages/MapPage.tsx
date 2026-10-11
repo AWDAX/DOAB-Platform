@@ -1166,12 +1166,15 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             className="h-full w-full z-0 cursor-grab active:cursor-grabbing"
             style={{ height: '100%', width: '100%', minHeight: '100%' }}
           >
-            {/* Universal OpenStreetMap Tile Layer (Fast, Reliable, No CORS/API Limits) */}
+            {/* High-Reliability Enterprise Basemap Layer (No API Key Required, Fast Global CDN) */}
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              subdomains={['a', 'b', 'c']}
-              maxZoom={19}
+              attribution='&copy; <a href="https://www.esri.com/">Esri</a> &copy; OpenStreetMap'
+              url={
+                isDarkMode
+                  ? 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+                  : 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+              }
+              maxZoom={16}
             />
 
             <MapViewController center={mapCenter} zoom={mapZoom} />
