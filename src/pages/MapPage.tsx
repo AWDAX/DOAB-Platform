@@ -288,7 +288,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     }
   }, [isCreatePathQuery, mapEngine, setMapEngine]);
 
-  const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(() => WATERLOGGING_DATASET_INCIDENTS[0] || null);
+  // Selected Incident: null by default so no unwanted distance or vector line is computed until the user explicitly selects a point
+  const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(null);
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
 
   // Default Coordinates: National All-India Overview Center
@@ -513,6 +514,20 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       return R * c;
     };
+
+    // If the user has not acquired real GPS location, return idle status rather than computing fake distances to Bengaluru
+    if (!hasRealLocation) {
+      return {
+        nearbyTotalWithin3km: 0,
+        nearbyTotalWithin5km: 0,
+        nearbyCritical: 0,
+        nearbyHigh: 0,
+        nearestDistanceKm: null,
+        nearestNodeTitle: 'Select an incident or enable GPS to calculate distance',
+        routeInundationProb: 0,
+        hasRealGps: false
+      };
+    }
 
     let nearbyCritical = 0;
     let nearbyHigh = 0;
