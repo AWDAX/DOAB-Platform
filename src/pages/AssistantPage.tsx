@@ -42,11 +42,42 @@ export default function AssistantPage() {
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleToggleFullscreen = useCallback(() => {
+    playClick();
+    if (!document.fullscreenElement) {
+      if (containerRef.current?.requestFullscreen) {
+        containerRef.current.requestFullscreen().catch(() => {
+          setIsFullScreen((prev) => !prev);
+        });
+      } else {
+        setIsFullScreen((prev) => !prev);
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {
+          setIsFullScreen(false);
+        });
+      } else {
+        setIsFullScreen(false);
+      }
+    }
+  }, []);
 
   // Auto-scroll to bottom of conversation
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
+
+  // Sync native fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Clean up speech on unmount
   useEffect(() => {
@@ -187,11 +218,14 @@ export default function AssistantPage() {
         : 'idle';
 
   return (
-    <div className={`w-full mx-auto flex flex-col transition-all duration-300 ${
-      isFullScreen 
-        ? 'fixed inset-0 z-50 p-4 sm:p-6 bg-[var(--bg-main)] h-[100dvh] max-h-[100dvh] overflow-hidden' 
-        : 'h-[calc(100dvh-5.5rem)] max-w-6xl p-3 sm:p-5 md:p-6 pb-2'
-    }`}>
+    <div 
+      ref={containerRef}
+      className={`w-full mx-auto flex flex-col transition-all duration-300 ${
+        isFullScreen 
+          ? 'fixed inset-0 z-[9999] p-4 sm:p-6 md:p-8 pt-6 sm:pt-8 bg-[var(--bg-main)] h-[100dvh] max-h-[100dvh] overflow-hidden' 
+          : 'h-[calc(100dvh-5.5rem)] max-w-6xl p-3 sm:p-5 md:p-6 pb-2'
+      }`}
+    >
       {/* Page Header Bar */}
       <div id="tour-assistant-header" className="flex items-center justify-between gap-3 mb-4 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
@@ -270,10 +304,7 @@ export default function AssistantPage() {
 
           <button
             type="button"
-            onClick={() => {
-              playClick();
-              setIsFullScreen(prev => !prev);
-            }}
+            onClick={handleToggleFullscreen}
             title={isFullScreen ? 'Exit Fullscreen' : 'Fullscreen'}
             className="p-1.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer shadow-xs"
           >
