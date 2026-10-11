@@ -138,6 +138,7 @@ export default function VoiceAssistant() {
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
   // Read Aloud / Text-to-Speech handler with Saystack-style animated outline rings
@@ -460,10 +461,30 @@ export default function VoiceAssistant() {
                 <Tooltip content="History" position="bottom">
                   <button
                     onClick={() => { playClick(); setIsHistoryOpen(!isHistoryOpen); }}
-                    className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+                    className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                      isHistoryOpen 
+                        ? 'bg-[var(--color-brand-accent)] text-white shadow-xs' 
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/10'
+                    }`}
                     aria-label="Mission History"
                   >
                     <History className="h-4.5 w-4.5" />
+                  </button>
+                </Tooltip>
+
+                <Tooltip content="New Session" position="bottom">
+                  <button
+                    onClick={() => {
+                      playClick();
+                      newChat();
+                      setIsHistoryOpen(false);
+                      setTimeout(() => inputRef.current?.focus(), 80);
+                    }}
+                    className="p-1.5 px-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] flex items-center gap-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs select-none"
+                    aria-label="Start New Mission"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">New</span>
                   </button>
                 </Tooltip>
                 
@@ -532,7 +553,12 @@ export default function VoiceAssistant() {
                     <div className="flex justify-between items-center mb-3.5 pb-2.5 border-b border-[var(--border-color)]">
                       <span className="text-xs font-mono uppercase font-bold text-[var(--text-muted)]">Mission History</span>
                       <button 
-                        onClick={() => { playClick(); newChat(); setIsHistoryOpen(false); }} 
+                        onClick={() => {
+                          playClick();
+                          newChat();
+                          setIsHistoryOpen(false);
+                          setTimeout(() => inputRef.current?.focus(), 80);
+                        }} 
                         className="px-2.5 py-1 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] flex items-center gap-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
                       >
                         <Plus className="h-3.5 w-3.5" /> New Mission
@@ -702,6 +728,7 @@ export default function VoiceAssistant() {
             <div className={`p-4 bg-[var(--bg-card)]/90 backdrop-blur-xl border-t border-[var(--border-color)] ${isFullScreen ? 'pb-10' : 'rounded-b-3xl'}`}>
               <div className="relative flex items-center">
                 <input 
+                  ref={inputRef}
                   type="text" 
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
