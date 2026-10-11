@@ -458,13 +458,16 @@ export default function MapLibreView({
     }
   }, [styleConfig, isDarkMode]);
 
-  // Update center & zoom if changed from outside
+  // Update center & zoom if changed from outside with cinematic flight
   useEffect(() => {
     if (mapRef.current) {
-      mapRef.current.easeTo({
+      mapRef.current.flyTo({
         center: [center[1], center[0]],
         zoom: zoom,
-        duration: 800
+        duration: 2000,
+        essential: true,
+        curve: 1.42,
+        speed: 1.2
       });
     }
   }, [center[0], center[1], zoom]);

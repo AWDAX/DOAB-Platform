@@ -169,7 +169,12 @@ function MapViewController({ center, zoom }: { center: [number, number]; zoom: n
   useEffect(() => {
     try {
       map.invalidateSize();
-      map.setView(center, zoom, { animate: true });
+      // Smooth cinematic flyTo transition across coordinate changes
+      map.flyTo(center, zoom, {
+        duration: 1.8,
+        easeLinearity: 0.25,
+        noMoveStart: true,
+      });
     } catch (e) {
       /* ignore */
     }
@@ -466,7 +471,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     setActiveLeftTab('incident');
     setIsMobileCollapsed(false);
     setMapCenter([incident.lat, incident.lng]);
-    setMapZoom(14);
+    // Gentle contextual zoom: if at national overview (<= 6), glide into 11. If already viewing region, preserve zoom.
+    setMapZoom((currentZoom) => currentZoom <= 6 ? 11 : currentZoom);
   };
 
   // Automatically start fetching user live location on MapPage mount
