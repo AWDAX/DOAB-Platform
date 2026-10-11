@@ -267,6 +267,13 @@ export default function VoiceAssistant() {
     };
   }, [resizeDir]);
 
+  // Listen for global custom event to trigger Assistant from Sidebar or shortcuts
+  useEffect(() => {
+    const handleOpenAssistant = () => setIsOpen(true);
+    window.addEventListener('doab:open-assistant', handleOpenAssistant);
+    return () => window.removeEventListener('doab:open-assistant', handleOpenAssistant);
+  }, []);
+
   const activeOrbState = isListening ? 'listening' : isThinking ? 'thinking' : 'idle';
   const currentSuggestion = ROTATING_SUGGESTIONS[suggestionIdx];
 
@@ -274,6 +281,7 @@ export default function VoiceAssistant() {
     <>
       {/* Touch & Desktop Draggable Floating Action Button (AI Orb FAB) */}
       <motion.button 
+        id="tour-ai-copilot"
         drag
         dragMomentum={false}
         dragElastic={0.1}

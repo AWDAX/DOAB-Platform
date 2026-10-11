@@ -114,9 +114,7 @@ function DashboardLayout({
         {children}
       </main>
       
-      <div id="tour-ai-copilot">
-        <VoiceAssistant />
-      </div>
+      <VoiceAssistant />
     </div>
   );
 }

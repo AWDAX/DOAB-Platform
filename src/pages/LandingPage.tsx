@@ -107,7 +107,7 @@ interface LandingPageProps {
   onOpenTour?: () => void;
 }
 
-export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', user, onOpenTour }: LandingPageProps) {
+export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', toggleEnvMode, user, onOpenTour }: LandingPageProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -531,7 +531,13 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           <div className="inline-flex p-1.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm relative">
             <button
               type="button"
-              onClick={() => { playClick(); setSelectedModeTab('flood'); }}
+              onClick={() => {
+                playClick();
+                setSelectedModeTab('flood');
+                if (envMode !== 'flood' && toggleEnvMode) {
+                  toggleEnvMode();
+                }
+              }}
               className={`relative px-5 py-2 rounded-full text-xs font-bold transition-colors duration-200 cursor-pointer flex items-center gap-2 z-10 ${
                 selectedModeTab === 'flood'
                   ? 'text-[var(--bg-card)]'
@@ -550,7 +556,13 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             </button>
             <button
               type="button"
-              onClick={() => { playClick(); setSelectedModeTab('drought'); }}
+              onClick={() => {
+                playClick();
+                setSelectedModeTab('drought');
+                if (envMode !== 'drought' && toggleEnvMode) {
+                  toggleEnvMode();
+                }
+              }}
               className={`relative px-5 py-2 rounded-full text-xs font-bold transition-colors duration-200 cursor-pointer flex items-center gap-2 z-10 ${
                 selectedModeTab === 'drought'
                   ? 'text-[var(--bg-card)]'
