@@ -44,6 +44,15 @@ jobs:
             fi
             "$APP_DIR/venv/bin/python" -m pip install --upgrade pip
             "$APP_DIR/venv/bin/python" -m pip install -r "$APP_DIR/requirements.txt"
+            
+            echo "🧠 Checking and training waterlogging ML model..."
+            cd "$APP_DIR"
+            if [ ! -f "$APP_DIR/models/waterlogging_1h.joblib" ]; then
+              mkdir -p "$APP_DIR/models"
+              "$APP_DIR/venv/bin/python" -m app.cli build-dataset || echo "Dataset build skipped/cached"
+              "$APP_DIR/venv/bin/python" -m app.cli train || echo "Model train skipped"
+            fi
+
             sudo systemctl restart zplus-backend
             echo "Waiting for backend service to bind port 8000..."
             sleep 4
