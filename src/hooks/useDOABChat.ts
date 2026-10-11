@@ -134,37 +134,59 @@ export function useDOABChat() {
       let assistantReply = '';
 
       if (GROQ_API_KEY) {
-        // Live Groq API Call
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GROQ_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-              { role: 'system', content: DOAB_SYSTEM_PROMPT },
-              ...activeSession.messages.map(m => ({ role: m.role, content: m.content })),
-              { role: 'user', content: userText }
-            ],
-            temperature: 0.3,
-            max_tokens: 500
-          })
-        });
+        // Live Groq API Call with reliable multi-model fallback chain
+        const candidateModels = [
+          'llama-3.1-8b-instant',
+          'llama3-8b-8192',
+          'mixtral-8x7b-32768',
+          'gemma2-9b-it'
+        ];
 
-        if (response.ok) {
-          const data = await response.json();
-          assistantReply = data.choices[0]?.message?.content || 'No response generated.';
-        } else {
-          let errorDetail = response.statusText;
+        let success = false;
+        let lastError = '';
+
+        for (const candidateModel of candidateModels) {
           try {
-            const errJson = await response.json();
-            errorDetail = errJson.error?.message || errJson.message || JSON.stringify(errJson);
-          } catch (_) {
-            errorDetail = `HTTP ${response.status} ${response.statusText}`;
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_API_KEY}`
+              },
+              body: JSON.stringify({
+                model: candidateModel,
+                messages: [
+                  { role: 'system', content: DOAB_SYSTEM_PROMPT },
+                  ...activeSession.messages.map(m => ({ role: m.role, content: m.content })),
+                  { role: 'user', content: userText }
+                ],
+                temperature: 0.3,
+                max_tokens: 500
+              })
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              assistantReply = data.choices[0]?.message?.content || 'No response generated.';
+              success = true;
+              break;
+            } else {
+              const errJson = await response.json().catch(() => ({}));
+              lastError = errJson.error?.message || response.statusText || `HTTP ${response.status}`;
+              // If it's a 404 model error, try the next model in the fallback chain
+              if (response.status !== 404) {
+                throw new Error(`Groq API error (${response.status}): ${lastError}`);
+              }
+            }
+          } catch (err: any) {
+            if (!err.message?.includes('404')) {
+              throw err;
+            }
           }
-          throw new Error(`Groq API error (${response.status}): ${errorDetail}`);
+        }
+
+        if (!success) {
+          throw new Error(`Groq API error: ${lastError || 'None of the candidate models were available.'}`);
         }
       } else if (OPENROUTER_API_KEY) {
         // Live OpenRouter Call
