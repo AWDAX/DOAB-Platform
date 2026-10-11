@@ -198,7 +198,16 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
     playClick();
     setIsMobileMenuOpen(false);
     const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!el) return;
+    if ((window as any).lenis) {
+      (window as any).lenis.scrollTo(el, { 
+        offset: -80,
+        duration: 1.4, 
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) 
+      });
+    } else {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
@@ -806,16 +815,19 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             window.dispatchEvent(new CustomEvent('doab-trigger-particle-dissolve'));
             setTimeout(() => {
               if ((window as any).lenis) {
-                (window as any).lenis.scrollTo(0, { duration: 1.2 });
+                (window as any).lenis.scrollTo(0, { 
+                  duration: 1.6, 
+                  easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) 
+                });
               } else {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
                 document.body.scrollTo({ top: 0, behavior: 'smooth' });
               }
-            }, 320);
+            }, 250);
             setTimeout(() => {
               window.dispatchEvent(new CustomEvent('doab-reset-particles'));
-            }, 1600);
+            }, 1800);
           }} 
           className="footer-scroll-top"
           aria-label="Scroll to top"
