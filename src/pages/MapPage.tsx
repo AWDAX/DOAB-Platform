@@ -213,13 +213,13 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(() => WATERLOGGING_DATASET_INCIDENTS[0] || null);
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
 
-  // Default Coordinates: WaterLogging Urban Corridor Center
-  const defaultCenter: [number, number] = [12.9716, 77.5946];
+  // Default Coordinates: National All-India Overview Center
+  const defaultCenter: [number, number] = [20.5937, 78.9629];
   const [userCoords, setUserCoords] = useState<[number, number]>(defaultCenter);
   const [hasRealLocation, setHasRealLocation] = useState(false);
 
   const [mapCenter, setMapCenter] = useState<[number, number]>(defaultCenter);
-  const [mapZoom, setMapZoom] = useState<number>(12);
+  const [mapZoom, setMapZoom] = useState<number>(5);
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
   const [activeLeftTab, setActiveLeftTab] = useState<'search' | 'forecast' | 'incident' | 'clusters'>('search');
 
@@ -521,9 +521,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const handleRecenter = () => {
     playClick();
     if (isViewingMyLocation) {
-      // Toggle back: Zoom out to city overview
+      // Toggle back: Zoom out to All-India national overview
       setMapCenter(defaultCenter);
-      setMapZoom(11);
+      setMapZoom(5);
       setIsViewingMyLocation(false);
       return;
     }
@@ -545,9 +545,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           setIsViewingMyLocation(true);
         },
         () => {
-          // Fallback if permission denied or timeout: zoom to city overview without pretending it's real GPS
+          // Fallback if permission denied or timeout: keep national overview without pretending it's real GPS
           setMapCenter(defaultCenter);
-          setMapZoom(12);
+          setMapZoom(5);
           setIsLocating(false);
           setIsViewingMyLocation(false);
         },
@@ -556,7 +556,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     } else {
       setIsLocating(false);
       setMapCenter(defaultCenter);
-      setMapZoom(12);
+      setMapZoom(5);
       setIsViewingMyLocation(false);
     }
   };
