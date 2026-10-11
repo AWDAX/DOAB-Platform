@@ -232,24 +232,38 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         </Link>
 
         {/* Center: Clean Nav Links with Dotted Animated Underlines */}
-        <nav className="hidden md:flex items-center gap-5 text-xs font-semibold text-[var(--text-muted)]">
-          <button type="button" onClick={() => scrollTo('loop')} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
-            <Layers className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>The Loop</span>
-          </button>
-          <button type="button" onClick={() => scrollTo('modes')} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
-            <Sun className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>Dual Climate</span>
-          </button>
-          <button type="button" onClick={() => scrollTo('telemetry')} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
-            <Activity className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>Live Incidents</span>
-          </button>
-          <button type="button" onClick={() => scrollTo('faq')} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
-            <HelpCircle className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>FAQ</span>
-          </button>
-        </nav>
+        <div className="hidden md:flex items-center gap-4">
+          <span 
+            aria-hidden="true" 
+            className={`h-3.5 w-px bg-[var(--border-color)] transition-opacity duration-300 ${
+              scrolled ? 'opacity-100' : 'opacity-0'
+            }`} 
+          />
+          <nav className="flex items-center gap-5 text-xs font-semibold text-[var(--text-muted)]">
+            <button type="button" onClick={() => scrollTo('loop')} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+              <span>The Loop</span>
+            </button>
+            <button type="button" onClick={() => scrollTo('modes')} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
+              <Sun className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+              <span>Dual Climate</span>
+            </button>
+            <button type="button" onClick={() => scrollTo('telemetry')} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
+              <Activity className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+              <span>Live Incidents</span>
+            </button>
+            <button type="button" onClick={() => scrollTo('faq')} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
+              <HelpCircle className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+              <span>FAQ</span>
+            </button>
+          </nav>
+          <span 
+            aria-hidden="true" 
+            className={`h-3.5 w-px bg-[var(--border-color)] transition-opacity duration-300 ${
+              scrolled ? 'opacity-100' : 'opacity-0'
+            }`} 
+          />
+        </div>
 
 
 
