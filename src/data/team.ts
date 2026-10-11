@@ -17,7 +17,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'member-1',
     name: 'Suneet Chugh',
-    role: 'Leader',
+    role: 'Team Lead',
     title: 'TEAM LEAD & RESEARCH, UI',
     domain: 'Platform Architecture, Research & UI Engineering',
     college: 'Engineering & Technology',
@@ -31,8 +31,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'member-2',
     name: 'Sarvapriya Harsh',
-    role: 'ML & Backend Lead',
-    title: 'BACKEND AND ML LEAD',
+    role: 'ML & Backend Developer',
+    title: 'BACKEND AND ML DEVELOPER',
     domain: 'Predictive Machine Learning & Hydrological Intelligence',
     college: 'Engineering & Technology',
     bio: 'Architected predictive machine learning pipelines, hydrological risk algorithms, ultrasonic depth telemetry processing, and backend service clusters.',
@@ -45,8 +45,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'member-3',
     name: 'Harshit Chauhan',
-    role: 'Lead UI/UX',
-    title: 'Lead UI/UX',
+    role: 'UI/UX Developer',
+    title: 'UI/UX DESIGN & FRONTEND DEVELOPER',
     domain: 'Product Design, Kinetic Motion & Civic UX',
     college: 'Engineering & Technology',
     bio: 'Crafted the tactile design system, dual-climate high-contrast visual hierarchy, kinetic animations, and life-safety SOS broadcast interfaces.',
@@ -59,8 +59,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'member-4',
     name: 'Jatin Jha',
-    role: 'Lead Developer',
-    title: 'LEAD DEVELOPER, INFRASTRUCTURE, DEV OPS',
+    role: 'Full-Stack Developer',
+    title: 'FULL-STACK DEVELOPER & DEVOPS',
     domain: 'Full-Stack Development, Cloud Infrastructure & DevOps',
     college: 'Engineering & Technology',
     bio: 'Spearheaded full-stack system implementation, distributed cloud deployments, high-throughput WebSocket streams, and automated DevOps infrastructure.',

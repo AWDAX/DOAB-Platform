@@ -259,7 +259,7 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
                       }}
                     />
                     <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] font-mono text-[8px] font-black uppercase shadow-xs">
-                      {member.role.toLowerCase().includes('lead') ? 'LEAD' : 'DEV'}
+                      {member.name === 'Suneet Chugh' ? 'LEAD' : 'DEV'}
                     </div>
                   </div>
 
