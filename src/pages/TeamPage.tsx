@@ -156,138 +156,175 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
         </span>
       </div>
 
-      {/* ── Dynamic Morphing Navbar (SAHNIRMAAN / SWATVA Standard) ── */}
-      <header className={`portfolio-header ${scrolled ? 'scrolled' : ''}`}>
-        
-        {/* Left: Back Action Button & Brand */}
-        <div className="flex items-center gap-2.5 flex-shrink-0">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] shadow-2xs hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-all cursor-pointer group"
-            aria-label="Back to previous page"
-          >
-            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
-            <span>Back</span>
-          </button>
+      {/* ── SAHNIRMAAN MinimalBrandHeader Standard ── */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-8 md:px-12 py-3 sm:py-4 border-b border-[var(--border-color)]/60 bg-[var(--bg-main)]/80 dark:bg-[#0c0a09]/80 backdrop-blur-xl transition-all pt-[env(safe-area-inset-top)] ${
+          scrolled ? 'shadow-md dark:shadow-black/40 border-[var(--border-color)]' : ''
+        }`}
+      >
+        {/* Left: Back Button with SAHNIRMAAN Oval Styling */}
+        <button
+          type="button"
+          onClick={handleBack}
+          className="px-3 sm:px-4 py-1.5 min-h-9 sm:min-h-10 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition-all duration-300 bg-transparent border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] cursor-pointer shadow-2xs touch-manipulation group"
+          title="Back to Platform"
+          aria-label="Back to Platform"
+        >
+          <ArrowLeft size={14} className="flex-shrink-0 transition-transform group-hover:-translate-x-0.5" />
+          <span className="hidden sm:inline">Back to Platform</span>
+          <span className="inline sm:hidden">Back</span>
+        </button>
 
-          <Link to="/" onClick={() => playClick()} className="flex items-center gap-2 group cursor-pointer ml-1">
-            <BrandLogo size="sm" />
-            <div className={`flex flex-col overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              scrolled ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none' : 'max-w-[140px] opacity-100 translate-x-0'
-            }`}>
-              <span className="font-bold text-xs tracking-tight text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] transition-colors whitespace-nowrap">
-                DOAB
-              </span>
-              <span className="text-[9px] text-[var(--text-muted)] tracking-tight leading-none whitespace-nowrap">
-                Contrarians
-              </span>
+        {/* Center: Absolute Centered Logo with Luminous Glow (Exact SAHNIRMAAN Pattern) */}
+        <button
+          type="button"
+          onClick={() => { playClick(); navigate('/'); }}
+          className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center cursor-pointer touch-manipulation group"
+          title="DOAB Platform"
+          aria-label="DOAB Platform"
+        >
+          <div className="relative flex items-center justify-center flex-shrink-0">
+            {/* Luminous Brand Aura */}
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 -m-3 rounded-full bg-sky-500/20 blur-xl dark:block hidden pointer-events-none group-hover:scale-125 transition-transform"
+            />
+            <div className="flex items-center gap-2">
+              <BrandLogo size="md" />
+              <div className="hidden md:flex flex-col text-left">
+                <span className="font-extrabold text-sm tracking-tight text-[var(--text-main)] leading-none">
+                  DOAB
+                </span>
+                <span className="text-[9px] font-mono text-[var(--text-muted)] tracking-wider uppercase mt-0.5">
+                  Contrarians
+                </span>
+              </div>
             </div>
-          </Link>
-        </div>
+          </div>
+        </button>
 
-        {/* Center: Clean Nav Links with Dotted Animated Underlines */}
-        <nav className="hidden md:flex items-center gap-5 text-xs font-semibold text-[var(--text-muted)]">
-          <button type="button" onClick={() => { playClick(); document.getElementById('tour-team-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
-            <Users2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>Architects</span>
-          </button>
-          <button type="button" onClick={() => { playClick(); document.getElementById('tour-team-stats')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>Benchmarks</span>
-          </button>
-          <button type="button" onClick={() => { playClick(); document.getElementById('tour-team-pillars')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
-            <Radio className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>Pillars</span>
-          </button>
-        </nav>
-
-        {/* Right: Clean Theme Toggle & Sign In / Operations Link */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
+        {/* Right: Theme Toggle Only (Clean, Uncluttered, Just like SAHNIRMAAN) */}
+        <div className="flex items-center space-x-2">
+          <Tooltip content={isDarkMode ? "Light Mode" : "Dark Mode"} shortcut="Shift+T" position="bottom">
             <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
           </Tooltip>
-
-          <Link
-            to="/"
-            onClick={() => playClick()}
-            className="flex px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap items-center gap-1.5 transition-all duration-200 border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] shadow-2xs cursor-pointer group ml-1"
-          >
-            <span>Operations Grid</span>
-            <ArrowUpRight className="h-3.5 w-3.5 text-current transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 flex-shrink-0" />
-          </Link>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 pt-10 pb-16 relative z-10 flex flex-col items-center">
-        <div id="tour-team-header" className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-mono font-bold text-[var(--text-muted)] mb-3 shadow-2xs">
+      {/* Main Container - With Generous Margin-Top below Fixed Header */}
+      <main className="flex-1 w-full max-w-[1300px] mx-auto px-4 sm:px-6 md:px-8 pt-28 sm:pt-36 md:pt-40 pb-20 relative z-10 flex flex-col items-center">
+        {/* Hero Section */}
+        <div id="tour-team-header" className="text-center max-w-2xl mx-auto mb-14 sm:mb-16 relative">
+          {/* Subtle Ambient Radial Glow */}
+          <div
+            aria-hidden="true"
+            className="absolute -top-16 left-1/2 -translate-x-1/2 w-[380px] sm:w-[500px] h-[220px] sm:h-[280px] bg-[radial-gradient(ellipse_at_center,_rgba(2,132,199,0.18),_rgba(217,119,6,0.06),_transparent_70%)] rounded-full blur-2xl sm:blur-3xl pointer-events-none -z-0"
+          />
+
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-mono font-bold text-[var(--text-muted)] mb-4 shadow-2xs">
             <Users2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
-            <span>Team Contrarians · Architects & Engineering</span>
+            <span>Team Contrarians · Core Engineering Architects</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[var(--text-main)] mb-3">
+          
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[var(--text-main)] mb-4 text-balance">
             The Team Behind DOAB
           </h1>
-          <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-lg mx-auto">
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-lg mx-auto text-balance">
             Building life-safety civic infrastructure, predictive hydrological telemetry, and decentralized emergency dispatch routing for Indian cities.
           </p>
         </div>
 
         {/* Team Members Grid */}
-        <div id="tour-team-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 w-full max-w-6xl mx-auto mb-16">
+        <div id="tour-team-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 w-full max-w-6xl mx-auto mb-16">
           {TEAM_MEMBERS.map((member) => (
             <div
               key={member.id}
               onClick={() => { playClick(); setLightboxMember(member); }}
-              className="neo-glass-card rounded-2xl border border-[var(--border-color)] p-5 flex flex-col justify-between cursor-pointer group hover:border-[var(--text-main)]/40 hover:-translate-y-1 transition-all duration-200 shadow-2xs"
+              className="neo-glass-card rounded-3xl border border-[var(--border-color)] p-5 sm:p-6 flex flex-col justify-between cursor-pointer group hover:border-[var(--text-main)]/35 hover:-translate-y-1.5 transition-all duration-300 shadow-sm hover:shadow-xl relative overflow-hidden bg-[var(--bg-card)]"
             >
+              {/* Subtle top-right corner ambient geometric accent */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sky-500/10 via-transparent to-transparent rounded-bl-full pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+
               <div>
-                {/* Avatar & Role Badge */}
-                <div className="flex items-start justify-between gap-3 mb-4">
+                {/* Avatar & Social Row */}
+                <div className="flex items-start justify-between gap-3 mb-5">
                   <div className="relative">
                     <img
                       src={member.avatar || member.fallbackAvatar}
                       alt={member.name}
                       referrerPolicy="no-referrer"
-                      className="h-14 w-14 rounded-2xl object-cover border border-[var(--border-color)] bg-[var(--bg-main)] shadow-2xs group-hover:scale-105 transition-transform"
+                      className="h-16 w-16 rounded-2xl object-cover border-2 border-[var(--border-color)] group-hover:border-[var(--color-brand-accent)] bg-[var(--bg-main)] shadow-sm group-hover:scale-105 transition-all duration-300"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = member.fallbackAvatar;
                       }}
                     />
+                    <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] font-mono text-[8px] font-black uppercase shadow-xs">
+                      {member.role.toLowerCase().includes('lead') ? 'LEAD' : 'DEV'}
+                    </div>
                   </div>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)]">
-                    {member.role}
-                  </span>
+
+                  {/* Social Action Shortcuts */}
+                  <div className="flex items-center gap-1.5 text-[var(--text-muted)]" onClick={(e) => e.stopPropagation()}>
+                    {member.github && (
+                      <a
+                        href={member.github}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-colors border border-transparent hover:border-[var(--border-color)]"
+                        title={`${member.name} on GitHub`}
+                      >
+                        <GithubIcon className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                    {member.linkedin && (
+                      <a
+                        href={member.linkedin}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-colors border border-transparent hover:border-[var(--border-color)]"
+                        title={`${member.name} on LinkedIn`}
+                      >
+                        <LinkedinIcon className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
                 </div>
 
-                <h3 className="font-extrabold text-base text-[var(--text-main)] tracking-tight group-hover:text-[var(--color-brand-accent)] transition-colors">
-                  {member.name}
-                </h3>
-                <div className="text-xs font-semibold text-[var(--color-brand-accent)] mt-0.5">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <h3 className="font-extrabold text-base sm:text-lg text-[var(--text-main)] tracking-tight group-hover:text-[var(--color-brand-accent)] transition-colors">
+                    {member.name}
+                  </h3>
+                </div>
+
+                <div className="text-xs font-semibold text-[var(--color-brand-accent)]">
                   {member.title}
                 </div>
-                <div className="text-[11px] font-mono text-[var(--text-muted)] mt-1 mb-3">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] mt-0.5 mb-3">
                   {member.domain}
                 </div>
 
-                <p className="text-xs text-[var(--text-muted)] leading-relaxed line-clamp-3 mb-4">
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed line-clamp-3 mb-4 font-normal">
                   {member.bio}
                 </p>
               </div>
 
               <div>
                 {/* Skill Tags */}
-                <div className="flex flex-wrap gap-1 mb-3.5 pt-3 border-t border-[var(--border-color)]">
+                <div className="flex flex-wrap gap-1 mb-4 pt-3 border-t border-[var(--border-color)]/70">
                   {member.tags.slice(0, 3).map((tag, idx) => (
-                    <span key={idx} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
+                    <span key={idx} className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
                       {tag}
                     </span>
                   ))}
+                  {member.tags.length > 3 && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-md text-[var(--text-muted)] font-bold">
+                      +{member.tags.length - 3}
+                    </span>
+                  )}
                 </div>
 
-                {/* Card Footer */}
-                <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--text-muted)] group-hover:text-[var(--text-main)]">
+                {/* Card Footer CTA */}
+                <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors pt-1">
                   <span>View Full Profile</span>
                   <ArrowUpRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </div>
