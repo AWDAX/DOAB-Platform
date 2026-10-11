@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Plus, Minus, Compass, RotateCcw } from 'lucide-react';
+import { Plus, Minus, RotateCcw } from 'lucide-react';
 import Tooltip from './Tooltip';
 import { playClick } from '../utils/soundFx';
 import type { TelemetryIncident } from '../data/waterloggingIncidents';
@@ -294,19 +294,57 @@ export default function MapLibreView({
 
         <div className="w-5 h-px bg-[var(--border-color)] dark:bg-white/10 my-0.5" />
 
-        {/* Rotate / Compass Reset */}
+        {/* Rotate / Compass Reset (Authentic Marine / GIS Navigation Needle) */}
         <Tooltip content={bearing !== 0 ? `Reset North (Bearing: ${bearing}°)` : "Orient to True North"} position="left">
           <button
             type="button"
             onClick={handleResetBearing}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer relative"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer relative group"
             aria-label="Reset orientation north"
           >
-            <Compass 
-              size={16} 
-              className="text-cyan-500 transition-transform duration-300"
+            <div 
+              className="w-5 h-5 flex items-center justify-center transition-transform duration-300"
               style={{ transform: `rotate(${-bearing}deg)` }}
-            />
+            >
+              <svg 
+                viewBox="0 0 24 24" 
+                className="w-4.5 h-4.5 overflow-visible drop-shadow-xs"
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="1.2"
+              >
+                {/* Outer Subtle Compass Dial Ring */}
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeDasharray="1.5 2" />
+                
+                {/* North Needle Pointer (Vibrant Red) */}
+                <polygon 
+                  points="12,2.5 15,12 12,10.5 9,12" 
+                  className="fill-rose-500 stroke-rose-600" 
+                  strokeWidth="0.8" 
+                />
+                
+                {/* South Needle Pointer (Polished Slate / Neutral) */}
+                <polygon 
+                  points="12,21.5 15,12 12,10.5 9,12" 
+                  className="fill-slate-400 dark:fill-neutral-300 stroke-slate-500 dark:stroke-neutral-400" 
+                  strokeWidth="0.8" 
+                />
+
+                {/* Center Pivot Bezel */}
+                <circle cx="12" cy="11.5" r="1.8" className="fill-white dark:fill-[#12100e] stroke-neutral-700 dark:stroke-white/80" strokeWidth="1" />
+                
+                {/* Cardinal 'N' Marker Text */}
+                <text 
+                  x="12" 
+                  y="1.8" 
+                  textAnchor="middle" 
+                  className="text-[6.5px] font-mono font-black fill-rose-600 dark:fill-rose-400 select-none"
+                  style={{ fontSize: '6.5px', fontWeight: 900 }}
+                >
+                  N
+                </text>
+              </svg>
+            </div>
           </button>
         </Tooltip>
 
