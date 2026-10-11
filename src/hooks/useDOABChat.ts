@@ -134,13 +134,36 @@ export function useDOABChat() {
       let assistantReply = '';
 
       if (GROQ_API_KEY) {
-        // Live Groq API Call with reliable multi-model fallback chain
-        // Note: llama3-8b-8192 is deprecated/decommissioned by Groq; llama-3.1-8b-instant is the current active replacement.
-        const candidateModels = [
+        // Query live available models directly from Groq's active registry to eliminate hardcoded model deprecation mismatches
+        let candidateModels = [
           'llama-3.1-8b-instant',
-          'mixtral-8x7b-32768',
-          'gemma2-9b-it'
+          'llama-3.3-70b-specdec',
+          'qwen-2.5-32b',
+          'deepseek-r1-distill-llama-70b'
         ];
+
+        try {
+          const modelsRes = await fetch('https://api.groq.com/openai/v1/models', {
+            headers: {
+              'Authorization': `Bearer ${GROQ_API_KEY}`
+            }
+          });
+          if (modelsRes.ok) {
+            const modelsData = await modelsRes.json();
+            const liveChatModels = (modelsData.data || [])
+              .map((m: any) => m.id)
+              .filter((id: string) => !id.includes('whisper') && !id.includes('vision') && !id.includes('embed') && !id.includes('guard'));
+            if (liveChatModels.length > 0) {
+              candidateModels = [
+                // Prioritize fast 8b or 70b models if present in live list
+                ...liveChatModels.filter((id: string) => id.includes('instant') || id.includes('llama-3.1-8b')),
+                ...liveChatModels
+              ].filter((v, i, a) => a.indexOf(v) === i);
+            }
+          }
+        } catch (_) {
+          // If models endpoint fails, proceed with default candidate list
+        }
 
         let success = false;
         let lastError = '';
@@ -173,14 +196,14 @@ export function useDOABChat() {
             } else {
               const errJson = await response.json().catch(() => ({}));
               lastError = errJson.error?.message || response.statusText || `HTTP ${response.status}`;
-              // If it's a 404 (not found) or 400 (decommissioned / model error), try next candidate
-              const isModelIssue = response.status === 404 || (response.status === 400 && lastError.toLowerCase().includes('model'));
+              // If it's a model issue (404, 400 decommissioned/unsupported), try next candidate
+              const isModelIssue = response.status === 404 || (response.status === 400 && (lastError.toLowerCase().includes('model') || lastError.toLowerCase().includes('decommissioned')));
               if (!isModelIssue) {
                 throw new Error(`Groq API error (${response.status}): ${lastError}`);
               }
             }
           } catch (err: any) {
-            const isModelErr = err.message?.includes('404') || err.message?.toLowerCase().includes('model');
+            const isModelErr = err.message?.includes('404') || err.message?.toLowerCase().includes('model') || err.message?.toLowerCase().includes('decommissioned');
             if (!isModelErr) {
               throw err;
             }
@@ -188,7 +211,7 @@ export function useDOABChat() {
         }
 
         if (!success) {
-          throw new Error(`Groq API error: ${lastError || 'None of the candidate models were available.'}`);
+          throw new Error(`Groq API error: ${lastError || 'None of the active Groq models responded.'}`);
         }
       } else if (OPENROUTER_API_KEY) {
         // Live OpenRouter Call
