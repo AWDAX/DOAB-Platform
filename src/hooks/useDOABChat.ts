@@ -260,6 +260,11 @@ export function useDOABChat() {
         timestamp: Date.now()
       };
 
+      try {
+        localStorage.setItem('doab_has_unread_ai_response', 'true');
+        window.dispatchEvent(new CustomEvent('doab:ai-new-message'));
+      } catch (_) {}
+
       setSessions(prev => prev.map(s => {
         if (s.id === activeSessionId) {
           return {

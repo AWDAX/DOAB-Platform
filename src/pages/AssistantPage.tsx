@@ -64,6 +64,14 @@ export default function AssistantPage() {
     }
   }, []);
 
+  // Clear unread AI notifications when user visits Assistant page
+  useEffect(() => {
+    try {
+      localStorage.removeItem('doab_has_unread_ai_response');
+      window.dispatchEvent(new CustomEvent('doab:ai-read'));
+    } catch (_) {}
+  }, []);
+
   // Auto-scroll to bottom of conversation
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
