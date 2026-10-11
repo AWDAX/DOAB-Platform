@@ -112,7 +112,27 @@
   }
 
   /* Scrollbar gutter isolated strictly to login page */
-  html.auth-page,
+  html.auth-page {
+    scrollbar-gutter: stable;
+    scrollbar-color: rgba(148, 163, 184, 0.35) #FFFFFF;
+    background-color: #FFFFFF;
+  }
+
+  html.auth-page.dark,
+  html.auth-page .dark {
+    scrollbar-color: rgba(255, 255, 255, 0.2) #101A24;
+    background-color: #101A24;
+  }
+
+  html.auth-page.theme-drought.dark {
+    scrollbar-color: rgba(255, 255, 255, 0.2) #2C241E;
+    background-color: #2C241E;
+  }
+
+  html.auth-page ::-webkit-scrollbar-track {
+    background: var(--bg-card);
+  }
+
   .login-page-container {
     scrollbar-gutter: stable;
   }
