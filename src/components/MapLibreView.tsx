@@ -294,17 +294,36 @@ export default function MapLibreView({
     // Add user marker if available
     if (userLocation) {
       const userEl = document.createElement('div');
-      userEl.className = 'w-7 h-7 flex items-center justify-center relative cursor-pointer';
+      userEl.className = 'w-8 h-8 flex items-center justify-center relative cursor-pointer';
+      userEl.style.zIndex = '50';
+      userEl.style.pointerEvents = 'auto';
       userEl.innerHTML = `
         <span class="absolute inset-0 rounded-full bg-sky-500/35 animate-ping"></span>
-        <div class="w-4 h-4 rounded-full bg-sky-500 border-2 border-white shadow-lg flex items-center justify-center">
+        <span class="absolute -inset-1 rounded-full bg-sky-400/20"></span>
+        <div class="w-4 h-4 rounded-full bg-sky-500 border-2 border-white shadow-lg flex items-center justify-center relative z-10">
           <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
         </div>
       `;
       userEl.title = 'Your Live GPS Location';
 
+      const userPopup = new maplibregl.Popup({ 
+        offset: 18, 
+        closeButton: false 
+      }).setHTML(`
+        <div style="padding: 6px 10px; font-family: monospace; font-size: 11px; border-radius: 10px; background: #0f172a; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 14px rgba(0,0,0,0.35);">
+          <div style="font-weight: bold; display: flex; align-items: center; gap: 6px; color: #38bdf8;">
+            <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#38bdf8;"></span>
+            Your Real Live GPS Location
+          </div>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 3px;">
+            ${userLocation.lat.toFixed(4)}° N, ${userLocation.lng.toFixed(4)}° E
+          </div>
+        </div>
+      `);
+
       const userMarker = new maplibregl.Marker({ element: userEl })
         .setLngLat([userLocation.lng, userLocation.lat])
+        .setPopup(userPopup)
         .addTo(map);
       markersRef.current.push(userMarker);
     }
