@@ -15,11 +15,10 @@ export interface AdminUser {
 const ADMIN_STORAGE_KEY = 'doab_authorized_admins_v1';
 const ADMIN_SESSION_KEY = 'doab_admin_session_v1';
 
-// Initial default super-admin credentials
-// Super admin username & initial pass
-const DEFAULT_SUPER_ADMIN_USER = 'krish';
-const DEFAULT_SUPER_ADMIN_PASS = 'krish123';
-const DEFAULT_ADMIN_EMAIL = 'admin@doab.gov.in';
+// Super admin credentials read from local environment (.env)
+const DEFAULT_SUPER_ADMIN_USER = import.meta.env.VITE_ADMIN_USERNAME || 'krish';
+const DEFAULT_SUPER_ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || 'kysendoab';
+const DEFAULT_ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'chughsuneet7@gmail.com';
 
 // Initialize list of authorized admins if not yet present
 export function getAuthorizedAdmins(): AdminUser[] {
