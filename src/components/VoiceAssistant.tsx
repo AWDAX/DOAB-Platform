@@ -47,6 +47,42 @@ export default function VoiceAssistant() {
     return () => clearInterval(interval);
   }, [inputVal]);
 
+  // Draggable AI Orb Screen Constraints (Strictly bounded inside viewport)
+  const [orbConstraints, setOrbConstraints] = useState({ top: 0, left: 0, right: 0, bottom: 0 });
+
+  useEffect(() => {
+    const updateOrbConstraints = () => {
+      if (typeof window === 'undefined') return;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const orbSize = 54;
+      const rightPadding = w < 640 ? 12 : w < 768 ? 24 : 32;
+      const bottomPadding = w < 768 ? 76 : 24;
+
+      // The button default position is at:
+      // right = rightPadding, bottom = bottomPadding
+      // In Framer Motion, left constraint is how far left (negative) it can move from its origin.
+      // right constraint is how far right (positive) it can move.
+      // top constraint is how far up (negative) it can move.
+      // bottom constraint is how far down (positive) it can move.
+      const maxLeft = -(w - rightPadding - orbSize - 12);
+      const maxRight = rightPadding - 12;
+      const maxTop = -(h - bottomPadding - orbSize - 12);
+      const maxBottom = bottomPadding - 12;
+
+      setOrbConstraints({
+        left: maxLeft,
+        right: maxRight,
+        top: maxTop,
+        bottom: maxBottom
+      });
+    };
+
+    updateOrbConstraints();
+    window.addEventListener('resize', updateOrbConstraints);
+    return () => window.removeEventListener('resize', updateOrbConstraints);
+  }, []);
+
   // Window Draggable Position
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -213,10 +249,40 @@ export default function VoiceAssistant() {
       const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
       const dx = clientX - dragStartRef.current.mouseX;
       const dy = clientY - dragStartRef.current.mouseY;
-      const newX = dragStartRef.current.startX + dx;
-      const newY = dragStartRef.current.startY + dy;
-      setPosition({ x: newX, y: newY });
-      currentPosRef.current = { x: newX, y: newY };
+
+      // Base unconstrained candidate position
+      let candX = dragStartRef.current.startX + dx;
+      let candY = dragStartRef.current.startY + dy;
+
+      // Strictly clamp within viewport borders so the window can NEVER leave the screen
+      const winW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const winH = typeof window !== 'undefined' ? window.innerHeight : 800;
+      const initialRightOffset = typeof window !== 'undefined' && winW < 768 ? 8 : 32; // 0.5rem or 2rem
+      const initialBottomOffset = typeof window !== 'undefined' && winW < 768 ? 72 : 32;
+
+      // The window's default unshifted top-left:
+      // defaultLeft = winW - initialRightOffset - size.w
+      // defaultTop = winH - initialBottomOffset - size.h
+      const defaultLeft = winW - initialRightOffset - size.w;
+      const defaultTop = winH - initialBottomOffset - size.h;
+
+      // Margins from screen edges (8px padding from viewport edges)
+      const minScreenX = 8;
+      const maxScreenX = winW - size.w - 8;
+      const minScreenY = 8;
+      const maxScreenY = winH - size.h - 8;
+
+      // Allowed position offsets:
+      const minOffsetX = minScreenX - defaultLeft;
+      const maxOffsetX = maxScreenX - defaultLeft;
+      const minOffsetY = minScreenY - defaultTop;
+      const maxOffsetY = maxScreenY - defaultTop;
+
+      const clampedX = Math.max(Math.min(candX, maxOffsetX), minOffsetX);
+      const clampedY = Math.max(Math.min(candY, maxOffsetY), minOffsetY);
+
+      setPosition({ x: clampedX, y: clampedY });
+      currentPosRef.current = { x: clampedX, y: clampedY };
     };
 
     const handleDragEnd = () => setIsDragging(false);
@@ -323,7 +389,8 @@ export default function VoiceAssistant() {
           id="tour-ai-copilot"
           drag
           dragMomentum={false}
-          dragElastic={0.1}
+          dragElastic={0}
+          dragConstraints={orbConstraints}
           onDragStart={handleOrbDragStart}
           onDragEnd={handleOrbDragEnd}
           whileDrag={{ scale: 1.1, cursor: 'grabbing' }}
