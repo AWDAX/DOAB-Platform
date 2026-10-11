@@ -44,6 +44,7 @@ import { playClick } from '../utils/soundFx';
 import AnimatedCrosshair from '../components/AnimatedCrosshair';
 import Tooltip from '../components/Tooltip';
 import MapLibreView from '../components/MapLibreView';
+import AIOrbFace from '../components/AIOrbFace';
 import { WATERLOGGING_DATASET_INCIDENTS, type TelemetryIncident } from '../data/waterloggingIncidents';
 import { useForecast } from '../hooks/useForecast';
 import { getPredictionCopy } from '../i18n/predictionCopy';
@@ -912,7 +913,42 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
       {/* ── Top-Right SAHNIRMAAN Floating Neo-Glass Map Controls Toolbar (Vertical Column) ── */}
       <div id="tour-map-controls" className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">
-        {/* 1. My Location FAB with AnimatedCrosshair */}
+        {/* 1. Start Map Page Tour Guide (Placed at the very top, matching theme styling) */}
+        <Tooltip content="Live Map Guide" position="left">
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              window.dispatchEvent(new CustomEvent('doab:start-page-tour', { detail: { pageKey: 'dashboard' } }));
+            }}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
+            aria-label="Start Map Tour Guide"
+          >
+            <Compass size={15} />
+          </button>
+        </Tooltip>
+
+        {/* 2. Map Intelligence & AI Copilot Button (Direct launch of DOAB AI Assistant) */}
+        <Tooltip content="DOAB AI Copilot" position="left">
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              window.dispatchEvent(new CustomEvent('doab:open-assistant'));
+            }}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 group relative"
+            aria-label="Open DOAB AI Intelligence Assistant"
+          >
+            <div className="w-5 h-5 rounded-full overflow-hidden bg-black/5 dark:bg-white/10 flex items-center justify-center border border-[var(--border-color)] dark:border-white/20 group-hover:scale-110 transition-transform">
+              <AIOrbFace state="idle" size={20} />
+            </div>
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--color-brand-accent)] ring-2 ring-[var(--bg-card)]" />
+          </button>
+        </Tooltip>
+
+        <div className="w-5 h-px bg-[var(--border-color)] dark:bg-white/10 my-0.5" />
+
+        {/* 3. My Location FAB with AnimatedCrosshair */}
         <Tooltip content={isViewingMyLocation ? "City Overview (Zoom Out)" : "Fly to My GPS Location"} position="left">
           <button
             type="button"
@@ -930,7 +966,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           </button>
         </Tooltip>
 
-        {/* 2. Focused Risk Halo / Telemetry Layer Toggle */}
+        {/* 4. Focused Risk Halo / Telemetry Layer Toggle */}
         <Tooltip content={showHeatLayer ? "Hide Risk Halos & Clusters" : "Show Risk Halos & Cluster Table"} position="left">
           <button
             type="button"
@@ -954,7 +990,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           </button>
         </Tooltip>
 
-        {/* 3. Fullscreen Toggle Button */}
+        {/* 5. Fullscreen Toggle Button */}
         <Tooltip content={isFullScreen ? "Exit Fullscreen" : "Fullscreen Map"} position="left">
           <button
             type="button"
@@ -970,8 +1006,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           </button>
         </Tooltip>
 
-        {/* 4. Map Telemetry Info / Legend Button */}
-        <Tooltip content={showInfo ? "Close Map Intelligence" : "Map Intelligence"} position="left">
+        {/* 6. Proximity & Telemetry Legend / Intelligence Card Toggle */}
+        <Tooltip content={showInfo ? "Close Telemetry Panel" : "Proximity Telemetry"} position="left">
           <button
             type="button"
             onClick={() => { playClick(); setShowInfo(!showInfo); }}
@@ -980,24 +1016,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
                 : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
             }`}
-            aria-label="Toggle Map Intelligence"
+            aria-label="Toggle Proximity Telemetry Panel"
           >
             {showInfo ? <X size={15} /> : <Info size={15} />}
-          </button>
-        </Tooltip>
-
-        {/* 5. Start Map Page Tour Guide */}
-        <Tooltip content="Live Map Guide" position="left">
-          <button
-            type="button"
-            onClick={() => {
-              playClick();
-              window.dispatchEvent(new CustomEvent('doab:start-page-tour', { detail: { pageKey: 'dashboard' } }));
-            }}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-            aria-label="Start Map Tour Guide"
-          >
-            <Compass size={15} />
           </button>
         </Tooltip>
       </div>

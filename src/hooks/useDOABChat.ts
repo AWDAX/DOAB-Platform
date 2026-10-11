@@ -136,10 +136,11 @@ export function useDOABChat() {
       if (GROQ_API_KEY) {
         // Query live available models directly from Groq's active registry to eliminate hardcoded model deprecation mismatches
         let candidateModels = [
-          'llama-3.1-8b-instant',
-          'llama-3.3-70b-specdec',
-          'qwen-2.5-32b',
-          'deepseek-r1-distill-llama-70b'
+          'qwen/qwen3.8-27b',
+          'openai/gpt-oss-120b',
+          'openai/gpt-oss-20b',
+          'allam-2-7b',
+          'llama-3.1-8b-instant'
         ];
 
         try {
@@ -152,11 +153,11 @@ export function useDOABChat() {
             const modelsData = await modelsRes.json();
             const liveChatModels = (modelsData.data || [])
               .map((m: any) => m.id)
-              .filter((id: string) => !id.includes('whisper') && !id.includes('vision') && !id.includes('embed') && !id.includes('guard'));
+              .filter((id: string) => !id.includes('whisper') && !id.includes('vision') && !id.includes('embed') && !id.includes('guard') && !id.includes('safeguard'));
             if (liveChatModels.length > 0) {
               candidateModels = [
-                // Prioritize fast 8b or 70b models if present in live list
-                ...liveChatModels.filter((id: string) => id.includes('instant') || id.includes('llama-3.1-8b')),
+                // Prioritize qwen/qwen3.8-27b and gpt-oss which are actively enabled on this key
+                ...liveChatModels.filter((id: string) => id.includes('qwen') || id.includes('gpt-oss')),
                 ...liveChatModels
               ].filter((v, i, a) => a.indexOf(v) === i);
             }

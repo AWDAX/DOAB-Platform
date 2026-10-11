@@ -378,8 +378,9 @@ export default function VoiceAssistant() {
   const currentSuggestion = ROTATING_SUGGESTIONS[suggestionIdx];
 
   const isOnAssistantPage = location.pathname === '/assistant';
+  const isOnMapPage = location.pathname === '/';
   const isAuthOrLanding = location.pathname === '/login' || location.pathname === '/landing' || location.pathname === '/team';
-  const shouldHideOrb = isOnAssistantPage || isAuthOrLanding || isOpen;
+  const shouldHideOrb = isOnAssistantPage || isOnMapPage || isAuthOrLanding || isOpen;
 
   return (
     <>
