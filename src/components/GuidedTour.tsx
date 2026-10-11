@@ -770,12 +770,12 @@ export function PageTourButton({
         playClick();
         window.dispatchEvent(new CustomEvent(PAGE_TOUR_EVENT, { detail: { pageKey: targetKey } }));
       }}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/50 hover:bg-[var(--color-brand-accent)]/10 hover:text-[var(--color-brand-accent)] transition-all duration-200 cursor-pointer select-none shadow-2xs group ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/50 hover:bg-[var(--color-brand-accent)]/10 hover:text-[var(--color-brand-accent)] transition-all duration-200 cursor-pointer select-none shadow-2xs group ${className}`}
       aria-label={`Start ${label}`}
       title={`Start ${label} interactive tour`}
     >
-      <Compass size={13} className="text-[var(--color-brand-accent)] transition-transform duration-300 group-hover:rotate-45" />
-      <span>{label}</span>
+      <Compass size={13} className="text-[var(--color-brand-accent)] transition-transform duration-300 group-hover:rotate-45 shrink-0" />
+      <span className="whitespace-nowrap">{label}</span>
     </button>
   );
 }

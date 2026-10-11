@@ -108,14 +108,14 @@ export default function BestRoutesPage() {
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto custom-scrollbar">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div id="tour-best-header">
+        <div id="tour-best-header" className="min-w-0 flex-1">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
-            <RouteIcon className="h-6 w-6 text-[var(--color-brand-accent)]" />
-            Safe Computed Paths
+            <RouteIcon className="h-6 w-6 text-[var(--color-brand-accent)] shrink-0" />
+            <span className="truncate">Safe Computed Paths</span>
           </h1>
           <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">{copy.notASensor}</p>
         </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
           <PageTourButton pageKey="routes_best" label="Routes Guide" />
 
           {/* Share Route Button (SWATVA / SAHNIRMAAN Standard) */}
@@ -138,28 +138,28 @@ export default function BestRoutesPage() {
                 }).catch(() => {});
               }
             }}
-            className="px-3.5 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95 group"
+            className="px-3.5 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95 group"
             title="Share safe route with friends or emergency contacts"
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Link Copied!</span>
+                <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold whitespace-nowrap">Link Copied!</span>
               </>
             ) : (
               <>
-                <Share2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)] group-hover:text-current transition-colors" />
-                <span>Share Route</span>
+                <Share2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)] group-hover:text-current transition-colors shrink-0" />
+                <span className="whitespace-nowrap">Share Route</span>
               </>
             )}
           </button>
 
-          <div id="tour-best-switcher" className="flex items-center gap-2 bg-[var(--bg-main)] p-1.5 rounded-full border border-[var(--border-color)]">
-            <button type="button" className="p-1.5 px-2.5 rounded-full text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer" onClick={() => setActive((value) => Math.max(0, value - 1))} aria-label="Previous route">←</button>
-            <span className="text-xs font-mono font-semibold px-2 text-[var(--text-main)] tabular-nums">
+          <div id="tour-best-switcher" className="flex items-center gap-1 sm:gap-2 bg-[var(--bg-main)] p-1 rounded-full border border-[var(--border-color)] shrink-0 whitespace-nowrap select-none">
+            <button type="button" className="p-1 px-2.5 rounded-full text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer shrink-0 font-bold text-sm" onClick={() => setActive((value) => Math.max(0, value - 1))} aria-label="Previous route">←</button>
+            <span className="text-xs font-mono font-semibold px-1 sm:px-2 text-[var(--text-main)] tabular-nums shrink-0 whitespace-nowrap">
               {routes.length ? `${active + 1} / ${routes.length}` : '0 / 0'}
             </span>
-            <button type="button" className="p-1.5 px-2.5 rounded-full text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer" onClick={() => setActive((value) => Math.min(routes.length - 1, value + 1))} aria-label="Next route">→</button>
+            <button type="button" className="p-1 px-2.5 rounded-full text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer shrink-0 font-bold text-sm" onClick={() => setActive((value) => Math.min(routes.length - 1, value + 1))} aria-label="Next route">→</button>
           </div>
         </div>
       </div>
