@@ -261,7 +261,7 @@ export default function AssistantPage() {
 
         {/* Action Controls Toolbar */}
         <div id="tour-assistant-actions" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <PageTourButton pageKey="assistant" label="Copilot Guide" />
+          <PageTourButton pageKey="assistant" label="Assistant Guide" />
 
           <button
             type="button"
