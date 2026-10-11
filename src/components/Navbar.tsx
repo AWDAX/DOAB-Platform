@@ -299,22 +299,24 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                     <div className="p-3 bg-[var(--bg-main)]/90 border-b border-[var(--border-color)] flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Bell className="h-4 w-4 text-[var(--color-brand-accent)]" />
-                        <span className="text-xs font-bold text-[var(--text-main)]">Active Civic Alerts</span>
+                        <span className="text-xs font-bold text-[var(--text-main)]">Recent Alerts</span>
                       </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold uppercase">
-                        Mockup Feed
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold uppercase tracking-wider">
+                        Prototype Feed
                       </span>
                     </div>
 
                     {/* Micro Explanatory Banner */}
-                    <div className="px-3 py-1.5 bg-amber-500/5 border-b border-amber-500/15 text-[10px] text-amber-800 dark:text-amber-200/90 leading-tight">
-                      Model estimates & Bengaluru BBMP incident reports.
+                    <div className="px-3 py-1.5 bg-[var(--bg-main)] border-b border-[var(--border-color)] text-[10px] text-[var(--text-muted)] leading-tight flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-accent)] shrink-0" />
+                      <span>Model estimates & verified Bengaluru BBMP reports.</span>
                     </div>
 
                     {/* Quick Items List */}
                     <div className="p-1.5 flex flex-col gap-1 max-h-72 overflow-y-auto custom-scrollbar">
                       {CIVIC_INCIDENTS.slice(0, 4).map((inc) => {
                         const isCrit = inc.severity === 'Critical';
+                        const isHigh = inc.severity === 'High';
                         return (
                           <Link
                             key={inc.id}
@@ -323,30 +325,34 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                               playClick();
                               setIsAlertsOpen(false);
                             }}
-                            className="p-2 rounded-xl hover:bg-[var(--bg-main)] transition-colors flex items-start gap-2.5 group cursor-pointer"
+                            className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] transition-colors flex items-start gap-2.5 group cursor-pointer border border-transparent hover:border-[var(--border-color)]"
                           >
                             <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 ${
                               isCrit
-                                ? 'bg-rose-500/15 text-rose-600 border-rose-500/30'
-                                : 'bg-amber-500/15 text-amber-600 border-amber-500/30'
+                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                : isHigh
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                  : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
                             }`}>
                               <ShieldAlert className="h-3.5 w-3.5" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1">
-                                <span className="text-xs font-bold text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] truncate transition-colors">
+                                <span className="text-xs font-semibold text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] truncate transition-colors">
                                   {inc.title}
                                 </span>
-                                <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border shrink-0 ${
+                                <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded-full border shrink-0 ${
                                   isCrit
-                                    ? 'bg-rose-500/10 text-rose-600 border-rose-500/30'
-                                    : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                    : isHigh
+                                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                      : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
                                 }`}>
                                   {inc.severity}
                                 </span>
                               </div>
                               <span className="text-[10px] text-[var(--text-muted)] font-mono block truncate mt-0.5">
-                                {inc.ward} • {inc.waterDepthCm || 45}cm water
+                                {inc.ward} • {inc.waterDepthCm || 45} cm water
                               </span>
                             </div>
                           </Link>
