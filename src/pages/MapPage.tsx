@@ -32,7 +32,9 @@ import {
   Droplets,
   Navigation2,
   CheckCircle2,
-  Compass
+  Compass,
+  Activity,
+  ExternalLink
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
@@ -192,6 +194,7 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
   const [mapCenter, setMapCenter] = useState<[number, number]>(defaultCenter);
   const [mapZoom, setMapZoom] = useState<number>(12);
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
+  const [activeLeftTab, setActiveLeftTab] = useState<'search' | 'forecast' | 'incident'>('search');
 
   // Filter incidents based on criteria and curate density for clean map aesthetics
   const incidentSource = useMemo<TelemetryIncident[]>(() => {
@@ -362,6 +365,8 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
   const handleSelectIncident = (incident: TelemetryIncident) => {
     playClick();
     setSelectedIncident(incident);
+    setActiveLeftTab('incident');
+    setIsMobileCollapsed(false);
     setMapCenter([incident.lat, incident.lng]);
     setMapZoom(14);
   };
@@ -442,22 +447,19 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
           setIsViewingMyLocation(true);
         },
         () => {
-          // Fallback if permission denied or timeout: use default center
-          setUserCoords(defaultCenter);
+          // Fallback if permission denied or timeout: zoom to city overview without pretending it's real GPS
           setMapCenter(defaultCenter);
-          setMapZoom(14);
+          setMapZoom(12);
           setIsLocating(false);
-          setIsViewingMyLocation(true);
+          setIsViewingMyLocation(false);
         },
         { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
       );
     } else {
-      setTimeout(() => {
-        setIsLocating(false);
-        setMapCenter(userCoords);
-        setMapZoom(14);
-        setIsViewingMyLocation(true);
-      }, 400);
+      setIsLocating(false);
+      setMapCenter(defaultCenter);
+      setMapZoom(12);
+      setIsViewingMyLocation(false);
     }
   };
 
@@ -488,21 +490,20 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
   return (
     <div id="tour-map-view" className={`flex-grow flex flex-col relative w-full h-full min-h-[420px] bg-[var(--bg-main)] overflow-hidden ${isFullScreen ? 'fixed inset-0 z-[9999] rounded-none' : ''}`}>
       
-      {/* ── Left Floating Controls & Incident Inspector Panel ── */}
-      <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 w-[calc(100%-3.75rem)] sm:w-92 flex flex-col gap-2.5 pointer-events-none max-h-[calc(100%-1.5rem)] overflow-y-auto custom-scrollbar">
-        
-        {/* Search & Safe Routing Card */}
-        <div id="tour-map-search" className="neo-glass-card p-2.5 sm:p-3.5 rounded-2xl flex flex-col gap-2.5 pointer-events-auto shadow-lg backdrop-blur-xl border border-[var(--border-color)]">
+      {/* ── Unified Left Floating Map Command Dock (Tabbed, Elegant, Non-Intrusive) ── */}
+      <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 w-[calc(100%-3.75rem)] sm:w-92 pointer-events-none">
+        <div id="tour-map-search" className="neo-glass-card rounded-2xl pointer-events-auto shadow-xl backdrop-blur-xl border border-[var(--border-color)] overflow-hidden transition-all duration-200">
           
-          <div className="flex items-center justify-between gap-2 bg-[var(--bg-main)]/90 border border-[var(--border-color)] px-3 py-1.5 rounded-xl">
+          {/* Header Bar with Mode Pill & Minimize Toggle */}
+          <div className="flex items-center justify-between gap-2 bg-[var(--bg-main)]/90 border-b border-[var(--border-color)] px-3 py-2">
             <div className="flex items-center gap-2 truncate">
               <Crosshair className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0" />
-              <span className="text-xs font-semibold truncate text-[var(--text-main)]">
-                GPS: Urban WaterLogging Grid
+              <span className="text-xs font-bold truncate text-[var(--text-main)]">
+                Urban WaterLogging Grid
               </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200">
+              <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)]">
                 {copy.oneHour}
               </span>
               <button
@@ -518,139 +519,213 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
           </div>
 
           {!isMobileCollapsed && (
-            <>
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
-                <input 
-                  type="text" 
-                  placeholder="Search ward, street, or hotspot..."
-                  className="w-full pl-9 pr-3.5 py-2 text-base sm:text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] shadow-inner transition-colors text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                />
-              </div>
-
-              {/* Severity Filter Pill Row */}
-              <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
-                {(['all', 'Critical', 'High', 'Medium'] as const).map((sev) => {
-                  const active = severityFilter === sev;
-                  return (
-                    <button
-                      key={sev}
-                      onClick={() => { playClick(); setSeverityFilter(sev); }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap transition-colors cursor-pointer border ${
-                        active 
-                          ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' 
-                          : 'bg-[var(--bg-main)]/70 text-[var(--text-muted)] hover:text-[var(--text-main)] border-[var(--border-color)]'
-                      }`}
-                    >
-                      {sev === 'all' ? 'All Alerts' : sev}
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="p-3 flex flex-col gap-2.5">
               
-              <Link 
-                to="/routes/best" 
-                onClick={() => playClick()}
-                className="w-full py-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-xs shadow-xs"
-              >
-                <RouteIcon className="h-3.5 w-3.5" />
-                Compute Safe Path
-              </Link>
-            </>
-          )}
-        </div>
+              {/* Segmented Tab Switcher (Search, Forecast, Inspector) */}
+              <div className="grid grid-cols-3 gap-1 p-1 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] text-[11px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setActiveLeftTab('search'); }}
+                  className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                    activeLeftTab === 'search'
+                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs font-bold'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                >
+                  <Search className="h-3 w-3" />
+                  <span>Search</span>
+                </button>
 
-        <div id="tour-map-forecast" className="neo-glass-card p-3 rounded-2xl pointer-events-auto border border-[var(--border-color)] shadow-lg text-[11px] text-[var(--text-muted)] leading-relaxed">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="font-mono text-[10px] uppercase tracking-wider">{copy.estimate}</span>
-            <button type="button" onClick={() => { playClick(); void reload(); }} className="font-semibold text-[var(--text-main)] cursor-pointer">
-              {copy.refresh}
-            </button>
-          </div>
-          <p>
-            {status === 'loading' && copy.loading}
-            {status === 'error' && copy.error}
-            {status === 'insufficient' && (envMode === 'drought' ? copy.droughtNote : copy.insufficient)}
-            {status === 'ready' && copy.notASensor}
-            {usingDemo && ` ${copy.offlineDemo}`}
-            {stale && status === 'ready' && ` ${copy.stale}`}
-          </p>
-          {forecast?.cells[0]?.target_time && (
-            <p className="mt-1 font-mono text-[10px]">{copy.oneHour}: {forecast.cells[0].target_time}</p>
-          )}
-        </div>
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setActiveLeftTab('forecast'); }}
+                  className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                    activeLeftTab === 'forecast'
+                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs font-bold'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                >
+                  <Activity className="h-3 w-3" />
+                  <span>Forecast</span>
+                </button>
 
-        {/* Selected Incident Telemetry Card */}
-        {selectedIncident && !isMobileCollapsed && (
-          <div className="p-3.5 sm:p-4 bg-[var(--bg-card)]/95 border border-[var(--border-color)] rounded-2xl flex flex-col gap-2.5 pointer-events-auto shadow-xl backdrop-blur-xl transition-all duration-200">
-            <div className="flex items-start justify-between gap-2.5">
-              <div className="flex items-start gap-2.5">
-                <div className={`p-2 rounded-xl border shrink-0 mt-0.5 ${
-                  selectedIncident.severity === 'Critical'
-                    ? 'bg-orange-500/15 text-orange-600 border-orange-500/30'
-                    : selectedIncident.severity === 'High'
-                      ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
-                      : 'bg-sky-500/15 text-sky-600 border-sky-500/30'
-                }`}>
-                  <AlertTriangle className="h-4 w-4" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-xs text-[var(--text-main)] leading-tight line-clamp-2">
-                    {selectedIncident.title}
-                  </h4>
-                  <span className="text-[10px] text-[var(--text-muted)] font-mono block mt-0.5">
-                    {selectedIncident.ward} • {selectedIncident.updatedTime}
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setActiveLeftTab('incident'); }}
+                  className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                    activeLeftTab === 'incident'
+                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs font-bold'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>Hazard</span>
+                </button>
               </div>
 
-              <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${
-                selectedIncident.severity === 'Critical'
-                  ? 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/40'
-                  : selectedIncident.severity === 'High'
-                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/40'
-                    : 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/40'
-              }`}>
-                {selectedIncident.severity}
-              </span>
-            </div>
+              {/* TAB 1: Search & Safe Routes Action */}
+              {activeLeftTab === 'search' && (
+                <div className="flex flex-col gap-2.5 animate-in fade-in duration-150">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
+                    <input 
+                      type="text" 
+                      placeholder="Search ward, street, or hotspot..."
+                      className="w-full pl-8.5 pr-3 py-1.5 text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                    />
+                  </div>
 
-            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed line-clamp-2">
-              {copy.historical}. {selectedIncident.description}
-            </p>
-            <p className="text-[10px] text-[var(--text-muted)]">{copy.notASensor}</p>
+                  {/* Severity Filter Pill Row */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
+                    {(['all', 'Critical', 'High', 'Medium'] as const).map((sev) => {
+                      const active = severityFilter === sev;
+                      return (
+                        <button
+                          key={sev}
+                          type="button"
+                          onClick={() => { playClick(); setSeverityFilter(sev); }}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap transition-colors cursor-pointer border ${
+                            active 
+                              ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' 
+                              : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] border-[var(--border-color)]'
+                          }`}
+                        >
+                          {sev === 'all' ? 'All Alerts' : sev}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Link 
+                    to="/routes/best" 
+                    onClick={() => playClick()}
+                    className="w-full py-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-xs shadow-xs"
+                  >
+                    <RouteIcon className="h-3.5 w-3.5" />
+                    <span>Compute Safe Elevation Path</span>
+                  </Link>
+                </div>
+              )}
 
-            <div className="flex items-center justify-between gap-2.5 pt-0.5">
-              <Link
-                to={`/routes/best?lat=${selectedIncident.lat}&lng=${selectedIncident.lng}`}
-                onClick={() => playClick()}
-                className="flex-1 py-1.5 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold text-[11px] flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity shadow-2xs"
-              >
-                <RouteIcon className="h-3.5 w-3.5" />
-                Reroute Around
-              </Link>
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => playClick()}
-                className="px-2.5 py-1.5 rounded-xl border border-[var(--border-color)] text-[10px] font-semibold text-[var(--text-main)]"
-              >
-                {copy.openMaps}
-              </a>
-              <button
-                type="button"
-                onClick={() => setSelectedIncident(null)}
-                className="p-1.5 rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
-                title="Dismiss"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              {/* TAB 2: Model 1-Hour Forecast Telemetry */}
+              {activeLeftTab === 'forecast' && (
+                <div id="tour-map-forecast" className="flex flex-col gap-2 p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[11px] leading-relaxed animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between gap-2 border-b border-[var(--border-color)] pb-1.5">
+                    <span className="font-mono text-[10px] uppercase font-bold text-[var(--text-main)] flex items-center gap-1.5">
+                      <Activity className="h-3 w-3 text-[var(--color-brand-accent)]" />
+                      {copy.estimate}
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => { playClick(); void reload(); }} 
+                      className="text-[10px] font-bold text-[var(--color-brand-accent)] hover:underline cursor-pointer"
+                    >
+                      {copy.refresh}
+                    </button>
+                  </div>
+                  
+                  <p className="text-[var(--text-muted)] text-[11px]">
+                    {status === 'loading' && copy.loading}
+                    {status === 'error' && copy.error}
+                    {status === 'insufficient' && (envMode === 'drought' ? copy.droughtNote : copy.insufficient)}
+                    {status === 'ready' && copy.notASensor}
+                    {usingDemo && ` ${copy.offlineDemo}`}
+                    {stale && status === 'ready' && ` ${copy.stale}`}
+                  </p>
+
+                  {forecast?.cells[0]?.target_time && (
+                    <div className="pt-1 border-t border-[var(--border-color)]/60 text-[10px] font-mono text-[var(--text-muted)] flex items-center justify-between">
+                      <span>{copy.oneHour}</span>
+                      <span className="font-bold text-[var(--text-main)]">{forecast.cells[0].target_time}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: Selected Incident Details */}
+              {activeLeftTab === 'incident' && (
+                <div className="flex flex-col gap-2 animate-in fade-in duration-150">
+                  {selectedIncident ? (
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 ${
+                            selectedIncident.severity === 'Critical'
+                              ? 'bg-rose-500/15 text-rose-600 border-rose-500/30'
+                              : selectedIncident.severity === 'High'
+                                ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
+                                : 'bg-sky-500/15 text-sky-600 border-sky-500/30'
+                          }`}>
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-xs text-[var(--text-main)] truncate leading-tight">
+                              {selectedIncident.title}
+                            </h4>
+                            <span className="text-[10px] text-[var(--text-muted)] font-mono block mt-0.5 truncate">
+                              {selectedIncident.ward} • {selectedIncident.updatedTime}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                          selectedIncident.severity === 'Critical'
+                            ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/40'
+                            : selectedIncident.severity === 'High'
+                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/40'
+                              : 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/40'
+                        }`}>
+                          {selectedIncident.severity}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-[var(--text-muted)] leading-relaxed line-clamp-2">
+                        {copy.historical}. {selectedIncident.description}
+                      </p>
+
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <Link
+                          to={`/routes/best?lat=${selectedIncident.lat}&lng=${selectedIncident.lng}`}
+                          onClick={() => playClick()}
+                          className="flex-1 py-1.5 bg-[var(--text-main)] text-[var(--bg-card)] rounded-lg font-semibold text-[10px] flex items-center justify-center gap-1 hover:opacity-90 transition-opacity shadow-2xs"
+                        >
+                          <RouteIcon className="h-3 w-3" />
+                          <span>Reroute Around</span>
+                        </Link>
+                        
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => playClick()}
+                          className="px-2 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-semibold text-[var(--text-main)] hover:bg-[var(--bg-main)] flex items-center gap-1"
+                        >
+                          <span>{copy.openMaps}</span>
+                          <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedIncident(null)}
+                          className="p-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                          title="Dismiss"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 text-center text-xs text-[var(--text-muted)] font-mono bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)]">
+                      Click any pin or cluster on the map to inspect incident telemetry.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* ── Top-Right SAHNIRMAAN Floating Neo-Glass Map Controls Toolbar (Vertical Column) ── */}
