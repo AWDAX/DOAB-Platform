@@ -13,13 +13,12 @@ import {
   User, 
   LogOut, 
   MousePointer,
-  Bell,
   Check,
   ChevronDown,
   ShieldCheck
 } from 'lucide-react';
 import AIOrbIcon from './AIOrbIcon';
-import { playClick, playAlertAlarm, isSoundEnabled } from '../utils/soundFx';
+import { playClick, isSoundEnabled } from '../utils/soundFx';
 import { firebaseSignOut } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 
@@ -423,21 +422,6 @@ export default function PreferencesModal({
                           onChange={handleClickSoundToggle}
                           ariaLabel="Toggle click sounds"
                         />
-                      </div>
-
-                      {/* Sub 2: Emergency Alert Siren */}
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Bell size={13} className="text-[var(--text-muted)] shrink-0" />
-                          <span className="text-xs font-medium text-[var(--text-main)] truncate">Emergency Life-Safety Siren</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { playClick(); playAlertAlarm(); }}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono uppercase bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-colors cursor-pointer"
-                        >
-                          Test Siren
-                        </button>
                       </div>
                     </motion.div>
                   )}

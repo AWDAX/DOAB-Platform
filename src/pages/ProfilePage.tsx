@@ -224,7 +224,7 @@ export default function ProfilePage() {
               }}
               className="text-[10px] font-mono text-[var(--color-brand-accent)] hover:underline font-bold cursor-pointer"
             >
-              Manage & Test SOS
+              Configure
             </button>
           </div>
 

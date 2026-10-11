@@ -318,6 +318,20 @@ export default function BestRoutesPage() {
     }
   };
 
+  // Dev/Admin event listener to toggle arrival feedback modal on demand
+  useEffect(() => {
+    const handleTriggerArrival = (e: CustomEvent) => {
+      const targetRoute = e.detail?.route || current || routes[0];
+      if (targetRoute) {
+        handleMarkAsReached(targetRoute);
+      }
+    };
+    window.addEventListener('doab:trigger-destination-arrival', handleTriggerArrival as EventListener);
+    return () => {
+      window.removeEventListener('doab:trigger-destination-arrival', handleTriggerArrival as EventListener);
+    };
+  }, [current, routes]);
+
   useEffect(() => {
     const controller = new AbortController();
     setStatus('loading');

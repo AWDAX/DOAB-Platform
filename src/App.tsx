@@ -11,6 +11,7 @@ import AssistantPage from './pages/AssistantPage';
 import AuthPage from './pages/AuthPage';
 import LandingPage from './pages/LandingPage';
 import TeamPage from './pages/TeamPage';
+import DevAdminDashboard from './pages/DevAdminDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 import PageTransition, { ScrollToTop } from './components/PageTransition';
 import SplashLoader from './components/SplashLoader';
@@ -97,6 +98,7 @@ function BottomNav() {
 import { onDOABAuthStateChanged } from './lib/firebase';
 import PermissionsModal from './components/PermissionsModal';
 import EmergencyDangerBroadcast from './components/EmergencyDangerBroadcast';
+import DestinationArrivalModal from './components/DestinationArrivalModal';
 import GuidedTour, { WelcomeTourPromptModal } from './components/GuidedTour';
 import VoiceAssistant from './components/VoiceAssistant';
 
@@ -189,7 +191,7 @@ function AppContent({
 
   const isAuthenticated = Boolean(user);
   const isLanding = location.pathname === '/landing' || (location.pathname === '/' && !isAuthenticated);
-  const isStandalonePage = isLanding || location.pathname === '/login' || location.pathname === '/team';
+  const isStandalonePage = isLanding || location.pathname === '/login' || location.pathname === '/team' || location.pathname.startsWith('/admin') || location.pathname.startsWith('/dev-console');
 
   // Mount Global Keyboard Shortcuts
   useKeyboardShortcuts({
@@ -207,9 +209,26 @@ function AppContent({
   const [activeTourType, setActiveTourType] = useState<string | undefined>(undefined);
 
   // Global event listener for permissions, danger broadcast & tour
+  const [dangerPayload, setDangerPayload] = useState<{
+    title?: string;
+    ward?: string;
+    distanceAhead?: string;
+    waterDepthCm?: number;
+    description?: string;
+  } | undefined>(undefined);
+  const [isGlobalArrivalOpen, setIsGlobalArrivalOpen] = useState(false);
+  const [arrivalModalRoute, setArrivalModalRoute] = useState<any>(null);
+
   useEffect(() => {
     const handleOpenPermissions = () => setIsPermissionsOpen(true);
-    const handleTriggerDanger = () => setIsDangerBroadcastOpen(true);
+    const handleTriggerDanger = (e?: CustomEvent) => {
+      if (e?.detail) {
+        setDangerPayload(e.detail);
+      } else {
+        setDangerPayload(undefined);
+      }
+      setIsDangerBroadcastOpen(true);
+    };
     const handleOpenTour = () => {
       setActiveTourType(undefined);
       setIsTourOpen(true);
@@ -219,21 +238,34 @@ function AppContent({
       setIsTourOpen(true);
     };
     const handleOpenPreferences = () => setIsPreferencesOpen(true);
+    const handleTriggerArrival = (e?: CustomEvent) => {
+      const payload = e?.detail || {
+        summary: 'Koramangala 80ft Road → Domlur Safe Haven Corridor',
+        distance_meters: 4200,
+        duration_seconds: 720,
+        mean_risk: 0.08,
+        maps_url: 'https://maps.google.com',
+      };
+      setArrivalModalRoute(payload);
+      setIsGlobalArrivalOpen(true);
+    };
 
     window.addEventListener('doab:open-permissions', handleOpenPermissions);
-    window.addEventListener('doab:trigger-danger-broadcast', handleTriggerDanger);
+    window.addEventListener('doab:trigger-danger-broadcast', handleTriggerDanger as EventListener);
     window.addEventListener('doab:open-tour', handleOpenTour);
     window.addEventListener('doab:start-tour', handleOpenTour);
     window.addEventListener('doab:start-page-tour', handleOpenPageTour as EventListener);
     window.addEventListener('doab:open-preferences', handleOpenPreferences);
+    window.addEventListener('doab:trigger-destination-arrival', handleTriggerArrival as EventListener);
 
     return () => {
       window.removeEventListener('doab:open-permissions', handleOpenPermissions);
-      window.removeEventListener('doab:trigger-danger-broadcast', handleTriggerDanger);
+      window.removeEventListener('doab:trigger-danger-broadcast', handleTriggerDanger as EventListener);
       window.removeEventListener('doab:open-tour', handleOpenTour);
       window.removeEventListener('doab:start-tour', handleOpenTour);
       window.removeEventListener('doab:start-page-tour', handleOpenPageTour as EventListener);
       window.removeEventListener('doab:open-preferences', handleOpenPreferences);
+      window.removeEventListener('doab:trigger-destination-arrival', handleTriggerArrival as EventListener);
     };
   }, [setIsPermissionsOpen, setIsDangerBroadcastOpen, setIsTourOpen, setIsPreferencesOpen]);
 
@@ -389,6 +421,22 @@ function AppContent({
             } 
           />
           <Route 
+            path="/admin" 
+            element={
+              <PageTransition>
+                <DevAdminDashboard />
+              </PageTransition>
+            } 
+          />
+          <Route 
+            path="/dev-console" 
+            element={
+              <PageTransition>
+                <DevAdminDashboard />
+              </PageTransition>
+            } 
+          />
+          <Route 
             path="*" 
             element={
               <PageTransition>
@@ -421,6 +469,19 @@ function AppContent({
       <EmergencyDangerBroadcast
         isOpen={isDangerBroadcastOpen}
         onClose={() => setIsDangerBroadcastOpen(false)}
+        title={dangerPayload?.title}
+        ward={dangerPayload?.ward}
+        distanceAhead={dangerPayload?.distanceAhead}
+        waterDepthCm={dangerPayload?.waterDepthCm}
+        description={dangerPayload?.description}
+      />
+
+      {/* Global Destination Arrival & Probability Feedback Modal */}
+      <DestinationArrivalModal
+        isOpen={isGlobalArrivalOpen}
+        onClose={() => setIsGlobalArrivalOpen(false)}
+        route={arrivalModalRoute}
+        riskDisplay={arrivalModalRoute?.mean_risk ? `${(arrivalModalRoute.mean_risk * 100).toFixed(0)}% Inundation Risk` : 'Low Risk (Safe)'}
       />
 
       {/* Interactive Mode & Theme Aware Guided Product Tour */}

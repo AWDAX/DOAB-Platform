@@ -7,8 +7,7 @@ import {
   Radio, 
   Volume2, 
   CheckCircle2, 
-  X,
-  AlertTriangle
+  X
 } from 'lucide-react';
 import { playClick } from '../utils/soundFx';
 
@@ -158,7 +157,7 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
                 Life-Safety & Permissions Suite
               </h2>
               <span className="text-[10px] font-mono text-[var(--text-muted)]">
-                Manage & Test SOS Telemetry Infrastructure
+                Civic & Emergency Telemetry Infrastructure
               </span>
             </div>
           </div>
@@ -232,23 +231,11 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
           })}
         </div>
 
-        {/* Footer Actions: Test Emergency Broadcast CTA + Save & Close */}
-        <div className="mt-4 pt-3.5 border-t border-[var(--border-color)] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              playClick();
-              if (onTestDangerBroadcast) onTestDangerBroadcast();
-            }}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-semibold hover:bg-red-500/20 transition-colors cursor-pointer"
-          >
-            <AlertTriangle className="h-3.5 w-3.5" />
-            <span>Test Emergency Broadcast</span>
-          </button>
-
+        {/* Footer Actions: Save & Close */}
+        <div className="mt-4 pt-3.5 border-t border-[var(--border-color)] flex justify-end">
           <button
             onClick={handleComplete}
-            className="w-full sm:w-auto px-4 py-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-bold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+            className="w-full sm:w-auto px-5 py-2.5 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-bold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
           >
             Save & Close
           </button>

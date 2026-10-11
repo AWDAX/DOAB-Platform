@@ -12,6 +12,28 @@ export default function NotificationPage() {
   const { forecast, status, stale, reload } = useForecast();
   const [filterSeverity, setFilterSeverity] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
 
+  // Dev/Admin simulated alerts from localStorage
+  const [adminCustomAlerts, setAdminCustomAlerts] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('doab_admin_custom_alerts');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Listen for admin custom alerts trigger
+  useEffect(() => {
+    const handleUpdate = () => {
+      try {
+        const saved = localStorage.getItem('doab_admin_custom_alerts');
+        setAdminCustomAlerts(saved ? JSON.parse(saved) : []);
+      } catch {}
+    };
+    window.addEventListener('doab:admin-alerts-updated', handleUpdate);
+    return () => window.removeEventListener('doab:admin-alerts-updated', handleUpdate);
+  }, []);
+
   // Mark alerts as read when user visits Notification Page
   useEffect(() => {
     try {
@@ -71,7 +93,8 @@ export default function NotificationPage() {
     }));
 
   const isModelResponding = status === 'ready' && liveCells.length > 0;
-  const activeAlerts = isModelResponding ? liveCells : mockAlerts;
+  const baseAlerts = isModelResponding ? liveCells : mockAlerts;
+  const activeAlerts = [...adminCustomAlerts, ...baseAlerts];
 
   const filteredAlerts = activeAlerts.filter(
     (a) => filterSeverity === 'all' || a.severity === filterSeverity

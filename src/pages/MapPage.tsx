@@ -41,7 +41,6 @@ import {
   RefreshCw,
   Globe2,
   MapPin,
-  Check,
   Plus
 } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
@@ -806,26 +805,28 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 <button
                   type="button"
                   onClick={() => { playClick(); setPathPickingTarget('origin'); }}
-                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex items-center gap-2.5 ${
+                  className={`p-3 rounded-2xl text-left border transition-all cursor-pointer flex items-center gap-3 relative overflow-hidden ${
                     pathPickingTarget === 'origin'
-                      ? 'border-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/10 ring-1 ring-[var(--color-brand-accent)]/40 shadow-2xs'
-                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--color-brand-accent)]/50'
+                      ? 'border-[var(--text-main)] bg-[var(--text-main)]/5 shadow-xs ring-1 ring-[var(--text-main)]/20'
+                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--text-main)]/40 hover:bg-[var(--bg-card)]'
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-lg font-mono font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
+                  <div className={`w-7 h-7 rounded-xl font-mono font-bold text-xs flex items-center justify-center shrink-0 transition-all border ${
                     pathPickingTarget === 'origin'
-                      ? 'bg-[var(--color-brand-accent)] text-white'
-                      : 'bg-[var(--text-main)]/10 text-[var(--text-main)]'
+                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-2xs'
+                      : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)]'
                   }`}>
                     A
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[9px] font-mono text-[var(--text-muted)] font-semibold uppercase flex items-center justify-between">
+                    <div className="text-[9px] font-mono text-[var(--text-muted)] font-bold uppercase tracking-wider flex items-center justify-between">
                       <span>Origin Point</span>
-                      {pathOrigin && <Check className="h-3 w-3 text-[var(--color-brand-accent)]" />}
+                      {pathOrigin && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      )}
                     </div>
-                    <div className="text-xs font-semibold text-[var(--text-main)] truncate mt-0.5">
-                      {pathOrigin ? `${pathOrigin[0].toFixed(3)}°, ${pathOrigin[1].toFixed(3)}°` : 'Click map to place'}
+                    <div className="text-xs font-bold text-[var(--text-main)] truncate mt-0.5">
+                      {pathOrigin ? `${pathOrigin[0].toFixed(3)}°, ${pathOrigin[1].toFixed(3)}°` : 'Place on Map'}
                     </div>
                   </div>
                 </button>
@@ -834,26 +835,28 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 <button
                   type="button"
                   onClick={() => { playClick(); setPathPickingTarget('destination'); }}
-                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex items-center gap-2.5 ${
+                  className={`p-3 rounded-2xl text-left border transition-all cursor-pointer flex items-center gap-3 relative overflow-hidden ${
                     pathPickingTarget === 'destination'
-                      ? 'border-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/10 ring-1 ring-[var(--color-brand-accent)]/40 shadow-2xs'
-                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--color-brand-accent)]/50'
+                      ? 'border-[var(--text-main)] bg-[var(--text-main)]/5 shadow-xs ring-1 ring-[var(--text-main)]/20'
+                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--text-main)]/40 hover:bg-[var(--bg-card)]'
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-lg font-mono font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
+                  <div className={`w-7 h-7 rounded-xl font-mono font-bold text-xs flex items-center justify-center shrink-0 transition-all border ${
                     pathPickingTarget === 'destination'
-                      ? 'bg-[var(--color-brand-accent)] text-white'
-                      : 'bg-[var(--text-main)]/10 text-[var(--text-main)]'
+                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-2xs'
+                      : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)]'
                   }`}>
                     B
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[9px] font-mono text-[var(--text-muted)] font-semibold uppercase flex items-center justify-between">
+                    <div className="text-[9px] font-mono text-[var(--text-muted)] font-bold uppercase tracking-wider flex items-center justify-between">
                       <span>Safe Destination</span>
-                      {pathDest && <Check className="h-3 w-3 text-[var(--color-brand-accent)]" />}
+                      {pathDest && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      )}
                     </div>
-                    <div className="text-xs font-semibold text-[var(--text-main)] truncate mt-0.5">
-                      {pathDest ? `${pathDest[0].toFixed(3)}°, ${pathDest[1].toFixed(3)}°` : 'Click map to place'}
+                    <div className="text-xs font-bold text-[var(--text-main)] truncate mt-0.5">
+                      {pathDest ? `${pathDest[0].toFixed(3)}°, ${pathDest[1].toFixed(3)}°` : 'Place on Map'}
                     </div>
                   </div>
                 </button>

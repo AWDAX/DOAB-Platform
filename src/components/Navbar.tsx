@@ -57,7 +57,6 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
       { id: 'action-tour', title: 'Start Guided Platform Tour', subtitle: 'Interactive walkthrough of active workspace', action: () => onOpenTour?.(), icon: Compass, type: 'Action' },
       { id: 'action-env', title: `Switch to ${envMode === 'flood' ? 'Drought' : 'Flood'} Mode`, subtitle: 'Toggle dual-climate operational engine', action: toggleEnvMode, icon: Droplets, type: 'Action' },
       { id: 'action-theme', title: `Switch to ${isDarkMode ? 'Light' : 'Dark'} Mode`, subtitle: 'Toggle theme display appearance', action: toggleTheme, icon: Sun, type: 'Action' },
-      { id: 'action-sos', title: 'Manage & Test SOS Danger Screen', subtitle: 'Trigger full-screen emergency override alarm', action: () => window.dispatchEvent(new CustomEvent('doab:trigger-danger-broadcast')), icon: ShieldAlert, type: 'Action' },
     ];
 
     if (!q) {
@@ -580,19 +579,6 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                   >
                     <ShieldAlert className="h-4 w-4 text-orange-500" />
                     <span>Life-Safety Permissions</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClick();
-                      setIsMobileMenuOpen(false);
-                      window.dispatchEvent(new CustomEvent('doab:trigger-danger-broadcast'));
-                    }}
-                    className="p-2.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 text-left flex items-center gap-3 text-xs font-semibold transition-colors cursor-pointer"
-                  >
-                    <ShieldAlert className="h-4 w-4" />
-                    <span>Test SOS Danger Screen</span>
                   </button>
                 </div>
               </div>
