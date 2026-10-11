@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, Circle, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
@@ -167,7 +167,8 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
 
   // Default Coordinates: WaterLogging Urban Corridor Center
   const defaultCenter: [number, number] = [12.9716, 77.5946];
-  const userCoords: [number, number] = [12.9716, 77.5946];
+  const [userCoords, setUserCoords] = useState<[number, number]>(defaultCenter);
+  const [hasRealLocation, setHasRealLocation] = useState(false);
 
   const [mapCenter, setMapCenter] = useState<[number, number]>(defaultCenter);
   const [mapZoom, setMapZoom] = useState<number>(12);
@@ -228,17 +229,44 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
   const handleRecenter = () => {
     playClick();
     if (isViewingMyLocation) {
-      // Zoom out to city overview
+      // Toggle back: Zoom out to city overview
       setMapCenter(defaultCenter);
       setMapZoom(11);
       setIsViewingMyLocation(false);
+      return;
+    }
+
+    // Zoom in to real GPS location
+    setIsLocating(true);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const liveLat = position.coords.latitude;
+          const liveLng = position.coords.longitude;
+          const realCoords: [number, number] = [liveLat, liveLng];
+          setUserCoords(realCoords);
+          setHasRealLocation(true);
+          setMapCenter(realCoords);
+          setMapZoom(15);
+          setIsLocating(false);
+          setIsViewingMyLocation(true);
+        },
+        () => {
+          // Fallback if permission denied or timeout: use default center
+          setUserCoords(defaultCenter);
+          setMapCenter(defaultCenter);
+          setMapZoom(14);
+          setIsLocating(false);
+          setIsViewingMyLocation(true);
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+      );
     } else {
-      // Zoom in to GPS
-      setIsLocating(true);
       setTimeout(() => {
         setIsLocating(false);
         setMapCenter(userCoords);
-        setMapZoom(15);
+        setMapZoom(14);
         setIsViewingMyLocation(true);
       }, 400);
     }
@@ -596,7 +624,19 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
           ))}
 
           {/* User Live GPS Marker */}
-          <Marker position={userCoords} icon={USER_LIVE_ICON} />
+          <Marker position={userCoords} icon={USER_LIVE_ICON}>
+            <Popup className="neo-glass-popup">
+              <div className="p-1 text-xs">
+                <div className="font-bold text-neutral-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
+                  {hasRealLocation ? 'Your Real Live GPS Location' : 'Default Municipal Center'}
+                </div>
+                <div className="text-[10px] text-neutral-500 font-mono mt-1">
+                  {userCoords[0].toFixed(4)}° N, {userCoords[1].toFixed(4)}° E
+                </div>
+              </div>
+            </Popup>
+          </Marker>
 
           {/* Focused Risk Halo: Rendered ONLY for the currently inspected incident */}
           {showHeatLayer && selectedIncident && (
