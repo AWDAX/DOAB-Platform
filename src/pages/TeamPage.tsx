@@ -203,21 +203,39 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
       <main className="flex-1 w-full max-w-[1300px] mx-auto px-4 sm:px-6 md:px-8 pt-28 sm:pt-36 md:pt-40 pb-20 relative z-10 flex flex-col items-center">
         {/* Hero Section */}
         <div id="tour-team-header" className="text-center max-w-2xl mx-auto mb-14 sm:mb-16 relative">
-          {/* Subtle Ambient Radial Glow */}
+          {/* Theme-Adaptive Soft Blurred Smudge Background Aura (from SAHNIRMAAN) */}
           <div
             aria-hidden="true"
-            className="absolute -top-16 left-1/2 -translate-x-1/2 w-[380px] sm:w-[500px] h-[220px] sm:h-[280px] bg-[radial-gradient(ellipse_at_center,_rgba(2,132,199,0.18),_rgba(217,119,6,0.06),_transparent_70%)] rounded-full blur-2xl sm:blur-3xl pointer-events-none -z-0"
+            className="absolute -top-12 sm:-top-16 left-1/2 -translate-x-1/2 w-[340px] sm:w-[540px] md:w-[620px] h-[200px] sm:h-[260px] md:h-[300px] rounded-full pointer-events-none -z-0 transition-all duration-500
+              /* Flood Light: Cyan-Cerulean soft mist with subtle depth */
+              bg-[radial-gradient(ellipse_at_center,_rgba(2,132,199,0.22),_rgba(14,165,233,0.10),_transparent_68%)]
+              /* Flood Dark: Luminous Abyssal Aqua-Cyan Glow */
+              dark:bg-[radial-gradient(ellipse_at_center,_rgba(56,189,248,0.24),_rgba(2,132,199,0.12),_transparent_70%)]
+              /* Drought Light: Warm Golden-Bronze Smudge */
+              theme-drought:bg-[radial-gradient(ellipse_at_center,_rgba(217,119,6,0.18),_rgba(245,158,11,0.08),_transparent_68%)]
+              /* Drought Dark: Luminous Amber-Gold Halo */
+              theme-drought:dark:bg-[radial-gradient(ellipse_at_center,_rgba(251,191,36,0.24),_rgba(217,119,6,0.14),_transparent_70%)]
+              blur-2xl sm:blur-3xl filter"
           />
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-mono font-bold text-[var(--text-muted)] mb-4 shadow-2xs">
+          {/* Secondary Direct Text-Backdrop Smudge Shadow (Centered directly behind h1) */}
+          <div
+            aria-hidden="true"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[260px] sm:w-[420px] h-[90px] sm:h-[130px] rounded-full pointer-events-none -z-0
+              bg-sky-500/15 dark:bg-sky-400/20 
+              theme-drought:bg-amber-500/15 theme-drought:dark:bg-amber-400/20
+              blur-xl sm:blur-2xl filter"
+          />
+
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-mono font-bold text-[var(--text-muted)] mb-4 shadow-2xs relative z-10">
             <Users2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
             <span>Team Contrarians · Core Engineering Architects</span>
           </div>
           
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[var(--text-main)] mb-4 text-balance">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[var(--text-main)] mb-4 text-balance relative z-10 drop-shadow-[0_2px_12px_rgba(2,132,199,0.08)] dark:drop-shadow-[0_2px_20px_rgba(56,189,248,0.15)] theme-drought:drop-shadow-[0_2px_12px_rgba(217,119,6,0.08)] theme-drought:dark:drop-shadow-[0_2px_20px_rgba(245,158,11,0.18)]">
             The Team Behind DOAB
           </h1>
-          <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-lg mx-auto text-balance">
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-lg mx-auto text-balance relative z-10">
             Building life-safety civic infrastructure, predictive hydrological telemetry, and decentralized emergency dispatch routing for Indian cities.
           </p>
         </div>
