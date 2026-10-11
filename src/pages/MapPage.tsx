@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { geocodePlace } from '../lib/amazonLocation';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, GeoJSON, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Circle, GeoJSON, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -39,9 +39,12 @@ import {
   ExternalLink,
   Cpu,
   RefreshCw,
-  Globe2
+  Globe2,
+  MapPin,
+  Check,
+  Plus
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
 import AnimatedCrosshair from '../components/AnimatedCrosshair';
 import Tooltip from '../components/Tooltip';
@@ -162,6 +165,52 @@ const ALS_GEOCODED_ICON = L.divIcon({
   iconAnchor: [16, 16],
 });
 
+// Interactive Safe Path Origin Pin Icon (Green)
+const PATH_ORIGIN_ICON = L.divIcon({
+  className: 'path-origin-pin',
+  html: `
+    <div style="position:relative; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
+      <span style="position:absolute; width:100%; height:100%; border-radius:50%; background:rgba(16,185,129,0.35); animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
+      <div style="width:22px; height:22px; border-radius:50%; background:#10B981; border:3px solid #ffffff; box-shadow:0 4px 12px rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:10px; font-weight:800; font-family:monospace;">
+        A
+      </div>
+    </div>`,
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
+});
+
+// Interactive Safe Path Destination Pin Icon (Amber/Red)
+const PATH_DEST_ICON = L.divIcon({
+  className: 'path-dest-pin',
+  html: `
+    <div style="position:relative; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
+      <span style="position:absolute; width:100%; height:100%; border-radius:50%; background:rgba(239,68,68,0.35); animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
+      <div style="width:22px; height:22px; border-radius:50%; background:#EF4444; border:3px solid #ffffff; box-shadow:0 4px 12px rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:10px; font-weight:800; font-family:monospace;">
+        B
+      </div>
+    </div>`,
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
+});
+
+// Map Click Listener to pick Origin and Destination points when in Path Creation Mode
+function MapInteractiveClickHandler({
+  enabled,
+  onMapClick
+}: {
+  enabled: boolean;
+  onMapClick: (lat: number, lng: number) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      if (enabled) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+  return null;
+}
+
 // Map Viewport Controller for Smooth Recenter and Immediate Tile Invalidation
 function MapViewController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
@@ -206,6 +255,8 @@ function MapViewController({ center, zoom }: { center: [number, number]; zoom: n
 }
 
 export default function MapPage({ envMode = 'flood', isDarkMode = false }: { envMode?: 'flood' | 'drought'; isDarkMode?: boolean }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const copy = getPredictionCopy();
   const { forecast, incidents: apiIncidents, boundaries, status, usingDemo, reload } = useForecast();
   const [destination, setDestination] = useState('');
@@ -214,6 +265,28 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [showHeatLayer, setShowHeatLayer] = useState(false);
   const { mapEngine, updateMapEngine } = useUserSettings();
   const setMapEngine = updateMapEngine;
+
+  // Path Creation Mode State (Interactive Map Waypoint Picking & Manual Input)
+  const isCreatePathQuery = searchParams.get('mode') === 'create_path';
+  const [isPathCreationMode, setIsPathCreationMode] = useState<boolean>(isCreatePathQuery);
+  const [pathOrigin, setPathOrigin] = useState<[number, number] | null>(null);
+  const [pathDest, setPathDest] = useState<[number, number] | null>(null);
+  const [pathOriginAddress, setPathOriginAddress] = useState<string>('');
+  const [pathDestAddress, setPathDestAddress] = useState<string>('');
+  const [pathPickingTarget, setPathPickingTarget] = useState<'origin' | 'destination'>('origin');
+  const [pathSummaryName, setPathSummaryName] = useState<string>('');
+  const [pathRiskTier, setPathRiskTier] = useState<'low' | 'moderate' | 'high'>('low');
+
+  // Sync mode with URL if query parameter changes
+  useEffect(() => {
+    if (isCreatePathQuery) {
+      setIsPathCreationMode(true);
+      // Auto-switch to 2D standard map if needed for crystal-clear waypoint interaction
+      if (mapEngine !== 'leaflet') {
+        setMapEngine('leaflet');
+      }
+    }
+  }, [isCreatePathQuery, mapEngine, setMapEngine]);
 
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(() => WATERLOGGING_DATASET_INCIDENTS[0] || null);
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
@@ -319,6 +392,85 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     setDestination(place.label);
     setAlsSuggestions([]);
   }, []);
+
+  // Safe Path Creation: Map Click Handler
+  const handleMapClickForPath = useCallback((lat: number, lng: number) => {
+    playClick();
+    const roundedLat = Math.round(lat * 10000) / 10000;
+    const roundedLng = Math.round(lng * 10000) / 10000;
+    const coordsStr = `${roundedLat}° N, ${roundedLng}° E`;
+
+    if (pathPickingTarget === 'origin') {
+      setPathOrigin([roundedLat, roundedLng]);
+      setPathOriginAddress(prev => prev || `GPS Waypoint (${coordsStr})`);
+      setPathPickingTarget('destination');
+    } else {
+      setPathDest([roundedLat, roundedLng]);
+      setPathDestAddress(prev => prev || `Safe Elevation Point (${coordsStr})`);
+    }
+  }, [pathPickingTarget]);
+
+  // Safe Path Creation: Save to localStorage and redirect to /routes/best
+  const handleSaveCustomPath = useCallback(() => {
+    if (!pathOrigin && !pathDest && !pathOriginAddress && !pathDestAddress) return;
+    playClick();
+
+    const originName = pathOriginAddress.trim() || (pathOrigin ? `${pathOrigin[0]}, ${pathOrigin[1]}` : 'Selected Origin');
+    const destName = pathDestAddress.trim() || (pathDest ? `${pathDest[0]}, ${pathDest[1]}` : 'Safe Haven Sector');
+    const summary = pathSummaryName.trim() || `Custom Safe Elevation Corridor (${originName} → ${destName})`;
+
+    // Compute distance
+    let distMeters = 7500;
+    if (pathOrigin && pathDest) {
+      const distKm = haversineKm(pathOrigin[0], pathOrigin[1], pathDest[0], pathDest[1]);
+      distMeters = Math.max(800, Math.round(distKm * 1000));
+    }
+    const durationSec = Math.round((distMeters / 1000) * 160); // ~22 km/h city evacuation speed
+
+    const originQuery = pathOrigin ? `${pathOrigin[0]},${pathOrigin[1]}` : encodeURIComponent(originName);
+    const destQuery = pathDest ? `${pathDest[0]},${pathDest[1]}` : encodeURIComponent(destName);
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originQuery}&destination=${destQuery}&travelmode=driving`;
+
+    const riskVal = pathRiskTier === 'low' ? 0.045 : pathRiskTier === 'moderate' ? 0.175 : 0.380;
+
+    const newCustomRoute = {
+      summary,
+      distance_meters: distMeters,
+      duration_seconds: durationSec,
+      mean_risk: riskVal,
+      data_quality: 'ok',
+      scored: true,
+      maps_url: mapsUrl,
+      rank: pathRiskTier === 'low' ? 'safest' : 'alternative',
+    };
+
+    try {
+      const existing = JSON.parse(localStorage.getItem('doab_custom_created_routes') || '[]');
+      const updated = [newCustomRoute, ...existing.filter((r: any) => r.summary !== summary)];
+      localStorage.setItem('doab_custom_created_routes', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Could not save custom route', e);
+    }
+
+    // Reset path creation mode and navigate to Best Routes page
+    setIsPathCreationMode(false);
+    navigate('/routes/best');
+  }, [pathOrigin, pathDest, pathOriginAddress, pathDestAddress, pathSummaryName, pathRiskTier, navigate]);
+
+  // Cancel Safe Path Creation
+  const handleCancelCustomPath = useCallback(() => {
+    playClick();
+    setIsPathCreationMode(false);
+    setPathOrigin(null);
+    setPathDest(null);
+    setPathOriginAddress('');
+    setPathDestAddress('');
+    setPathSummaryName('');
+    setSearchParams(params => {
+      params.delete('mode');
+      return params;
+    });
+  }, [setSearchParams]);
 
   const [showInfo, setShowInfo] = useState(false);
 
@@ -594,6 +746,173 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   return (
     <div id="tour-map-view" className={`flex-grow flex flex-col relative w-full h-full min-h-[420px] bg-[var(--bg-main)] overflow-hidden ${isFullScreen ? 'fixed inset-0 z-[9999] rounded-none' : ''}`}>
       
+      {/* ── Interactive Safe Elevation Path Floating Action Banner (When mode=create_path) ── */}
+      <AnimatePresence>
+        {isPathCreationMode && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.98 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="absolute top-2.5 sm:top-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-1.5rem)] sm:w-[560px] max-w-full pointer-events-auto"
+          >
+            <div className="neo-glass-card rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-2xl border-2 border-[var(--color-brand-accent)] bg-[var(--bg-card)]/95 flex flex-col gap-3">
+              {/* Header */}
+              <div className="flex items-center justify-between gap-2 border-b border-[var(--border-color)] pb-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="p-1.5 rounded-xl bg-[var(--color-brand-accent)]/15 text-[var(--color-brand-accent)] shrink-0">
+                    <RouteIcon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-xs sm:text-sm text-[var(--text-main)] truncate flex items-center gap-1.5">
+                      <span>Create Safe Elevation Path</span>
+                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        Interactive Map
+                      </span>
+                    </h3>
+                    <p className="text-[10px] text-[var(--text-muted)] truncate">
+                      Click directly on map or type addresses below to compute bypass route
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelCustomPath}
+                  className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer shrink-0"
+                  title="Close Path Creation Mode"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Waypoint Selector Chips (Click target toggle: Origin vs Destination) */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* Waypoint A (Origin) */}
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setPathPickingTarget('origin'); }}
+                  className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex items-center gap-2 ${
+                    pathPickingTarget === 'origin'
+                      ? 'border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500'
+                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-emerald-500/50'
+                  }`}
+                >
+                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                    A
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[9px] font-mono text-[var(--text-muted)] font-semibold uppercase flex items-center justify-between">
+                      <span>Origin</span>
+                      {pathOrigin && <Check className="h-2.5 w-2.5 text-emerald-500" />}
+                    </div>
+                    <div className="text-xs font-semibold text-[var(--text-main)] truncate">
+                      {pathOrigin ? `${pathOrigin[0].toFixed(3)}°, ${pathOrigin[1].toFixed(3)}°` : 'Click map to place'}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Waypoint B (Destination) */}
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setPathPickingTarget('destination'); }}
+                  className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex items-center gap-2 ${
+                    pathPickingTarget === 'destination'
+                      ? 'border-rose-500 bg-rose-500/10 ring-1 ring-rose-500'
+                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-rose-500/50'
+                  }`}
+                >
+                  <div className="w-5 h-5 rounded-full bg-rose-500 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                    B
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[9px] font-mono text-[var(--text-muted)] font-semibold uppercase flex items-center justify-between">
+                      <span>Safe Destination</span>
+                      {pathDest && <Check className="h-2.5 w-2.5 text-rose-500" />}
+                    </div>
+                    <div className="text-xs font-semibold text-[var(--text-main)] truncate">
+                      {pathDest ? `${pathDest[0].toFixed(3)}°, ${pathDest[1].toFixed(3)}°` : 'Click map to place'}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Manual Input Fields (Address / Landmark Name) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div>
+                  <label className="block text-[10px] font-mono text-[var(--text-muted)] mb-1">
+                    Origin Address / Landmark
+                  </label>
+                  <input
+                    type="text"
+                    value={pathOriginAddress}
+                    onChange={(e) => setPathOriginAddress(e.target.value)}
+                    placeholder="e.g. Indiranagar Metro Station"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:outline-none focus:ring-1 focus:ring-emerald-500 text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono text-[var(--text-muted)] mb-1">
+                    Destination / Safe Haven
+                  </label>
+                  <input
+                    type="text"
+                    value={pathDestAddress}
+                    onChange={(e) => setPathDestAddress(e.target.value)}
+                    placeholder="e.g. High Elevation Ridge / Whitefield"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:outline-none focus:ring-1 focus:ring-rose-500 text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                  />
+                </div>
+              </div>
+
+              {/* Path Name & Risk Tier Options */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-[var(--border-color)]">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-mono text-[var(--text-muted)]">Risk Profile:</span>
+                  {(['low', 'moderate', 'high'] as const).map((tier) => (
+                    <button
+                      key={tier}
+                      type="button"
+                      onClick={() => { playClick(); setPathRiskTier(tier); }}
+                      className={`px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold capitalize transition-all cursor-pointer border ${
+                        pathRiskTier === tier
+                          ? tier === 'low'
+                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs'
+                            : tier === 'moderate'
+                              ? 'bg-amber-500 text-white border-amber-500 shadow-2xs'
+                              : 'bg-rose-500 text-white border-rose-500 shadow-2xs'
+                          : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      {tier}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={handleCancelCustomPath}
+                    className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveCustomPath}
+                    disabled={(!pathOrigin && !pathOriginAddress.trim()) || (!pathDest && !pathDestAddress.trim())}
+                    className="px-4 py-1.5 rounded-xl bg-[var(--color-brand-accent)] hover:opacity-90 disabled:opacity-40 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Save Safe Path</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Unified Left Floating Map Command Dock (Tabbed, Elegant, Non-Intrusive) ── */}
       <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 w-[calc(100%-3.75rem)] sm:w-92 pointer-events-none">
         <div id="tour-map-search" className="neo-glass-card rounded-2xl pointer-events-auto shadow-xl backdrop-blur-xl border border-[var(--border-color)] overflow-hidden transition-all duration-200">
@@ -1534,6 +1853,65 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   weight: 2,
                   dashArray: '5, 8',
                   opacity: 0.75,
+                }}
+              />
+            )}
+
+            {/* Interactive Safe Path Waypoint Picking Handler */}
+            <MapInteractiveClickHandler
+              enabled={isPathCreationMode}
+              onMapClick={handleMapClickForPath}
+            />
+
+            {/* Custom Safe Path Origin Pin */}
+            {pathOrigin && (
+              <Marker position={pathOrigin} icon={PATH_ORIGIN_ICON}>
+                <Popup className="neo-glass-popup">
+                  <div className="p-1 text-xs">
+                    <div className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Waypoint A: Safe Path Origin
+                    </div>
+                    <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
+                      {pathOriginAddress || 'Custom GPS Origin'}
+                    </div>
+                    <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
+                      {pathOrigin[0].toFixed(4)}° N, {pathOrigin[1].toFixed(4)}° E
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+
+            {/* Custom Safe Path Destination Pin */}
+            {pathDest && (
+              <Marker position={pathDest} icon={PATH_DEST_ICON}>
+                <Popup className="neo-glass-popup">
+                  <div className="p-1 text-xs">
+                    <div className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Waypoint B: Safe Haven Destination
+                    </div>
+                    <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
+                      {pathDestAddress || 'Custom Safe Haven Sector'}
+                    </div>
+                    <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
+                      {pathDest[0].toFixed(4)}° N, {pathDest[1].toFixed(4)}° E
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+
+            {/* Custom Safe Path Connecting Elevation Polyline */}
+            {pathOrigin && pathDest && (
+              <Polyline
+                positions={[pathOrigin, pathDest]}
+                pathOptions={{
+                  color: '#10B981',
+                  weight: 4,
+                  dashArray: '6, 8',
+                  opacity: 0.9,
                 }}
               />
             )}

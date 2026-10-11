@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
@@ -94,6 +94,7 @@ function generateFallbackRoutes(origin: { lat: number; lng: number }, destinatio
 }
 
 export default function BestRoutesPage() {
+  const navigate = useNavigate();
   const copy = getPredictionCopy();
   const [params] = useSearchParams();
   const destination = {
@@ -262,12 +263,12 @@ export default function BestRoutesPage() {
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
           <PageTourButton pageKey="routes_best" label="Routes Guide" />
 
-          {/* Create Custom Path Button */}
+          {/* Create Custom Path Button (Redirects to interactive Map with click & manual picking) */}
           <button
             type="button"
-            onClick={() => { playClick(); setIsCreateModalOpen(true); }}
+            onClick={() => { playClick(); navigate('/map?mode=create_path'); }}
             className="px-3.5 py-2 rounded-full border border-[var(--border-color)] bg-[var(--color-brand-accent)] text-white hover:opacity-90 text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
-            title="Create and simulate a custom elevation-calibrated route"
+            title="Create and pick points interactively on map or via address autocomplete"
           >
             <Plus className="h-3.5 w-3.5" />
             <span className="whitespace-nowrap">Create Safe Path</span>
