@@ -48,6 +48,7 @@ import AIOrbFace from '../components/AIOrbFace';
 import { WATERLOGGING_DATASET_INCIDENTS, type TelemetryIncident } from '../data/waterloggingIncidents';
 import { NATIONAL_MUNICIPAL_INCIDENTS } from '../data/nationalIncidents';
 import { useForecast } from '../hooks/useForecast';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 
 // Re-export TelemetryIncident type for backward-compatibility
@@ -190,7 +191,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
   const [selectedState, setSelectedState] = useState<string>('all');
   const [showHeatLayer, setShowHeatLayer] = useState(false);
-  const [mapEngine, setMapEngine] = useState<'leaflet' | 'maplibre'>('leaflet');
+  const { mapEngine, updateMapEngine } = useUserSettings();
+  const setMapEngine = updateMapEngine;
 
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(() => WATERLOGGING_DATASET_INCIDENTS[0] || null);
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
@@ -248,9 +250,17 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       return true;
     });
 
-    // When unfiltered with no search, show a balanced, aesthetic sample of ~80 key nodes to avoid screen clutter
+    // When showing All India with no active filters, build a stratified sample
+    // to guarantee geographic diversity. Bengaluru (BBMP) dominates the pool
+    // since it comes first in the array — a naive slice(0,N) would show ONLY
+    // Bengaluru pins. We take national incidents first, then fill with Bengaluru.
     if (severityFilter === 'all' && !destination.trim() && selectedState === 'all') {
-      return matched.slice(0, 80);
+      const isBengaluru = (i: TelemetryIncident) =>
+        (i.source || '').includes('BBMP') || (i.source || '').includes('OpenCity') || (i.source || '').includes('WaterLogging Dataset');
+      const bengaluru = matched.filter(isBengaluru);
+      const national = matched.filter((i) => !isBengaluru(i));
+      // Aim for ~70 national + ~30 Bengaluru to make the All India view actually national
+      return [...national.slice(0, 70), ...bengaluru.slice(0, 30)];
     }
     return matched.slice(0, 150);
   }, [severityFilter, destination, incidentSource, selectedState]);

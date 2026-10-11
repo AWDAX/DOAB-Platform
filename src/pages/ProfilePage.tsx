@@ -5,6 +5,7 @@ import { signInWithGoogle, firebaseSignOut, onDOABAuthStateChanged } from '../li
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import BrandLogo from '../components/BrandLogo';
+import { useUserSettings } from '../hooks/useUserSettings';
 
 function formatLastLogin(dateString?: string | null) {
   if (!dateString) return 'Today, ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -26,7 +27,12 @@ function formatLastLogin(dateString?: string | null) {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const [role, setRole] = useState<'citizen' | 'delivery'>('citizen');
+  const { profile, updateProfile } = useUserSettings();
+  const role = profile.role;
+  const vendorId = profile.vendorId;
+  const setRole = (r: 'citizen' | 'delivery') => updateProfile({ role: r });
+  const setVendorId = (v: string) => updateProfile({ vendorId: v });
+
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -193,6 +199,8 @@ export default function ProfilePage() {
               placeholder="e.g. SWIGGY-RIDER-8821 or ZEPTO-OPS-109" 
               className="w-full p-2.5 text-xs font-mono border border-[var(--border-color)] rounded-xl focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] bg-[var(--bg-card)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]" 
               disabled={!user}
+              value={vendorId}
+              onChange={(e) => setVendorId(e.target.value)}
             />
             {!user && (
               <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1.5 font-medium">
