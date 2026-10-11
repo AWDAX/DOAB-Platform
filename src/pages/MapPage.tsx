@@ -1240,10 +1240,11 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           >
             {/* High-Reliability Enterprise Basemap Layer (No API Key Required, Fast Global CDN) */}
             <TileLayer
+              key={isDarkMode ? 'dark-canvas-tile' : 'light-canvas-tile'}
               attribution='&copy; <a href="https://www.esri.com/">Esri</a> &copy; OpenStreetMap'
               url={
                 isDarkMode
-                  ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                  ? 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
                   : 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
               }
               maxZoom={18}

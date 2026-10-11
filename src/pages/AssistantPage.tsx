@@ -267,6 +267,7 @@ export default function AssistantPage() {
             type="button"
             onClick={() => {
               playClick();
+              setIsHistoryOpen(false);
               newChat();
               setTimeout(() => inputRef.current?.focus(), 80);
             }}
@@ -331,6 +332,19 @@ export default function AssistantPage() {
                 <span>Mission & Consultation History</span>
               </span>
               <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    setIsHistoryOpen(false);
+                    newChat();
+                    setTimeout(() => inputRef.current?.focus(), 80);
+                  }}
+                  className="px-2.5 py-1 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] flex items-center gap-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                >
+                  <Plus size={13} />
+                  <span>New Session</span>
+                </button>
                 {sessions.length > 1 && (
                   <button
                     type="button"
