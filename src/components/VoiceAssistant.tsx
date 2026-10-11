@@ -410,14 +410,16 @@ export default function VoiceAssistant() {
           dragConstraints={orbConstraints}
           onDragStart={handleOrbDragStart}
           onDragEnd={handleOrbDragEnd}
-          whileDrag={{ scale: 1.1, cursor: 'grabbing' }}
+          whileDrag={{ scale: 1.08, cursor: 'grabbing' }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           animate={isOrbGiggling ? { 
-            scale: [1, 1.05, 1],
+            scale: [1, 1.06, 1],
             transition: { duration: 0.5 }
           } : undefined}
           onClick={() => { playClick(); setIsOpen(true); }}
-          className={`fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] md:bottom-6 right-3 sm:right-6 md:right-8 h-[52px] w-[52px] sm:h-[54px] sm:w-[54px] rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.18)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-grab touch-none ${
-            shouldHideOrb ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
+          className={`fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] md:bottom-6 right-3 sm:right-6 md:right-8 h-[52px] w-[52px] sm:h-[54px] sm:w-[54px] rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.18)] flex items-center justify-center z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-grab touch-none origin-center ${
+            shouldHideOrb ? 'scale-0 opacity-0 pointer-events-none' : 'opacity-100'
           }`}
           aria-label="Open DOAB Assistant (Draggable)"
           title={isOrbGiggling ? "Hehe! (Giggling)" : "Open DOAB Assistant (Drag me around!)"}
