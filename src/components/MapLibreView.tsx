@@ -30,29 +30,29 @@ export default function MapLibreView({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
 
-  // Choose appropriate basemap style (use DEMAG/Carto or OpenStreetMap raster fallback style spec)
+  // Choose appropriate basemap style (use ArcGIS World Gray Canvas: 100% Free, No API Key, Clean Civic Map)
   const styleConfig = useMemo(() => {
+    const tileUrl = isDarkMode
+      ? 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+      : 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+
     return {
       version: 8 as const,
       sources: {
-        'osm-tiles': {
+        'esri-canvas-tiles': {
           type: 'raster' as const,
-          tiles: [
-            isDarkMode 
-              ? 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-              : 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
-          ],
+          tiles: [tileUrl],
           tileSize: 256,
-          attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+          attribution: '&copy; Esri &copy; OpenStreetMap'
         }
       },
       layers: [
         {
-          id: 'osm-tiles-layer',
+          id: 'esri-canvas-tiles-layer',
           type: 'raster' as const,
-          source: 'osm-tiles',
+          source: 'esri-canvas-tiles',
           minzoom: 0,
-          maxzoom: 19
+          maxzoom: 16
         }
       ]
     };
