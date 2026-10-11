@@ -7,16 +7,17 @@ import OldRoutesPage from './pages/OldRoutesPage';
 import BestRoutesPage from './pages/BestRoutesPage';
 import NotificationPage from './pages/NotificationPage';
 import ProfilePage from './pages/ProfilePage';
+import AssistantPage from './pages/AssistantPage';
 import AuthPage from './pages/AuthPage';
 import LandingPage from './pages/LandingPage';
 import TeamPage from './pages/TeamPage';
 import PageTransition, { ScrollToTop } from './components/PageTransition';
 import SplashLoader from './components/SplashLoader';
 import PreferencesModal from './components/PreferencesModal';
-import VoiceAssistant from './components/VoiceAssistant';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { Map, History, Route as RouteIcon, Bell, User } from 'lucide-react';
+import { Map, Route as RouteIcon, Bell, User } from 'lucide-react';
+import AIOrbIcon from './components/AIOrbIcon';
 import { playClick, initGlobalClickSound } from './utils/soundFx';
 import Lenis from 'lenis';
 
@@ -48,7 +49,7 @@ function BottomNav() {
   const navItems = [
     { path: '/', icon: Map, label: 'Map' },
     { path: '/routes/best', icon: RouteIcon, label: 'Routes' },
-    { path: '/routes/old', icon: History, label: 'History' },
+    { path: '/assistant', icon: AIOrbIcon, label: 'Assistant', badge: 'AI' },
     { path: '/notifications', icon: Bell, label: 'Alerts', badge: '3' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
@@ -113,8 +114,6 @@ function DashboardLayout({
       <main className="flex-1 min-h-0 h-full rounded-2xl sm:rounded-3xl neo-glass-card shadow-sm overflow-hidden flex flex-col transition-colors duration-200 relative border border-[var(--border-color)]">
         {children}
       </main>
-      
-      <VoiceAssistant />
     </div>
   );
 }
@@ -317,6 +316,18 @@ function AppContent({
               isAuthenticated ? (
                 <PageTransition>
                   <BestRoutesPage />
+                </PageTransition>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } 
+          />
+          <Route 
+            path="/assistant" 
+            element={
+              isAuthenticated ? (
+                <PageTransition>
+                  <AssistantPage />
                 </PageTransition>
               ) : (
                 <Navigate to="/login" replace />

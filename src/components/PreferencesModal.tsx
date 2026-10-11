@@ -13,13 +13,13 @@ import {
   Compass, 
   User, 
   LogOut, 
-  Sparkles,
   MousePointer,
   Bell,
   Check,
   ChevronDown,
   ShieldCheck
 } from 'lucide-react';
+import AIOrbIcon from './AIOrbIcon';
 import { playClick, playAlertAlarm, isSoundEnabled } from '../utils/soundFx';
 import { firebaseSignOut } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
@@ -228,7 +228,7 @@ export default function PreferencesModal({
               {/* SECTION 1: Dual-Climate Dynamics (SWATVA Visual Cards) */}
               <div className="space-y-2.5">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
-                  <Sparkles size={12} className="text-[var(--color-brand-accent)]" />
+                  <AIOrbIcon size={13} className="text-[var(--color-brand-accent)]" />
                   Dual-Climate Environmental Engine
                 </span>
 

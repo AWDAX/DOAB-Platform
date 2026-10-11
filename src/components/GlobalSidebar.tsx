@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Map, Route as RouteIcon, History, Bell, User, LogOut, PanelLeftClose, PanelLeftOpen, Users2, Sparkles, Compass } from 'lucide-react';
+import { Map, Route as RouteIcon, History, Bell, User, LogOut, PanelLeftClose, PanelLeftOpen, Users2, Compass } from 'lucide-react';
+import AIOrbIcon from './AIOrbIcon';
 import { playClick } from '../utils/soundFx';
 import { firebaseSignOut } from '../lib/firebase';
 import Tooltip from './Tooltip';
@@ -23,15 +24,11 @@ export default function GlobalSidebar() {
     { id: 'notifications', path: '/notifications', icon: Bell, label: 'Alerts', badge: '3', shortcut: '4' },
     { 
       id: 'assistant', 
-      icon: Sparkles, 
+      path: '/assistant',
+      icon: AIOrbIcon, 
       label: 'DOAB Assistant', 
       badge: 'AI', 
       shortcut: 'A',
-      isAction: true,
-      onClick: () => {
-        playClick();
-        window.dispatchEvent(new CustomEvent('doab:open-assistant'));
-      }
     },
   ];
 
@@ -83,7 +80,7 @@ export default function GlobalSidebar() {
     const linkContent = (
       <Link
         key={item.path}
-        id={item.id === 'best' ? 'tour-nav-routes' : undefined}
+        id={item.id === 'best' ? 'tour-nav-routes' : item.id === 'assistant' ? 'tour-ai-copilot' : undefined}
         to={item.path}
         onClick={() => playClick()}
         className={`group relative flex items-center h-10 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${

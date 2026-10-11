@@ -97,7 +97,7 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // 1-5 Quick Page Navigation
+      // 1-5 Quick Page Navigation & 'A' for Assistant
       if (e.key === '1') {
         e.preventDefault();
         navigate('/');
@@ -113,6 +113,9 @@ export function useKeyboardShortcuts({
       } else if (e.key === '5') {
         e.preventDefault();
         navigate('/profile');
+      } else if (e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        navigate('/assistant');
       }
     };
 
