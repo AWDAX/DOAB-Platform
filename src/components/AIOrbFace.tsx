@@ -14,7 +14,7 @@ export interface AIOrbFaceProps {
 export default function AIOrbFace({
   state = 'idle',
   size = 80,
-  gaze = true,
+  gaze = false,
   className = '',
   'aria-label': ariaLabel
 }: AIOrbFaceProps) {
@@ -212,18 +212,7 @@ export default function AIOrbFace({
           transform: `translate(${eyePos.x}px, ${eyePos.y}px)`
         }}
       >
-        {state === 'done' || state === 'giggle' || (isSmilingActive && state === 'happy') ? (
-          <g className="stroke-neutral-900 dark:stroke-neutral-950" strokeWidth={size <= 32 ? "6" : "4.2"} strokeLinecap="round" fill="none">
-            {/* Happy, joyful crescent laughing eyes (child-like giggle) */}
-            <path d="M 31 46 Q 38 36 45 46" className="transition-all duration-200" />
-            <path d="M 55 46 Q 62 36 69 46" className="transition-all duration-200" />
-            {/* Sweet open child smile / giggle mouth */}
-            <path d="M 38 62 Q 50 75 62 62" strokeWidth={size <= 32 ? "5" : "3.6"} fill="rgba(0,0,0,0.85)" />
-            {/* Cute pink rosy cheeks on giggle */}
-            <ellipse cx="28" cy="54" rx="4.5" ry="2.5" fill="rgba(244,63,94,0.35)" stroke="none" />
-            <ellipse cx="72" cy="54" rx="4.5" ry="2.5" fill="rgba(244,63,94,0.35)" stroke="none" />
-          </g>
-        ) : state === 'error' ? (
+        {state === 'error' ? (
           <g stroke="#f43f5e" strokeWidth="3" strokeLinecap="round" fill="none">
             <circle cx="38" cy="46" r="8" strokeDasharray="3 3" />
             <circle cx="62" cy="46" r="8" strokeDasharray="3 3" />
@@ -252,11 +241,13 @@ export default function AIOrbFace({
             ) : state === 'thinking' ? (
               <path d="M 46 64 Q 50 66 55 63" className="stroke-neutral-950" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.8" />
             ) : state === 'streaming' ? (
-              <path d="M 44 65 Q 50 69 56 65" className="stroke-neutral-950" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.9" />
-            ) : isSmilingActive ? (
-              <path d="M 41 62 Q 50 71 59 62" className="stroke-neutral-950" strokeWidth="2.6" strokeLinecap="round" fill="none" opacity="0.95" />
+              <path d="M 44 65 Q 50 68 56 65" className="stroke-neutral-950" strokeWidth="2.2" strokeLinecap="round" fill="none" opacity="0.85" />
+            ) : state === 'giggle' || state === 'happy' || isSmilingActive ? (
+              /* Subtle, warm and gentle micro-smile (natural and non-creepy) */
+              <path d="M 43 64 Q 50 68.5 57 64" className="stroke-neutral-950" strokeWidth="2.2" strokeLinecap="round" fill="none" opacity="0.85" />
             ) : (
-              <path d="M 45 64 Q 50 67 55 64" className="stroke-neutral-950" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.75" />
+              /* Calm, resting neutral micro-curve */
+              <path d="M 45 65 Q 50 66.5 55 65" className="stroke-neutral-950" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.7" />
             )}
           </g>
         )}

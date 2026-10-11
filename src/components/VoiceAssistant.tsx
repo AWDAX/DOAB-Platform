@@ -7,7 +7,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import AIOrbFace from './AIOrbFace';
 import Tooltip from './Tooltip';
-import { playClick, playChildGiggle } from '../utils/soundFx';
+import { playClick } from '../utils/soundFx';
 import { useDOABChat } from '../hooks/useDOABChat';
 
 const ROTATING_SUGGESTIONS = [
@@ -108,16 +108,14 @@ export default function VoiceAssistant() {
     if (distanceMoved > 15 || elapsed > 300) {
       dragMoveCountRef.current += 1;
       if (dragMoveCountRef.current >= 2) {
-        // Trigger smiling and giggling!
+        // Trigger a gentle, subtle acknowledgement smile (non-intrusive)
         setIsOrbGiggling(true);
-        playChildGiggle();
-
         if (giggleTimeoutRef.current) clearTimeout(giggleTimeoutRef.current);
         giggleTimeoutRef.current = setTimeout(() => {
           setIsOrbGiggling(false);
-        }, 3200);
+        }, 1200);
 
-        dragMoveCountRef.current = 0; // reset counter after giggling
+        dragMoveCountRef.current = 0; // reset counter
       }
     }
   };
@@ -136,7 +134,6 @@ export default function VoiceAssistant() {
   });
   
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
-  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -414,9 +411,8 @@ export default function VoiceAssistant() {
           onDragEnd={handleOrbDragEnd}
           whileDrag={{ scale: 1.1, cursor: 'grabbing' }}
           animate={isOrbGiggling ? { 
-            scale: [1, 1.16, 0.94, 1.14, 0.96, 1.08, 1],
-            rotate: [0, -6, 6, -5, 5, -2, 0],
-            transition: { duration: 1.6, repeat: 1 }
+            scale: [1, 1.05, 1],
+            transition: { duration: 0.5 }
           } : undefined}
           onClick={() => { playClick(); setIsOpen(true); }}
           className={`fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] md:bottom-6 right-3 sm:right-6 md:right-8 h-[52px] w-[52px] sm:h-[54px] sm:w-[54px] rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.18)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-grab touch-none ${
@@ -489,12 +485,12 @@ export default function VoiceAssistant() {
                   </button>
                 </Tooltip>
                 
-                {/* Header AI Orb Face with Status Tooltip */}
+                {/* Header AI Orb Face with Status Tooltip (Tracks cursor when chat window is open) */}
                 <Tooltip content={isListening ? "Listening..." : isThinking ? "Analyzing..." : "Online"} position="bottom">
                   <div className="relative flex items-center justify-center cursor-pointer">
                     <div className="absolute inset-0 -m-1 rounded-full bg-[var(--color-brand-accent)]/20 blur-md pointer-events-none" />
                     <div className="w-7 h-7 rounded-full overflow-hidden bg-black/5 dark:bg-white/10 flex items-center justify-center border border-[var(--border-color)] shrink-0 relative z-10">
-                      <AIOrbFace state={activeOrbState} size={28} />
+                      <AIOrbFace state={activeOrbState} size={28} gaze={isOpen} />
                     </div>
                   </div>
                 </Tooltip>
@@ -648,22 +644,13 @@ export default function VoiceAssistant() {
                 )}
 
                 {/* Messages stream with Avatar Faces */}
-                {(() => {
-                  const lastAssistantMsgId = messages.filter(m => m.role === 'assistant').slice(-1)[0]?.id;
-                  return messages.map((m) => {
-                    const isLastAssistant = m.id === lastAssistantMsgId;
-                    const isHovered = hoveredMsgId === m.id;
-                    const shouldGaze = isLastAssistant || isHovered;
-
-                    return (
-                      <div
-                        key={m.id}
-                        onMouseEnter={() => setHoveredMsgId(m.id)}
-                        onMouseLeave={() => setHoveredMsgId(null)}
-                        className={`flex items-start gap-2.5 max-w-[90%] ${
-                          m.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
-                        }`}
-                      >
+                {messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`flex items-start gap-2.5 max-w-[90%] ${
+                      m.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'
+                    }`}
+                  >
                         {m.role === 'assistant' && (
                           <div className="relative shrink-0 mt-1">
                             {playingMessageId === m.id && (
@@ -671,8 +658,8 @@ export default function VoiceAssistant() {
                             )}
                             <AIOrbFace 
                               size={24} 
-                              state={playingMessageId === m.id ? 'speaking' : isHovered ? 'smile' : 'done'} 
-                              gaze={shouldGaze}
+                              state={playingMessageId === m.id ? 'speaking' : 'idle'} 
+                              gaze={false}
                               className="relative z-10" 
                             />
                           </div>
@@ -714,9 +701,7 @@ export default function VoiceAssistant() {
                       </div>
                     </div>
                   </div>
-                );
-              });
-            })()}
+                ))}
 
                 {isThinking && (
                   <div className="flex items-center gap-2.5 text-[var(--text-muted)]">

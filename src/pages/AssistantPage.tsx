@@ -245,6 +245,7 @@ export default function AssistantPage() {
               <AIOrbFace 
                 state={isListening ? 'listening' : isThinking ? 'thinking' : 'idle'} 
                 size={44} 
+                gaze={true}
                 className="w-full h-full pointer-events-none" 
               />
             </div>
@@ -475,7 +476,7 @@ export default function AssistantPage() {
               ) : (
                 <div key={m.id} className="flex items-start gap-3 sm:gap-3.5 max-w-[94%] group">
                   <div className="shrink-0 mt-0.5">
-                    <AIOrbFace size={30} state={playingMessageId === m.id ? 'speaking' : 'done'} />
+                    <AIOrbFace size={30} state={playingMessageId === m.id ? 'speaking' : 'idle'} gaze={false} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="rounded-2xl rounded-tl-xs px-4 sm:px-5 py-3.5 text-xs sm:text-sm leading-relaxed border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] shadow-xs">
