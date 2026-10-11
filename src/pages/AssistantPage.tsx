@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { 
   Send, Mic, MicOff, Plus, Clock, Download, Copy, Check, 
   Volume2, VolumeX, Maximize2, Minimize2, Trash2, Search,
-  ChevronRight, X, Sparkles
+  ChevronRight, X, MessageSquarePlus
 } from 'lucide-react';
 import AIOrbFace from '../components/AIOrbFace';
 import { FormattedChatText } from '../components/FormattedChatText';
@@ -453,7 +453,7 @@ export default function AssistantPage() {
                     className="text-left text-xs px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--color-brand-accent)]/50 hover:bg-[var(--color-brand-accent)]/5 transition-all cursor-pointer text-[var(--text-main)] flex items-center justify-between gap-2 shadow-2xs group"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <Sparkles size={12} className="text-[var(--color-brand-accent)] shrink-0 group-hover:scale-110 transition-transform" />
+                      <MessageSquarePlus size={13} className="text-[var(--color-brand-accent)] shrink-0 opacity-75 group-hover:opacity-100 transition-opacity" />
                       <span className="truncate">{item.label}</span>
                     </div>
                     <ChevronRight size={13} className="text-[var(--text-muted)] shrink-0 group-hover:translate-x-0.5 transition-transform" />
