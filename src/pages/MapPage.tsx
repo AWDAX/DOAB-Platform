@@ -187,7 +187,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const { forecast, incidents: apiIncidents, boundaries, status, usingDemo, reload } = useForecast();
   const [destination, setDestination] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
-  const [showHeatLayer, setShowHeatLayer] = useState(true);
+  const [showHeatLayer, setShowHeatLayer] = useState(false);
   const [mapEngine, setMapEngine] = useState<'leaflet' | 'maplibre'>('leaflet');
 
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(() => WATERLOGGING_DATASET_INCIDENTS[0] || null);
@@ -646,7 +646,6 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   onClick={() => {
                     playClick();
                     setActiveLeftTab('clusters');
-                    if (!showHeatLayer) setShowHeatLayer(true);
                   }}
                   className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
                     activeLeftTab === 'clusters'
