@@ -126,6 +126,22 @@
 - **Capacitor Configuration (`capacitor.config.ts`):** Configured `server.url = 'https://doab.sahnirmaan.live'` with cleartext permissions disabled.
 - **Compiled Binary:** Generated production-ready APK at `Codebase/Z-Sentinel-DOAB.apk` (7.7 MB) with native geolocation and vibration sensor bridges.
 
+### F. Amazon Location Service (Geospatial Intelligence)
+1. **Place Index Provisioning:**
+   - Index Name: `doab-place-index`
+   - ARN: `arn:aws:geo:ap-southeast-2:970909364340:place-index/doab-place-index`
+   - Data Source: Esri
+   - Pricing Plan: RequestBasedUsage
+2. **Cognito Identity Federation:**
+   - Identity Pool: `doab-als-pool` (`ap-southeast-2:ff8ccdf5-4e7a-45c8-861d-51221d0ea28d`)
+   - Unauthenticated IAM Role: `doab-als-unauth-role`
+   - Scoped IAM Policy: Strictly authorizes `geo:SearchPlaceIndexForText` and `geo:SearchPlaceIndexForSuggestions` on the `doab-place-index` resource only.
+3. **Application Integration:**
+   - Client Library: `src/lib/amazonLocation.ts` using `@aws-sdk/client-location` and `@aws-sdk/credential-providers`.
+   - Real-time Place Autocomplete: Search bar debounces user input and queries Amazon Location Service with country biasing (`IND`).
+   - Dynamic Interactive Pinning: Selecting a geocoded suggestion flies the map directly to coordinates and anchors an active ALS telemetry pin.
+
+
 ---
 
 ## 🔍 3. Live Verification & Health Checks
