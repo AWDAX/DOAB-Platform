@@ -7,7 +7,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import AIOrbFace from './AIOrbFace';
 import Tooltip from './Tooltip';
-import { playClick } from '../utils/soundFx';
+import { playClick, playChildGiggle } from '../utils/soundFx';
 import { useDOABChat } from '../hooks/useDOABChat';
 
 const ROTATING_SUGGESTIONS = [
@@ -52,6 +52,38 @@ export default function VoiceAssistant() {
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ mouseX: 0, mouseY: 0, startX: 0, startY: 0 });
   const currentPosRef = useRef({ x: 0, y: 0 });
+
+  // Playful Easter Egg: If dragged/moved 2-3 times, orb smiles and giggles like a happy child
+  const dragMoveCountRef = useRef(0);
+  const [isOrbGiggling, setIsOrbGiggling] = useState(false);
+  const giggleTimeoutRef = useRef<any>(null);
+  const dragStartTimeRef = useRef<number>(0);
+
+  const handleOrbDragStart = () => {
+    dragStartTimeRef.current = Date.now();
+  };
+
+  const handleOrbDragEnd = (_: any, info: any) => {
+    const elapsed = Date.now() - dragStartTimeRef.current;
+    const distanceMoved = Math.sqrt((info?.offset?.x || 0) ** 2 + (info?.offset?.y || 0) ** 2);
+
+    // Only count genuine drags (moved more than 15px)
+    if (distanceMoved > 15 || elapsed > 300) {
+      dragMoveCountRef.current += 1;
+      if (dragMoveCountRef.current >= 2) {
+        // Trigger smiling and giggling!
+        setIsOrbGiggling(true);
+        playChildGiggle();
+
+        if (giggleTimeoutRef.current) clearTimeout(giggleTimeoutRef.current);
+        giggleTimeoutRef.current = setTimeout(() => {
+          setIsOrbGiggling(false);
+        }, 3200);
+
+        dragMoveCountRef.current = 0; // reset counter after giggling
+      }
+    }
+  };
 
   // Window Resizable Size (Multi-directional 4-corner & edge resizing)
   type ResizeDirection = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w';
@@ -292,15 +324,22 @@ export default function VoiceAssistant() {
           drag
           dragMomentum={false}
           dragElastic={0.1}
-          whileDrag={{ scale: 1.08, cursor: 'grabbing' }}
+          onDragStart={handleOrbDragStart}
+          onDragEnd={handleOrbDragEnd}
+          whileDrag={{ scale: 1.1, cursor: 'grabbing' }}
+          animate={isOrbGiggling ? { 
+            scale: [1, 1.16, 0.94, 1.14, 0.96, 1.08, 1],
+            rotate: [0, -6, 6, -5, 5, -2, 0],
+            transition: { duration: 1.6, repeat: 1 }
+          } : undefined}
           onClick={() => { playClick(); setIsOpen(true); }}
           className={`fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] md:bottom-6 right-3 sm:right-6 md:right-8 h-[52px] w-[52px] sm:h-[54px] sm:w-[54px] rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.18)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-grab touch-none ${
             shouldHideOrb ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
           }`}
           aria-label="Open DOAB Assistant (Draggable)"
-          title="Open DOAB Assistant (Draggable)"
+          title={isOrbGiggling ? "Hehe! (Giggling)" : "Open DOAB Assistant (Drag me around!)"}
         >
-          <AIOrbFace state="idle" size={54} className="w-full h-full pointer-events-none" />
+          <AIOrbFace state={isOrbGiggling ? 'giggle' : 'idle'} size={54} className="w-full h-full pointer-events-none" />
         </motion.button>
       )}
 

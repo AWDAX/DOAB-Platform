@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 export interface AIOrbFaceProps {
-  state?: 'idle' | 'listening' | 'thinking' | 'speaking' | 'streaming' | 'done' | 'error' | 'smile' | 'happy';
+  state?: 'idle' | 'listening' | 'thinking' | 'speaking' | 'streaming' | 'done' | 'error' | 'smile' | 'happy' | 'giggle';
   size?: number;
   gaze?: boolean;
   className?: string;
@@ -212,11 +212,16 @@ export default function AIOrbFace({
           transform: `translate(${eyePos.x}px, ${eyePos.y}px)`
         }}
       >
-        {state === 'done' ? (
-          <g className="stroke-neutral-950" strokeWidth="4.5" strokeLinecap="round" fill="none">
-            <path d="M 30 48 Q 38 38 46 48" />
-            <path d="M 54 48 Q 62 38 70 48" />
-            <path d="M 40 64 Q 50 74 60 64" />
+        {state === 'done' || state === 'giggle' || (isSmilingActive && state === 'happy') ? (
+          <g className="stroke-neutral-950" strokeWidth="4.2" strokeLinecap="round" fill="none">
+            {/* Happy, joyful crescent laughing eyes (child-like giggle) */}
+            <path d="M 31 46 Q 38 36 45 46" className="transition-all duration-200" />
+            <path d="M 55 46 Q 62 36 69 46" className="transition-all duration-200" />
+            {/* Sweet open child smile / giggle mouth */}
+            <path d="M 38 62 Q 50 75 62 62" strokeWidth="3.6" fill="rgba(0,0,0,0.85)" />
+            {/* Cute pink rosy cheeks on giggle */}
+            <ellipse cx="28" cy="54" rx="4.5" ry="2.5" fill="rgba(244,63,94,0.35)" stroke="none" />
+            <ellipse cx="72" cy="54" rx="4.5" ry="2.5" fill="rgba(244,63,94,0.35)" stroke="none" />
           </g>
         ) : state === 'error' ? (
           <g stroke="#f43f5e" strokeWidth="3" strokeLinecap="round" fill="none">
