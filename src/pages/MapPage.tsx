@@ -1,4 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { geocodePlace } from '../lib/amazonLocation';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, GeoJSON, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -46,7 +48,9 @@ import Tooltip from '../components/Tooltip';
 import MapLibreView from '../components/MapLibreView';
 import AIOrbFace from '../components/AIOrbFace';
 import { WATERLOGGING_DATASET_INCIDENTS, type TelemetryIncident } from '../data/waterloggingIncidents';
+import { NATIONAL_MUNICIPAL_INCIDENTS } from '../data/nationalIncidents';
 import { useForecast } from '../hooks/useForecast';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 
 // Re-export TelemetryIncident type for backward-compatibility
@@ -144,6 +148,20 @@ const USER_LIVE_ICON = L.divIcon({
   iconAnchor: [14, 14],
 });
 
+// Amazon Location Service Geocoded Pin Icon
+const ALS_GEOCODED_ICON = L.divIcon({
+  className: 'als-geocoded-pin',
+  html: `
+    <div style="position:relative; width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+      <span style="position:absolute; width:100%; height:100%; border-radius:50%; background:rgba(217,119,6,0.35); animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></span>
+      <div style="width:20px; height:20px; border-radius:50%; background:#d97706; border:3px solid #ffffff; box-shadow:0 4px 10px rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center;">
+        <div style="width:6px; height:6px; border-radius:50%; background:#ffffff;"></div>
+      </div>
+    </div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
 // Map Viewport Controller for Smooth Recenter and Immediate Tile Invalidation
 function MapViewController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
@@ -187,8 +205,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const { forecast, incidents: apiIncidents, boundaries, status, usingDemo, reload } = useForecast();
   const [destination, setDestination] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
+  const [selectedState, setSelectedState] = useState<string>('all');
   const [showHeatLayer, setShowHeatLayer] = useState(false);
-  const [mapEngine, setMapEngine] = useState<'leaflet' | 'maplibre'>('leaflet');
+  const { mapEngine, updateMapEngine } = useUserSettings();
+  const setMapEngine = updateMapEngine;
 
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(() => WATERLOGGING_DATASET_INCIDENTS[0] || null);
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
@@ -203,10 +223,15 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
   const [activeLeftTab, setActiveLeftTab] = useState<'search' | 'forecast' | 'incident' | 'clusters'>('search');
 
-  // Filter incidents based on criteria and curate density for clean map aesthetics
+  // Combined National Master Telemetry Pool (Karnataka Ground-Truth + 17 Indian States via Amazon Location Geocoder)
+  const allIncidentsPool = useMemo<TelemetryIncident[]>(() => {
+    return [...WATERLOGGING_DATASET_INCIDENTS, ...NATIONAL_MUNICIPAL_INCIDENTS];
+  }, []);
+
+  // Filter incidents based on criteria, state focus, and curate density for clean map aesthetics
   const incidentSource = useMemo<TelemetryIncident[]>(() => {
-    if (usingDemo || apiIncidents.length === 0) return WATERLOGGING_DATASET_INCIDENTS;
-    return apiIncidents.map((item) => ({
+    if (usingDemo || apiIncidents.length === 0) return allIncidentsPool;
+    const mapped = apiIncidents.map((item) => ({
       id: item.id,
       title: item.category || copy.historical,
       ward: 'Bengaluru',
@@ -220,10 +245,15 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       description: copy.historical,
       source: item.source,
     }));
-  }, [apiIncidents, usingDemo, copy.historical]);
+    return [...mapped, ...NATIONAL_MUNICIPAL_INCIDENTS];
+  }, [apiIncidents, usingDemo, copy.historical, allIncidentsPool]);
 
   const filteredIncidents = useMemo(() => {
     const matched = incidentSource.filter((item) => {
+      if (selectedState !== 'all') {
+        const itemText = `${item.ward} ${item.source || ''} ${item.description || ''} ${item.title}`.toLowerCase();
+        if (!itemText.includes(selectedState.toLowerCase())) return false;
+      }
       if (severityFilter !== 'all' && item.severity !== severityFilter) return false;
       if (destination.trim()) {
         const query = destination.toLowerCase();
@@ -236,16 +266,55 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       return true;
     });
 
-    // When unfiltered with no search, show a balanced, aesthetic sample of ~50 key nodes to avoid screen clutter
-    if (severityFilter === 'all' && !destination.trim()) {
-      return matched.slice(0, 50);
+    // When showing All India with no active filters, build a stratified sample
+    // to guarantee geographic diversity. Bengaluru (BBMP) dominates the pool
+    // since it comes first in the array — a naive slice(0,N) would show ONLY
+    // Bengaluru pins. We take national incidents first, then fill with Bengaluru.
+    if (severityFilter === 'all' && !destination.trim() && selectedState === 'all') {
+      const isBengaluru = (i: TelemetryIncident) =>
+        (i.source || '').includes('BBMP') || (i.source || '').includes('OpenCity') || (i.source || '').includes('WaterLogging Dataset');
+      const bengaluru = matched.filter(isBengaluru);
+      const national = matched.filter((i) => !isBengaluru(i));
+      // Aim for ~70 national + ~30 Bengaluru to make the All India view actually national
+      return [...national.slice(0, 70), ...bengaluru.slice(0, 30)];
     }
-    return matched;
-  }, [severityFilter, destination, incidentSource]);
+    return matched.slice(0, 150);
+  }, [severityFilter, destination, incidentSource, selectedState]);
 
   const [isLocating, setIsLocating] = useState(false);
   const [isViewingMyLocation, setIsViewingMyLocation] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // Amazon Location Service — live geocoding state
+  const [alsSuggestions, setAlsSuggestions] = useState<import('../lib/amazonLocation').GeocodedPlace[]>([]);
+  const [alsLoading, setAlsLoading] = useState(false);
+  const [geocodedPin, setGeocodedPin] = useState<[number, number] | null>(null);
+  const alsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced ALS geocode — fires 400ms after the user stops typing
+  const handleSearchChange = useCallback((query: string) => {
+    setDestination(query);
+    setAlsSuggestions([]);
+    if (alsDebounceRef.current) clearTimeout(alsDebounceRef.current);
+    if (query.trim().length < 3) { setAlsLoading(false); return; }
+    setAlsLoading(true);
+    alsDebounceRef.current = setTimeout(async () => {
+      const results = await geocodePlace(query + ', India', 5);
+      setAlsSuggestions(results);
+      setAlsLoading(false);
+    }, 400);
+  }, []);
+
+  // When user picks an ALS suggestion — pan map + drop geocoded pin
+  const handleAlsSelect = useCallback((place: import('../lib/amazonLocation').GeocodedPlace) => {
+    playClick();
+    setGeocodedPin([place.lat, place.lng]);
+    setMapCenter([place.lat, place.lng]);
+    setMapZoom(13);
+    setDestination(place.label);
+    setAlsSuggestions([]);
+  }, []);
+
   const [showInfo, setShowInfo] = useState(false);
 
   // Unread AI Response indicator state (blue dot appears only when new response from AI is present)
@@ -678,12 +747,41 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
                     <input 
                       type="text" 
-                      placeholder="Search ward, street, or hotspot..."
-                      className="w-full pl-8.5 pr-3 py-1.5 text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                      placeholder="Search any place in India via ALS..."
+                      className="w-full pl-8.5 pr-16 py-1.5 text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
                       value={destination}
-                      onChange={(e) => setDestination(e.target.value)}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') { setAlsSuggestions([]); setDestination(''); }
+                      }}
                     />
+                    {/* ALS badge */}
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      {alsLoading && <span className="h-2 w-2 rounded-full border border-[var(--color-brand-accent)] border-t-transparent animate-spin" />}
+                      <span className="text-[8px] font-mono font-bold text-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/10 px-1 py-0.5 rounded">ALS</span>
+                    </span>
                   </div>
+
+                  {/* ALS Autocomplete Suggestions Dropdown */}
+                  {alsSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg overflow-hidden">
+                      {alsSuggestions.map((place, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleAlsSelect(place)}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--bg-main)] transition-colors flex flex-col gap-0.5 border-b border-[var(--border-color)] last:border-0 cursor-pointer"
+                        >
+                          <span className="font-semibold text-[var(--text-main)] truncate">{place.municipality || place.label.split(',')[0]}</span>
+                          <span className="text-[10px] text-[var(--text-muted)] truncate">{place.region ? `${place.region}, India` : place.label}</span>
+                        </button>
+                      ))}
+                      <div className="px-3 py-1 text-[9px] text-[var(--text-muted)] font-mono flex items-center gap-1 bg-[var(--bg-main)]">
+                        <span className="text-[var(--color-brand-accent)] font-bold">Powered by Amazon Location Service</span>
+                      </div>
+                    </div>
+                  )}
+
 
                   {/* Severity Filter Pill Row */}
                   <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
@@ -694,7 +792,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           key={sev}
                           type="button"
                           onClick={() => { playClick(); setSeverityFilter(sev); }}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap transition-colors cursor-pointer border ${
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap transition-colors cursor-pointer border ${
                             active 
                               ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' 
                               : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] border-[var(--border-color)]'
@@ -704,6 +802,49 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* State / Region Focus Filter Chips (Amazon Location Service Multi-State Registry) */}
+                  <div className="flex flex-col gap-1 pt-1 border-t border-[var(--border-color)]">
+                    <div className="flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)]">
+                      <span className="flex items-center gap-1 font-semibold text-[var(--text-main)]">
+                        <Globe2 className="h-3 w-3 text-[var(--color-brand-accent)]" />
+                        Region Focus
+                      </span>
+                      <span className="text-[9px] opacity-75">18 States Ingested</span>
+                    </div>
+                    <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar pb-1">
+                      {[
+                        { label: '🇮🇳 All India', val: 'all', center: [20.5937, 78.9629] as [number, number], zoom: 5 },
+                        { label: 'Bengaluru', val: 'karnataka', center: [12.9716, 77.5946] as [number, number], zoom: 12 },
+                        { label: 'Bihar', val: 'bihar', center: [25.75, 85.50] as [number, number], zoom: 8 },
+                        { label: 'Telangana', val: 'telangana', center: [17.45, 78.50] as [number, number], zoom: 9 },
+                        { label: 'Manipur', val: 'manipur', center: [24.81, 93.94] as [number, number], zoom: 9 },
+                        { label: 'Assam', val: 'assam', center: [26.20, 92.50] as [number, number], zoom: 8 },
+                        { label: 'West Bengal', val: 'west bengal', center: [22.57, 88.36] as [number, number], zoom: 11 },
+                      ].map((reg) => {
+                        const active = selectedState === reg.val;
+                        return (
+                          <button
+                            key={reg.val}
+                            type="button"
+                            onClick={() => {
+                              playClick();
+                              setSelectedState(reg.val);
+                              setMapCenter(reg.center);
+                              setMapZoom(reg.zoom);
+                            }}
+                            className={`px-2 py-0.5 rounded-md text-[9px] font-mono font-medium whitespace-nowrap transition-all cursor-pointer border ${
+                              active
+                                ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] font-bold'
+                                : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] border-[var(--border-color)]'
+                            }`}
+                          >
+                            {reg.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   
                   <Link 
@@ -1057,149 +1198,172 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           </button>
         </Tooltip>
 
-        {/* 6. Proximity & Telemetry Legend / Intelligence Card Toggle */}
-        <Tooltip content={showInfo ? "Close Telemetry Panel" : "Proximity Telemetry"} position="left">
+        {/* 6. Nearby Safety & Route Info Toggle */}
+        <Tooltip content={showInfo ? "Close Nearby Safety" : "Nearby Safety & Alerts"} position="left">
           <button
             type="button"
             onClick={() => { playClick(); setShowInfo(!showInfo); }}
-            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer relative overflow-hidden ${
               showInfo 
-                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
+                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md rotate-0' 
                 : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
             }`}
-            aria-label="Toggle Proximity Telemetry Panel"
+            aria-label={showInfo ? "Close Nearby Safety and Alerts Panel" : "View Nearby Safety and Alerts"}
           >
-            {showInfo ? <X size={15} /> : <Info size={15} />}
+            <div className="relative w-4 h-4 flex items-center justify-center">
+              <span
+                className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  showInfo ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-75 pointer-events-none'
+                }`}
+              >
+                <X size={15} />
+              </span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  !showInfo ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-75 pointer-events-none'
+                }`}
+              >
+                <Info size={15} />
+              </span>
+            </div>
           </button>
         </Tooltip>
       </div>
 
       {/* ── SAHNIRMAAN Floating Map Intelligence & Proximity Radar Card (Anchored to the left of the vertical toolbar) ── */}
-      {showInfo && (
-        <div className="absolute top-3 right-14 sm:top-4 sm:right-16 z-20 w-80 sm:w-96 p-4 rounded-3xl backdrop-blur-2xl bg-[var(--bg-card)]/95 dark:bg-[#12100e]/95 border border-[var(--border-color)] dark:border-white/15 shadow-2xl space-y-3.5 pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
-          
-          {/* Header */}
-          <div className="flex items-center justify-between pb-2.5 border-b border-[var(--border-color)] dark:border-white/10">
-            <div className="flex items-center space-x-2 text-xs font-bold text-[var(--text-main)]">
-              <Radar size={15} className="text-[var(--color-brand-accent)] animate-spin" style={{ animationDuration: '8s' }} />
-              <span>Proximity & Route Intelligence</span>
-            </div>
-            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-              proximityIntelligence.hasRealGps 
-                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' 
-                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
-            }`}>
-              {proximityIntelligence.hasRealGps ? 'GPS Ground Lock' : 'City Grid Lock'}
-            </span>
-          </div>
-
-          {/* Metric 1: Route Blockage / Inundation Probability Bar */}
-          <div className="p-3 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-[var(--text-main)] flex items-center gap-1.5">
-                <Navigation2 size={13} className="text-[var(--color-brand-accent)]" />
-                Transit Route Blockage Risk
-              </span>
-              <span className={`font-mono font-bold text-xs ${
-                proximityIntelligence.routeInundationProb > 50 
-                  ? 'text-rose-600 dark:text-rose-400' 
-                  : proximityIntelligence.routeInundationProb > 25 
-                    ? 'text-amber-600 dark:text-amber-400' 
-                    : 'text-emerald-600 dark:text-emerald-400'
+      <AnimatePresence>
+        {showInfo && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, x: 8 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.95, x: 8 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute top-3 right-14 sm:top-4 sm:right-16 z-20 w-80 sm:w-96 p-4 rounded-3xl backdrop-blur-2xl bg-[var(--bg-card)]/95 dark:bg-[#12100e]/95 border border-[var(--border-color)] dark:border-white/15 shadow-2xl space-y-3.5 pointer-events-auto"
+          >
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2.5 border-b border-[var(--border-color)] dark:border-white/10">
+              <div className="flex items-center space-x-2 text-xs font-bold text-[var(--text-main)]">
+                <Radar size={15} className="text-[var(--color-brand-accent)] animate-spin" style={{ animationDuration: '8s' }} />
+                <span>Nearby Safety & Routes</span>
+              </div>
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                proximityIntelligence.hasRealGps 
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' 
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
               }`}>
-                {proximityIntelligence.routeInundationProb}%
+                {proximityIntelligence.hasRealGps ? 'GPS Ground Lock' : 'City Grid Lock'}
               </span>
             </div>
 
-            {/* Progress Bar Track */}
-            <div className="w-full h-2 rounded-full bg-[var(--border-color)]/60 dark:bg-white/10 overflow-hidden">
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${
+            {/* Metric 1: Route Blockage / Inundation Probability Bar */}
+            <div className="p-3 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-[var(--text-main)] flex items-center gap-1.5">
+                  <Navigation2 size={13} className="text-[var(--color-brand-accent)]" />
+                  Transit Route Blockage Risk
+                </span>
+                <span className={`font-mono font-bold text-xs ${
                   proximityIntelligence.routeInundationProb > 50 
-                    ? 'bg-rose-500' 
+                    ? 'text-rose-600 dark:text-rose-400' 
                     : proximityIntelligence.routeInundationProb > 25 
-                      ? 'bg-amber-500' 
-                      : 'bg-emerald-500'
-                }`}
-                style={{ width: `${Math.max(6, proximityIntelligence.routeInundationProb)}%` }}
-              />
+                      ? 'text-amber-600 dark:text-amber-400' 
+                      : 'text-emerald-600 dark:text-emerald-400'
+                }`}>
+                  {proximityIntelligence.routeInundationProb}%
+                </span>
+              </div>
+
+              {/* Progress Bar Track */}
+              <div className="w-full h-2 rounded-full bg-[var(--border-color)]/60 dark:bg-white/10 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    proximityIntelligence.routeInundationProb > 50 
+                      ? 'bg-rose-500' 
+                      : proximityIntelligence.routeInundationProb > 25 
+                        ? 'bg-amber-500' 
+                        : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.max(6, proximityIntelligence.routeInundationProb)}%` }}
+                />
+              </div>
+
+              <p className="text-[10px] text-[var(--text-muted)] font-mono leading-tight">
+                {proximityIntelligence.routeInundationProb > 50 
+                  ? 'High probability of stalled traffic or deep water on standard arterials.' 
+                  : proximityIntelligence.routeInundationProb > 25 
+                    ? 'Moderate ponding risk. Consider high-elevation bypass roads.' 
+                    : 'Low inundation risk along your immediate perimeter corridors.'}
+              </p>
             </div>
 
-            <p className="text-[10px] text-[var(--text-muted)] font-mono leading-tight">
-              {proximityIntelligence.routeInundationProb > 50 
-                ? 'High probability of stalled traffic or deep water on standard arterials.' 
-                : proximityIntelligence.routeInundationProb > 25 
-                  ? 'Moderate ponding risk. Consider high-elevation bypass roads.' 
-                  : 'Low inundation risk along your immediate perimeter corridors.'}
-            </p>
-          </div>
-
-          {/* Metric 2: Live Counts Around You (3km and 5km Rings) */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2.5 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
-              <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
-                <Droplets size={11} className="text-sky-500" />
-                <span>Within 3 km</span>
-              </div>
-              <div className="font-bold text-[var(--text-main)] text-sm mt-1 flex items-baseline gap-1">
-                <span>{proximityIntelligence.nearbyTotalWithin3km}</span>
-                <span className="text-[10px] font-mono text-[var(--text-muted)] font-normal">choke points</span>
-              </div>
-              <div className="text-[10px] font-mono text-rose-500 font-semibold mt-0.5">
-                {proximityIntelligence.nearbyCritical} critical severe
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
-              <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
-                <ShieldAlert size={11} className="text-amber-500" />
-                <span>Within 5 km</span>
-              </div>
-              <div className="font-bold text-[var(--text-main)] text-sm mt-1 flex items-baseline gap-1">
-                <span>{proximityIntelligence.nearbyTotalWithin5km}</span>
-                <span className="text-[10px] font-mono text-[var(--text-muted)] font-normal">total hotspots</span>
-              </div>
-              <div className="text-[10px] font-mono text-amber-500 font-semibold mt-0.5">
-                {proximityIntelligence.nearbyHigh} warning nodes
-              </div>
-            </div>
-          </div>
-
-          {/* Metric 3: Nearest Hazard Distance Callout */}
-          {proximityIntelligence.nearestDistanceKm && (
-            <div className="p-2.5 rounded-2xl bg-[var(--text-main)]/5 border border-[var(--border-color)] flex items-center justify-between text-xs">
-              <div className="min-w-0 pr-2">
-                <div className="text-[10px] font-mono uppercase text-[var(--text-muted)] font-bold">
-                  Nearest Hazard Node
+            {/* Metric 2: Live Counts Around You (3km and 5km Rings) */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2.5 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
+                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
+                  <Droplets size={11} className="text-sky-500" />
+                  <span>Within 3 km</span>
                 </div>
-                <div className="font-bold text-[var(--text-main)] truncate text-xs mt-0.5">
-                  {proximityIntelligence.nearestNodeTitle}
+                <div className="font-bold text-[var(--text-main)] text-sm mt-1 flex items-baseline gap-1">
+                  <span>{proximityIntelligence.nearbyTotalWithin3km}</span>
+                  <span className="text-[10px] font-mono text-[var(--text-muted)] font-normal">choke points</span>
+                </div>
+                <div className="text-[10px] font-mono text-rose-500 font-semibold mt-0.5">
+                  {proximityIntelligence.nearbyCritical} critical severe
                 </div>
               </div>
-              <span className="px-2 py-1 rounded-xl bg-[var(--bg-card)] font-mono font-bold text-xs text-[var(--color-brand-accent)] border border-[var(--border-color)] shrink-0 shadow-2xs">
-                {proximityIntelligence.nearestDistanceKm} km away
+
+              <div className="p-2.5 rounded-2xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
+                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
+                  <ShieldAlert size={11} className="text-amber-500" />
+                  <span>Within 5 km</span>
+                </div>
+                <div className="font-bold text-[var(--text-main)] text-sm mt-1 flex items-baseline gap-1">
+                  <span>{proximityIntelligence.nearbyTotalWithin5km}</span>
+                  <span className="text-[10px] font-mono text-[var(--text-muted)] font-normal">total hotspots</span>
+                </div>
+                <div className="text-[10px] font-mono text-amber-500 font-semibold mt-0.5">
+                  {proximityIntelligence.nearbyHigh} warning nodes
+                </div>
+              </div>
+            </div>
+
+            {/* Metric 3: Nearest Hazard Distance Callout */}
+            {proximityIntelligence.nearestDistanceKm && (
+              <div className="p-2.5 rounded-2xl bg-[var(--text-main)]/5 border border-[var(--border-color)] flex items-center justify-between text-xs">
+                <div className="min-w-0 pr-2">
+                  <div className="text-[10px] font-mono uppercase text-[var(--text-muted)] font-bold">
+                    Nearest Hazard Node
+                  </div>
+                  <div className="font-bold text-[var(--text-main)] truncate text-xs mt-0.5">
+                    {proximityIntelligence.nearestNodeTitle}
+                  </div>
+                </div>
+                <span className="px-2 py-1 rounded-xl bg-[var(--bg-card)] font-mono font-bold text-xs text-[var(--color-brand-accent)] border border-[var(--border-color)] shrink-0 shadow-2xs">
+                  {proximityIntelligence.nearestDistanceKm} km away
+                </span>
+              </div>
+            )}
+
+            {/* Footer Metadata */}
+            <div className="pt-2 border-t border-[var(--border-color)] dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)]">
+              <span className="flex items-center gap-1">
+                <CheckCircle2 size={11} className="text-emerald-500" />
+                <span>Municipal Data Synced</span>
               </span>
+              <Link 
+                to="/routes/best"
+                onClick={() => playClick()}
+                className="font-bold text-[var(--color-brand-accent)] hover:underline flex items-center gap-0.5"
+              >
+                <span>Safe Routes</span>
+                <RouteIcon size={10} />
+              </Link>
             </div>
-          )}
 
-          {/* Footer Metadata */}
-          <div className="pt-2 border-t border-[var(--border-color)] dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)]">
-            <span className="flex items-center gap-1">
-              <CheckCircle2 size={11} className="text-emerald-500" />
-              <span>Municipal Telemetry Synced</span>
-            </span>
-            <Link 
-              to="/routes/best"
-              onClick={() => playClick()}
-              className="font-bold text-[var(--color-brand-accent)] hover:underline flex items-center gap-0.5"
-            >
-              <span>Safe Routes</span>
-              <RouteIcon size={10} />
-            </Link>
-          </div>
-
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Dual-Engine Interactive Map View ── */}
       <div className="absolute inset-0 h-full w-full">
@@ -1295,6 +1459,27 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </Popup>
               </Marker>
             )}
+
+            {/* Amazon Location Service Search Result Pin */}
+            {geocodedPin && (
+              <Marker position={geocodedPin} icon={ALS_GEOCODED_ICON}>
+                <Popup className="neo-glass-popup">
+                  <div className="p-1 text-xs">
+                    <div className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                      <Globe2 className="h-3.5 w-3.5" />
+                      Amazon Location Service Pin
+                    </div>
+                    <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
+                      {destination}
+                    </div>
+                    <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
+                      {geocodedPin[0].toFixed(4)}° N, {geocodedPin[1].toFixed(4)}° E
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+
 
             {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
             {showHeatLayer && recurringClusters.slice(0, 8).map((cluster, cIdx) => (
