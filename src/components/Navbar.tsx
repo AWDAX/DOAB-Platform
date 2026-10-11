@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Search, Compass, Settings, X, MapPin, Route as RouteIcon, Bell, User, Sun, Droplets, ShieldAlert } from 'lucide-react';
+import { Menu, Search, Compass, Settings, X, MapPin, Route as RouteIcon, Bell, User, Sun, Droplets, ShieldAlert, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Tooltip from './Tooltip';
@@ -362,25 +362,31 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                       })}
                     </div>
 
-                    {/* Footer View All Link */}
-                    <div className="p-2 border-t border-[var(--border-color)] bg-[var(--bg-main)]/60 flex items-center justify-between text-xs">
+                    {/* Footer View All Link & Close Controls */}
+                    <div className="p-2.5 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)]/80 backdrop-blur-md flex items-center justify-between gap-2 text-xs">
                       <Link
                         to="/notifications"
                         onClick={() => {
                           playClick();
                           setIsAlertsOpen(false);
                         }}
-                        className="text-[11px] font-bold text-[var(--color-brand-accent)] hover:underline flex items-center gap-1"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none group"
                       >
                         <span>View All Alerts Page</span>
-                        <span>→</span>
+                        <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
+                      
                       <button
                         type="button"
-                        onClick={() => setIsAlertsOpen(false)}
-                        className="text-[10px] font-mono text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                        onClick={() => {
+                          playClick();
+                          setIsAlertsOpen(false);
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/30 hover:bg-[var(--text-main)]/5 active:scale-98 transition-all cursor-pointer select-none"
+                        aria-label="Close Alerts Panel"
                       >
-                        Close
+                        <X size={12} />
+                        <span>Close</span>
                       </button>
                     </div>
                   </motion.div>
