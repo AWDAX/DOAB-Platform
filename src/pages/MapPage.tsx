@@ -247,6 +247,28 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
+  // Unread AI Response indicator state (blue dot appears only when new response from AI is present)
+  const [hasNewAiResponse, setHasNewAiResponse] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('doab_has_unread_ai_response') === 'true';
+    } catch (_) {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const onNewAiMessage = () => setHasNewAiResponse(true);
+    const onAiRead = () => setHasNewAiResponse(false);
+
+    window.addEventListener('doab:ai-new-message', onNewAiMessage);
+    window.addEventListener('doab:ai-read', onAiRead);
+
+    return () => {
+      window.removeEventListener('doab:ai-new-message', onNewAiMessage);
+      window.removeEventListener('doab:ai-read', onAiRead);
+    };
+  }, []);
+
   // Real-time Spatial & Proximity Intelligence Metrics
   const proximityIntelligence = useMemo(() => {
     const lat1 = userCoords[0];
@@ -934,6 +956,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             type="button"
             onClick={() => {
               playClick();
+              setHasNewAiResponse(false);
+              try {
+                localStorage.removeItem('doab_has_unread_ai_response');
+              } catch (_) {}
               window.dispatchEvent(new CustomEvent('doab:open-assistant'));
             }}
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 group relative"
@@ -942,7 +968,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             <div className="w-5 h-5 rounded-full overflow-hidden bg-black/5 dark:bg-white/10 flex items-center justify-center border border-[var(--border-color)] dark:border-white/20 group-hover:scale-110 transition-transform">
               <AIOrbFace state="idle" size={20} />
             </div>
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--color-brand-accent)] ring-2 ring-[var(--bg-card)]" />
+            {hasNewAiResponse && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--color-brand-accent)] ring-2 ring-[var(--bg-card)] animate-pulse" />
+            )}
           </button>
         </Tooltip>
 

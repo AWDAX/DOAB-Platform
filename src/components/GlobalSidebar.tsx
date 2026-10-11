@@ -155,10 +155,10 @@ export default function GlobalSidebar() {
                     playClick();
                     window.dispatchEvent(new CustomEvent('doab:open-tour'));
                   }}
-                  className="p-1.5 rounded-xl text-[var(--color-brand-accent)] hover:bg-[var(--color-brand-accent)]/10 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
                   aria-label="Start Page Guided Tour"
                 >
-                  <Compass className="h-4.5 w-4.5 text-[var(--color-brand-accent)] transition-transform duration-500 hover:rotate-45" />
+                  <Compass className="h-4.5 w-4.5 text-current transition-transform duration-500 hover:rotate-45" />
                 </button>
               </Tooltip>
               <button
@@ -181,10 +181,10 @@ export default function GlobalSidebar() {
                   playClick();
                   window.dispatchEvent(new CustomEvent('doab:open-tour'));
                 }}
-                className="w-10 h-10 rounded-xl text-[var(--color-brand-accent)] hover:bg-[var(--color-brand-accent)]/10 transition-colors flex items-center justify-center cursor-pointer mx-auto"
+                className="w-10 h-10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors flex items-center justify-center cursor-pointer mx-auto"
                 aria-label="Start Page Guided Tour"
               >
-                <Compass className="h-4.5 w-4.5 text-[var(--color-brand-accent)]" />
+                <Compass className="h-4.5 w-4.5 text-current" />
               </button>
             </Tooltip>
             <Tooltip content="Expand Sidebar" shortcut="[" position="right" className="w-full flex justify-center">

@@ -369,10 +369,26 @@ export default function VoiceAssistant() {
 
   // Listen for global custom event to trigger Assistant from Sidebar or shortcuts
   useEffect(() => {
-    const handleOpenAssistant = () => setIsOpen(true);
+    const handleOpenAssistant = () => {
+      setIsOpen(true);
+      try {
+        localStorage.removeItem('doab_has_unread_ai_response');
+        window.dispatchEvent(new CustomEvent('doab:ai-read'));
+      } catch (_) {}
+    };
     window.addEventListener('doab:open-assistant', handleOpenAssistant);
     return () => window.removeEventListener('doab:open-assistant', handleOpenAssistant);
   }, []);
+
+  // Also clear unread status when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        localStorage.removeItem('doab_has_unread_ai_response');
+        window.dispatchEvent(new CustomEvent('doab:ai-read'));
+      } catch (_) {}
+    }
+  }, [isOpen]);
 
   const activeOrbState = isListening ? 'listening' : isThinking ? 'thinking' : 'idle';
   const currentSuggestion = ROTATING_SUGGESTIONS[suggestionIdx];
