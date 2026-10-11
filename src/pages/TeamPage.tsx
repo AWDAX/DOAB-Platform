@@ -10,14 +10,12 @@ import {
   ShieldCheck,
   Radio,
   ChevronRight,
-  ChevronLeft,
-  Compass
+  ChevronLeft
 } from 'lucide-react';
 import { TEAM_MEMBERS, PLATFORM_STATS, CORE_PILLARS, type TeamMember } from '../data/team';
 import { playClick } from '../utils/soundFx';
 import BrandLogo from '../components/BrandLogo';
 import ThemeToggle from '../components/ThemeToggle';
-import EnvToggle from '../components/EnvToggle';
 import Tooltip from '../components/Tooltip';
 import FooterParticles from '../components/FooterParticles';
 
@@ -43,12 +41,12 @@ function LinkedinIcon({ className = "h-4 w-4" }: { className?: string }) {
 interface TeamPageProps {
   isDarkMode: boolean;
   toggleTheme: () => void;
-  envMode: 'flood' | 'drought';
-  toggleEnvMode: () => void;
+  envMode?: 'flood' | 'drought';
+  toggleEnvMode?: () => void;
   onOpenTour?: () => void;
 }
 
-export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMode, onOpenTour }: TeamPageProps) {
+export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
   const navigate = useNavigate();
   const [lightboxMember, setLightboxMember] = useState<TeamMember | null>(null);
   const [lightboxTilt, setLightboxTilt] = useState({ x: 0, y: 0 });
@@ -158,52 +156,66 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
         </span>
       </div>
 
-      {/* Floating Morphing Header Bar */}
-      <header className={`sticky top-0 z-40 transition-all duration-300 ${
-        scrolled 
-          ? 'py-2.5 bg-[var(--bg-card)]/90 backdrop-blur-xl border-b border-[var(--border-color)] shadow-sm' 
-          : 'py-4 bg-transparent border-b border-transparent'
-      }`}>
-        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] shadow-2xs hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back</span>
-            </button>
-          </div>
+      {/* ── Dynamic Morphing Navbar (SAHNIRMAAN / SWATVA Standard) ── */}
+      <header className={`portfolio-header ${scrolled ? 'scrolled' : ''}`}>
+        
+        {/* Left: Back Action Button & Brand */}
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] shadow-2xs hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-all cursor-pointer group"
+            aria-label="Back to previous page"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+            <span>Back</span>
+          </button>
 
-          <Link to="/" onClick={() => playClick()} className="flex items-center gap-2.5">
+          <Link to="/" onClick={() => playClick()} className="flex items-center gap-2 group cursor-pointer ml-1">
             <BrandLogo size="sm" />
-            <span className="font-bold text-sm tracking-tight text-[var(--text-main)]">DOAB</span>
+            <div className={`flex flex-col overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              scrolled ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none' : 'max-w-[140px] opacity-100 translate-x-0'
+            }`}>
+              <span className="font-bold text-xs tracking-tight text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] transition-colors whitespace-nowrap">
+                DOAB
+              </span>
+              <span className="text-[9px] text-[var(--text-muted)] tracking-tight leading-none whitespace-nowrap">
+                Contrarians
+              </span>
+            </div>
           </Link>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <Tooltip content={envMode === 'flood' ? "Drought" : "Flood"} shortcut="Shift+E" position="bottom">
-              <EnvToggle envMode={envMode} toggleEnvMode={toggleEnvMode} />
-            </Tooltip>
+        {/* Center: Clean Nav Links with Dotted Animated Underlines */}
+        <nav className="hidden md:flex items-center gap-5 text-xs font-semibold text-[var(--text-muted)]">
+          <button type="button" onClick={() => { playClick(); document.getElementById('tour-team-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
+            <Users2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+            <span>Architects</span>
+          </button>
+          <button type="button" onClick={() => { playClick(); document.getElementById('tour-team-stats')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+            <span>Benchmarks</span>
+          </button>
+          <button type="button" onClick={() => { playClick(); document.getElementById('tour-team-pillars')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
+            <Radio className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+            <span>Pillars</span>
+          </button>
+        </nav>
 
-            <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
-              <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
-            </Tooltip>
+        {/* Right: Clean Theme Toggle & Sign In / Operations Link */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
+            <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
+          </Tooltip>
 
-            {onOpenTour && (
-              <Tooltip content="Start Team Tour" shortcut="Shift+T" position="bottom">
-                <button
-                  type="button"
-                  id="tour-team-guide-btn"
-                  onClick={() => { playClick(); onOpenTour(); }}
-                  className="w-8 h-8 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
-                  aria-label="Start Team Page Tour"
-                >
-                  <Compass className="h-4 w-4 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-45" />
-                </button>
-              </Tooltip>
-            )}
-          </div>
+          <Link
+            to="/"
+            onClick={() => playClick()}
+            className="flex px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap items-center gap-1.5 transition-all duration-200 border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] shadow-2xs cursor-pointer group ml-1"
+          >
+            <span>Operations Grid</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-current transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 flex-shrink-0" />
+          </Link>
         </div>
       </header>
 
