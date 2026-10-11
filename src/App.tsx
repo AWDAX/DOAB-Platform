@@ -18,6 +18,28 @@ import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Map, History, Route as RouteIcon, Bell, User } from 'lucide-react';
 import { playClick, initGlobalClickSound } from './utils/soundFx';
+import Lenis from 'lenis';
+
+/**
+ * Auto-detect seasonal climate mode:
+ * Indian Monsoon (June to Sept -> Months 5, 6, 7, 8) => 'flood'
+ * Indian Summer / Scarcity (March to May -> Months 2, 3, 4) => 'drought'
+ * Post-Monsoon / Winter (Oct to Feb) => Defaults to user preference or 'flood'
+ */
+function getInitialSeasonalClimateMode(): 'flood' | 'drought' {
+  try {
+    const saved = localStorage.getItem('doab_env_mode_preference');
+    if (saved === 'flood' || saved === 'drought') return saved;
+  } catch {}
+
+  const month = new Date().getMonth(); // 0-indexed (0 = Jan, 5 = June, 8 = Sept)
+  if (month >= 5 && month <= 8) {
+    return 'flood';
+  } else if (month >= 2 && month <= 4) {
+    return 'drought';
+  }
+  return 'flood';
+}
 
 function BottomNav() {
   const location = useLocation();
@@ -82,7 +104,7 @@ function DashboardLayout({
   children: React.ReactNode; 
   isStandalonePage?: boolean;
 }) {
-  if (isStandalonePage) return <div className="flex-1 overflow-y-auto">{children}</div>;
+  if (isStandalonePage) return <div className="flex-1 w-full">{children}</div>;
 
   return (
     <div className="flex-1 min-h-0 w-full max-w-[1920px] 2xl:max-w-full mx-auto px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 flex flex-col md:flex-row gap-2.5 sm:gap-3 md:gap-4 z-10 overflow-hidden h-[calc(100dvh-4rem)] pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-2.5">
@@ -201,7 +223,9 @@ function AppContent({
   }, [setIsPermissionsOpen, setIsDangerBroadcastOpen, setIsTourOpen, setIsPreferencesOpen]);
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] flex flex-col font-sans transition-colors duration-200 max-w-full bg-[var(--bg-main)] text-[var(--text-main)] selection:bg-[var(--color-brand-accent)] selection:text-white antialiased overflow-hidden">
+    <div className={`flex flex-col font-sans transition-colors duration-200 max-w-full bg-[var(--bg-main)] text-[var(--text-main)] selection:bg-[var(--color-brand-accent)] selection:text-white antialiased ${
+      isStandalonePage ? 'min-h-[100dvh]' : 'h-[100dvh] max-h-[100dvh] overflow-hidden'
+    }`}>
       <SplashLoader />
       
       {!isStandalonePage && (
@@ -387,12 +411,42 @@ function AppContent({
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [envMode, setEnvMode] = useState<'flood' | 'drought'>('flood');
+  const [envMode, setEnvMode] = useState<'flood' | 'drought'>(getInitialSeasonalClimateMode);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isPermissionsOpen, setIsPermissionsOpen] = useState(false);
   const [isDangerBroadcastOpen, setIsDangerBroadcastOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
+
+  // Initialize Lenis smooth scroll everywhere
+  useEffect(() => {
+    let lenis: Lenis | null = null;
+    try {
+      lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        touchMultiplier: 1.5,
+        infinite: false,
+      });
+
+      (window as any).lenis = lenis;
+
+      let rafId: number;
+      function raf(time: number) {
+        lenis?.raf(time);
+        rafId = requestAnimationFrame(raf);
+      }
+      rafId = requestAnimationFrame(raf);
+
+      return () => {
+        cancelAnimationFrame(rafId);
+        lenis?.destroy();
+        (window as any).lenis = null;
+      };
+    } catch {
+      // Graceful fallback if Lenis fails to initialize
+    }
+  }, []);
 
   useEffect(() => {
     initGlobalClickSound();
@@ -405,6 +459,10 @@ function App() {
 
     if (envMode === 'drought') root.classList.add('theme-drought');
     else root.classList.remove('theme-drought');
+
+    try {
+      localStorage.setItem('doab_env_mode_preference', envMode);
+    } catch {}
   }, [isDarkMode, envMode]);
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);

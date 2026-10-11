@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Route as RouteIcon, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
+import { playClick } from '../utils/soundFx';
 
 const ORIGIN = { lat: 12.9716, lng: 77.5946 };
 
@@ -31,6 +32,7 @@ export default function BestRoutesPage() {
   const [body, setBody] = useState<RouteResponse | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [active, setActive] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -61,12 +63,50 @@ export default function BestRoutesPage() {
           </h1>
           <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">{copy.notASensor}</p>
         </div>
-        <div id="tour-best-switcher" className="flex items-center gap-2 self-start sm:self-auto bg-[var(--bg-main)] p-1.5 rounded-2xl border border-[var(--border-color)]">
-          <button type="button" className="p-2 rounded-xl text-[var(--text-main)]" onClick={() => setActive((value) => Math.max(0, value - 1))} aria-label="Previous route">←</button>
-          <span className="text-xs font-mono font-semibold px-2.5 text-[var(--text-main)] tabular-nums">
-            {routes.length ? `${active + 1} / ${routes.length}` : '0 / 0'}
-          </span>
-          <button type="button" className="p-2 rounded-xl text-[var(--text-main)]" onClick={() => setActive((value) => Math.min(routes.length - 1, value + 1))} aria-label="Next route">→</button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {/* Share Route Button (SWATVA / SAHNIRMAAN Standard) */}
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              const shareData = {
+                title: 'DOAB Safe Elevation Route',
+                text: current ? `Safe Route: ${current.summary} (${formatKm(current.distance_meters)}, ${formatMinutes(current.duration_seconds)} - Risk: ${riskLabel(current, copy)})` : 'Check safe bypass routes on DOAB',
+                url: current?.maps_url || window.location.href,
+              };
+
+              if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+                navigator.share(shareData).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(shareData.url).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }).catch(() => {});
+              }
+            }}
+            className="px-3.5 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95 group"
+            title="Share safe route with friends or emergency contacts"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Link Copied!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)] group-hover:text-current transition-colors" />
+                <span>Share Route</span>
+              </>
+            )}
+          </button>
+
+          <div id="tour-best-switcher" className="flex items-center gap-2 bg-[var(--bg-main)] p-1.5 rounded-full border border-[var(--border-color)]">
+            <button type="button" className="p-1.5 px-2.5 rounded-full text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer" onClick={() => setActive((value) => Math.max(0, value - 1))} aria-label="Previous route">←</button>
+            <span className="text-xs font-mono font-semibold px-2 text-[var(--text-main)] tabular-nums">
+              {routes.length ? `${active + 1} / ${routes.length}` : '0 / 0'}
+            </span>
+            <button type="button" className="p-1.5 px-2.5 rounded-full text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer" onClick={() => setActive((value) => Math.min(routes.length - 1, value + 1))} aria-label="Next route">→</button>
+          </div>
         </div>
       </div>
 

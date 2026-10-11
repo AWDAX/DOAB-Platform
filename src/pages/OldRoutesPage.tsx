@@ -1,16 +1,122 @@
-import { History, Route, Camera, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import { History, Route, Camera, CheckCircle, Download, FileSpreadsheet } from 'lucide-react';
+import { playClick } from '../utils/soundFx';
+
+const SAMPLE_TRAVERSED_HISTORY = [
+  {
+    id: 'TRV-2026-001',
+    route: 'MG Road to Railway Hub',
+    timestamp: '2026-10-10 18:42',
+    predictedRiskPercent: 8.5,
+    riskClassification: 'Safe',
+    actualEncounter: 'Clear Dry',
+    floodDepthCm: 0,
+    status: 'Accurate',
+    elevationMarginM: 14.2,
+    riderVerificationScore: 50
+  },
+  {
+    id: 'TRV-2026-002',
+    route: 'Ward 14 South Link',
+    timestamp: '2026-10-09 09:15',
+    predictedRiskPercent: 62.0,
+    riskClassification: 'High',
+    actualEncounter: '1.8ft Flood',
+    floodDepthCm: 55,
+    status: 'Waterlogged',
+    elevationMarginM: -1.8,
+    riderVerificationScore: 50
+  },
+  {
+    id: 'TRV-2026-003',
+    route: 'Harmu River Bypass Corridor',
+    timestamp: '2026-10-08 14:30',
+    predictedRiskPercent: 12.4,
+    riskClassification: 'Low',
+    actualEncounter: 'Damp Surface',
+    floodDepthCm: 2,
+    status: 'Accurate',
+    elevationMarginM: 8.5,
+    riderVerificationScore: 35
+  }
+];
 
 export default function OldRoutesPage() {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCSV = () => {
+    playClick();
+    setIsExporting(true);
+
+    try {
+      const headers = [
+        'Traversal ID',
+        'Route Summary',
+        'Timestamp',
+        'Predicted Risk (%)',
+        'Risk Level',
+        'Actual Ground Encounter',
+        'Flood Depth (cm)',
+        'Accuracy Status',
+        'Elevation Margin (m)',
+        'Trust Points Earned'
+      ];
+
+      const rows = SAMPLE_TRAVERSED_HISTORY.map((item) => [
+        `"${item.id}"`,
+        `"${item.route}"`,
+        `"${item.timestamp}"`,
+        item.predictedRiskPercent,
+        `"${item.riskClassification}"`,
+        `"${item.actualEncounter}"`,
+        item.floodDepthCm,
+        `"${item.status}"`,
+        item.elevationMarginM,
+        item.riderVerificationScore
+      ]);
+
+      const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `DOAB_Route_Traversal_History_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export history CSV:', err);
+    } finally {
+      setTimeout(() => setIsExporting(false), 500);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto custom-scrollbar">
-      <div id="tour-history-header" className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
-          <History className="h-6 w-6 text-[var(--color-brand-accent)]" />
-          Route Traversal History & Back-Check
-        </h1>
-        <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">
-          Historical traversed routes, model prediction accuracy scores, and citizen ground-truth verification.
-        </p>
+      <div id="tour-history-header" className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
+            <History className="h-6 w-6 text-[var(--color-brand-accent)]" />
+            Route Traversal History & Back-Check
+          </h1>
+          <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">
+            Historical traversed routes, model prediction accuracy scores, and citizen ground-truth verification.
+          </p>
+        </div>
+
+        {/* Export CSV / Export History Button (SAHNIRMAAN / SWATVA Standard) */}
+        <button
+          type="button"
+          onClick={handleExportCSV}
+          disabled={isExporting}
+          className="self-start sm:self-auto px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-bold transition-all duration-200 shadow-2xs flex items-center gap-2 cursor-pointer group shrink-0 active:scale-95"
+          title="Export traversed paths and risk history to CSV"
+        >
+          <FileSpreadsheet className="h-4 w-4 text-[var(--color-brand-accent)] group-hover:text-current transition-colors" />
+          <span>{isExporting ? 'Generating CSV...' : 'Export History (CSV)'}</span>
+          <Download className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors" />
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

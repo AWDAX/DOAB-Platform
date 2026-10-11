@@ -73,7 +73,42 @@
 
   html {
     scroll-behavior: smooth;
-    scrollbar-color: rgba(115, 115, 115, 0.28) transparent;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.28) transparent;
+  }
+
+  /* Lenis smooth scrolling standard */
+  html.lenis, html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+  .lenis.lenis-scrolling iframe {
+    pointer-events: none;
+  }
+
+  /* Thin Minimalist Scrollbar (SAHNIRMAAN Standard - 6px) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.28);
+    border-radius: 9999px;
+    transition: background 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.48);
   }
 
   .login-page-container {
@@ -81,7 +116,13 @@
   }
 
   .dark html, html.dark {
-    scrollbar-color: rgba(212, 212, 212, 0.22) transparent;
+    scrollbar-color: rgba(148, 163, 184, 0.22) transparent;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.28);
   }
 
   /* Acclaimed Heading Typography from SWATVA & SAHNIRMAAN */
@@ -435,10 +476,10 @@ body.dark .cursor-grab:active {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   SWATVA / SAHNIRMAAN Black Gradient Hero Heading
+   SWATVA / SAHNIRMAAN Black Gradient Hero Heading (Harmonized Color Theory)
    ══════════════════════════════════════════════════════════════════════════ */
 .hero-headline-black-gradient {
-  background-image: linear-gradient(180deg, #0a0a0a 0%, #262626 55%, #525252 100%) !important;
+  background-image: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
@@ -447,7 +488,7 @@ body.dark .cursor-grab:active {
 }
 
 .dark .hero-headline-black-gradient {
-  background-image: linear-gradient(180deg, #ffffff 0%, #f5f5f5 55%, #a3a3a3 100%) !important;
+  background-image: linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 50%, #94A3B8 100%) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;

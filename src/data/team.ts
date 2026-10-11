@@ -25,8 +25,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     avatar: '/team/suneet-chugh.jpg',
     fallbackAvatar: 'https://ui-avatars.com/api/?name=Suneet+Chugh&background=0284c7&color=fff',
     tags: ['React 19', 'MapLibre GIS', 'Civic Research', 'UI Systems', 'Vite PWA'],
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com'
+    github: 'https://github.com/suneetchugh-dev',
+    linkedin: 'https://www.linkedin.com/in/suneetchugh-dev/'
   },
   {
     id: 'member-2',
@@ -39,8 +39,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     avatar: '/team/sarvapriya-harsh.jpg',
     fallbackAvatar: 'https://ui-avatars.com/api/?name=Sarvapriya+Harsh&background=0284c7&color=fff',
     tags: ['Python', 'FastAPI', 'PyTorch ML', 'Hydrology Models', 'PostgreSQL'],
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com'
+    github: 'https://github.com/sarvapriya12',
+    linkedin: 'https://www.linkedin.com/in/sarvapriya-harsh/'
   },
   {
     id: 'member-3',
@@ -53,8 +53,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     avatar: '/team/harshit-chauhan.jpg',
     fallbackAvatar: 'https://ui-avatars.com/api/?name=Harshit+Chauhan&background=d97706&color=fff',
     tags: ['Design Systems', 'Framer Motion', 'Emergency UX', 'Tailwind CSS', 'Accessibility'],
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com'
+    github: 'https://github.com/harsh4k',
+    linkedin: 'https://www.linkedin.com/in/harshitchauhan-dev/'
   },
   {
     id: 'member-4',
@@ -67,8 +67,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     avatar: '/team/jatin-jha.jpg',
     fallbackAvatar: 'https://ui-avatars.com/api/?name=Jatin+Jha&background=0284c7&color=fff',
     tags: ['Cloud Infrastructure', 'DevOps', 'Docker', 'WebSockets', 'Full-Stack Dev'],
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com'
+    github: 'https://github.com/jatin0jha',
+    linkedin: 'https://www.linkedin.com/in/jhajatin/'
   }
 ];
 

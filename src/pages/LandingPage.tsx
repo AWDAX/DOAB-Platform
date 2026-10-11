@@ -110,7 +110,7 @@ interface LandingPageProps {
 export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', user, onOpenTour }: LandingPageProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedModeTab, setSelectedModeTab] = useState<'flood' | 'drought'>(envMode);
   const [scrolled, setScrolled] = useState(false);
@@ -228,7 +228,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         }`} />
 
         {/* Center: Clean Nav Links with Dotted Animated Underlines */}
-        <nav className="hidden md:flex items-center gap-4 text-xs font-semibold text-[var(--text-muted)]">
+        <nav className="hidden md:flex items-center gap-5 text-xs font-semibold text-[var(--text-muted)]">
           <button type="button" onClick={() => scrollTo('loop')} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
             <Layers className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
             <span>The Loop</span>
@@ -245,10 +245,6 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             <HelpCircle className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
             <span>FAQ</span>
           </button>
-          <Link to="/team" onClick={() => playClick()} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
-            <BrandLogo size="sm" />
-            <span>Meet Team</span>
-          </Link>
         </nav>
 
         {/* Center-to-Right Vertical Divider Line (Scrolled only) */}
@@ -425,7 +421,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             </kbd>
             <button
               type="submit"
-              className="px-3.5 py-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl text-xs font-bold hover:opacity-90 transition-opacity shrink-0 flex items-center gap-1 cursor-pointer shadow-xs"
+              className="px-4 py-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-full text-xs font-bold hover:opacity-90 active:scale-95 transition-all shrink-0 flex items-center gap-1 cursor-pointer shadow-xs"
             >
               <span>Explore</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -433,12 +429,12 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           </form>
         </div>
 
-        {/* Primary Action Buttons */}
+        {/* Primary Action Buttons (Fully Ovalish SAHNIRMAAN Standard) */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-14">
           <Link
             to={user ? "/" : "/login"}
             onClick={() => playClick()}
-            className="px-5 py-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs sm:text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
+            className="px-6 py-2.5 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] text-xs sm:text-sm font-bold flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer group"
           >
             <MapPin className="h-4 w-4" />
             <span>{user ? "Open Operations Map" : "Launch Grid"}</span>
@@ -446,7 +442,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           <Link
             to={user ? "/routes/best" : "/login"}
             onClick={() => playClick()}
-            className="px-5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] text-xs sm:text-sm font-semibold flex items-center gap-2 hover:bg-[var(--bg-main)] transition-colors shadow-2xs cursor-pointer"
+            className="px-6 py-2.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] text-xs sm:text-sm font-semibold flex items-center gap-2 hover:bg-[var(--bg-main)] active:scale-95 transition-all shadow-2xs cursor-pointer group"
           >
             <RouteIcon className="h-4 w-4 text-[var(--color-brand-accent)]" />
             <span>{user ? "Safe Routes" : "Access Safe Routes"}</span>
@@ -530,31 +526,45 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           </p>
         </div>
 
-        {/* Mode Selector Pill */}
+        {/* Mode Selector Pill with Animated Moving Background Pill */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs">
+          <div className="inline-flex p-1.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm relative">
             <button
               type="button"
               onClick={() => { playClick(); setSelectedModeTab('flood'); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`relative px-5 py-2 rounded-full text-xs font-bold transition-colors duration-200 cursor-pointer flex items-center gap-2 z-10 ${
                 selectedModeTab === 'flood'
-                  ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
+                  ? 'text-[var(--bg-card)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
               }`}
             >
-              <Droplets className="h-3.5 w-3.5" />
+              {selectedModeTab === 'flood' && (
+                <motion.div
+                  layoutId="landingModePill"
+                  className="absolute inset-0 bg-[var(--text-main)] rounded-full -z-10 shadow-xs"
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
+              )}
+              <Droplets className={`h-4 w-4 transition-transform duration-200 ${selectedModeTab === 'flood' ? 'scale-110' : ''}`} />
               <span>Monsoon (Flood)</span>
             </button>
             <button
               type="button"
               onClick={() => { playClick(); setSelectedModeTab('drought'); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`relative px-5 py-2 rounded-full text-xs font-bold transition-colors duration-200 cursor-pointer flex items-center gap-2 z-10 ${
                 selectedModeTab === 'drought'
-                  ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
+                  ? 'text-[var(--bg-card)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
               }`}
             >
-              <Sun className="h-3.5 w-3.5" />
+              {selectedModeTab === 'drought' && (
+                <motion.div
+                  layoutId="landingModePill"
+                  className="absolute inset-0 bg-[var(--text-main)] rounded-full -z-10 shadow-xs"
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
+              )}
+              <Sun className={`h-4 w-4 transition-transform duration-200 ${selectedModeTab === 'drought' ? 'scale-110' : ''}`} />
               <span>Scarcity (Drought)</span>
             </button>
           </div>
@@ -734,13 +744,13 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
       <section className="w-full flex flex-col justify-center items-center text-center relative px-4 sm:px-6 py-16 sm:py-24 overflow-hidden border-t border-[var(--border-color)]">
         {/* Dual-Climate Dynamic Water Flowing / Desert Dunes Vector Artwork */}
         <div className="w-full max-w-4xl mx-auto mb-6 sm:mb-8 px-2 flex justify-center">
-          <ClimateDualWaveSvg envMode={envMode} />
+          <ClimateDualWaveSvg envMode={selectedModeTab} />
         </div>
 
         {/* Section Headline */}
         <div className="max-w-2xl mx-auto z-10 flex flex-col items-center">
           <span className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest text-[var(--color-brand-accent)] mb-2 px-3 py-1 rounded-full bg-[var(--color-brand-accent)]/10 border border-[var(--color-brand-accent)]/20">
-            {envMode === 'flood' ? 'Dual-Climate Monsoon Response' : 'Groundwater Deficit Telemetry'}
+            {selectedModeTab === 'flood' ? 'Dual-Climate Monsoon Response' : 'Groundwater Deficit Telemetry'}
           </span>
           
           <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-[var(--text-main)] tracking-tight mb-4 text-balance leading-tight">
@@ -748,15 +758,15 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           </h2>
           
           <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-lg mx-auto mb-8 text-balance">
-            Access 1-hour hydrological forecast estimates, compute safe elevation bypasses around waterlogged corridors, or log citizen ground-truth back-checks.
+            Access 1-hour hydrological estimates, compute safe elevation bypasses, or log photo back-checks.
           </p>
 
-          {/* Action CTAs: Solid Primary Button + Secondary Outlined Button */}
+          {/* Action CTAs: Solid Primary Button + Secondary Outlined Button (Fully Ovalish) */}
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               to={user ? "/" : "/login"}
               onClick={() => playClick()}
-              className="px-6 sm:px-7 py-3 bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-bold rounded-full hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md cursor-pointer flex items-center gap-2 group"
+              className="px-7 py-3 bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-bold rounded-full hover:opacity-90 active:scale-95 transition-all duration-300 shadow-md cursor-pointer flex items-center gap-2 group"
             >
               <span>{user ? 'Enter Operations Grid' : 'Initialize DOAB Account'}</span>
               <ArrowUpRight className="h-4 w-4 stroke-[2.5] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -765,7 +775,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             <Link
               to="/team"
               onClick={() => playClick()}
-              className="px-6 py-3 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] text-xs font-semibold rounded-full hover:bg-[var(--bg-main)] transition-colors shadow-2xs cursor-pointer flex items-center gap-2"
+              className="px-6 py-3 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] text-xs font-semibold rounded-full hover:bg-[var(--bg-main)] active:scale-95 transition-all duration-300 shadow-2xs cursor-pointer flex items-center gap-2 group"
             >
               <BrandLogo size="sm" />
               <span>Meet Contrarians</span>
@@ -831,8 +841,18 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
               <Link to={user ? "/profile" : "/login"} onClick={() => playClick()} className="hover:text-[var(--text-main)] transition-colors">Entity Profile</Link>
             </div>
 
-            <div className="text-[10px] font-mono text-[var(--text-muted)]">
-              DOAB • Civic Life-Safety & Dispatch Infrastructure
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                DOAB • Civic Infrastructure
+              </span>
+              <span className="h-3 w-px bg-[var(--border-color)]" aria-hidden="true" />
+              <Link
+                to="/team"
+                onClick={() => playClick()}
+                className="text-[9px] uppercase tracking-[0.18em] text-[var(--text-muted)] font-medium hover:text-[var(--text-main)] transition-colors cursor-pointer hover:underline whitespace-nowrap font-mono"
+              >
+                BY Contrarians
+              </Link>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Map, Route as RouteIcon, History, Bell, User, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Map, Route as RouteIcon, History, Bell, User, LogOut, PanelLeftClose, PanelLeftOpen, Users2 } from 'lucide-react';
 import { playClick } from '../utils/soundFx';
 import { firebaseSignOut } from '../lib/firebase';
 import Tooltip from './Tooltip';
@@ -25,6 +25,7 @@ export default function GlobalSidebar() {
 
   const bottomItems = [
     { id: 'profile', path: '/profile', icon: User, label: 'Profile', shortcut: '5' },
+    { id: 'team', path: '/team', icon: Users2, label: 'Meet Contrarians', shortcut: '6' },
   ];
 
   const renderLink = (item: any) => {
