@@ -108,8 +108,15 @@ export default function BestRoutesPage() {
   const [copied, setCopied] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
   const [savedOffline, setSavedOffline] = useState(false);
-  const [deletedIds, setDeletedIds] = useState<string[]>([]);
-  const [routePendingDelete, setRoutePendingDelete] = useState<{ index: number; summary: string } | null>(null);
+  const [deletedSummaries, setDeletedSummaries] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('doab_deleted_route_summaries');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [routePendingDelete, setRoutePendingDelete] = useState<{ summary: string } | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [customOrigin, setCustomOrigin] = useState('');
   const [customDest, setCustomDest] = useState('');
@@ -137,10 +144,7 @@ export default function BestRoutesPage() {
   const rawRoutes = body?.routes ?? [];
   // Merge API routes with user-created custom routes, filtering out deleted ones
   const allRoutes = [...customRoutes, ...rawRoutes];
-  const routes = allRoutes.filter((r, idx) => {
-    const routeKey = `${r.summary}-${idx}`;
-    return !deletedIds.includes(routeKey);
-  });
+  const routes = allRoutes.filter((r) => !deletedSummaries.includes(r.summary));
   const current = routes[active];
 
   // Open Arrival Feedback & Safe Path Bookmark Modal
@@ -214,21 +218,25 @@ export default function BestRoutesPage() {
   };
 
   // Prompt delete with accessible ConfirmationModal
-  const promptDeleteRoute = (indexToDelete: number) => {
+  const promptDeleteRoute = (routeToDelete: RouteOption) => {
     playClick();
-    const routeToDelete = routes[indexToDelete];
     if (!routeToDelete) return;
-    setRoutePendingDelete({ index: indexToDelete, summary: routeToDelete.summary });
+    setRoutePendingDelete({ summary: routeToDelete.summary });
   };
 
   // Confirm delete handler
   const confirmDeleteRoute = () => {
     if (!routePendingDelete) return;
     playClick();
-    const { index, summary } = routePendingDelete;
+    const { summary } = routePendingDelete;
 
-    const routeKey = `${summary}-${index}`;
-    setDeletedIds(prev => [...prev, routeKey]);
+    setDeletedSummaries(prev => {
+      const next = Array.from(new Set([...prev, summary]));
+      try {
+        localStorage.setItem('doab_deleted_route_summaries', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     // If it was a custom route, remove from localStorage
     const updatedCustom = customRoutes.filter(r => r.summary !== summary);
@@ -514,7 +522,7 @@ export default function BestRoutesPage() {
                         </a>
                         <button
                           type="button"
-                          onClick={() => promptDeleteRoute(index)}
+                          onClick={() => promptDeleteRoute(route)}
                           className="p-1.5 rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] hover:text-rose-500 hover:border-rose-500/40 hover:bg-rose-500/10 transition-colors cursor-pointer"
                           title="Delete this safe path"
                         >
@@ -543,7 +551,7 @@ export default function BestRoutesPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => promptDeleteRoute(index)}
+                    onClick={() => promptDeleteRoute(route)}
                     className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
                     title="Delete path"
                   >

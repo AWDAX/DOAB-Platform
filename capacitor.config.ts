@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.zplus.app',
-  appName: 'Z+ Sentinel',
+  appId: 'org.doab.sentinel',
+  appName: 'DOAB',
   webDir: 'dist',
   server: {
     url: 'https://doab.sahnirmaan.live',
