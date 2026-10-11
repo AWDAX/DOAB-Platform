@@ -18,47 +18,34 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Sync Backend Files via SCP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "services/prediction-api/*"
-          target: "/home/ubuntu/app-staging"
-          strip_components: 2
+      - name: Deploy via native SSH rsync
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+        run: |
+          set -e
+          echo "Setting up SSH key..."
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
 
-      - name: Deploy and Restart on EC2 via SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
+          echo "🚀 Syncing backend files to EC2..."
+          ssh "$USER@$HOST" "mkdir -p /home/ubuntu/app"
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa" --delete services/prediction-api/ "$USER@$HOST:/home/ubuntu/app/"
+
+          echo "🔄 Running setup and service restart on EC2..."
+          ssh "$USER@$HOST" bash -c "'
             set -e
-            echo "🚀 Deploying staging files to active backend..."
-
-            APP_DIR="/home/ubuntu/app"
-            STAGING_DIR="/home/ubuntu/app-staging"
-
-            mkdir -p "$APP_DIR"
-            rsync -av "$STAGING_DIR/" "$APP_DIR/"
-            rm -rf "$STAGING_DIR"
-
-            # Ensure virtual environment exists
-            if [ ! -f "$APP_DIR/venv/bin/python" ]; then
-              python3 -m venv "$APP_DIR/venv"
+            APP_DIR=\"/home/ubuntu/app\"
+            if [ ! -f \"\$APP_DIR/venv/bin/python\" ]; then
+              python3 -m venv \"\$APP_DIR/venv\"
             fi
-
-            # Install dependencies
-            "$APP_DIR/venv/bin/python" -m pip install --upgrade pip
-            "$APP_DIR/venv/bin/python" -m pip install -r "$APP_DIR/requirements.txt"
-
-            # Restart backend systemd daemon
+            \"\$APP_DIR/venv/bin/python\" -m pip install --upgrade pip
+            \"\$APP_DIR/venv/bin/python\" -m pip install -r \"\$APP_DIR/requirements.txt\"
             sudo systemctl restart zplus-backend
-
-            # Verify health
             sleep 3
-            curl -f http://127.0.0.1:8000/health || (echo "Health check failed!" && exit 1)
-
-            echo "✅ Backend successfully deployed and active!"
+            curl -f http://127.0.0.1:8000/health || (echo \"Health check failed!\" && exit 1)
+            echo \"✅ Deployment finished!\"
+          '"
