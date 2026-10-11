@@ -33,27 +33,20 @@ jobs:
 
           echo "🚀 Syncing backend files to EC2..."
           ssh "$USER@$HOST" "mkdir -p /home/ubuntu/app"
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa" --delete services/prediction-api/ "$USER@$HOST:/home/ubuntu/app/"
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa" --exclude="venv" --delete services/prediction-api/ "$USER@$HOST:/home/ubuntu/app/"
 
           echo "🔄 Running setup and service restart on EC2..."
-          ssh "$USER@$HOST" bash -c "'
+          ssh "$USER@$HOST" "bash -s" << 'EOF'
             set -e
-            APP_DIR=\"/home/ubuntu/app\"
-            if [ ! -f \"\$APP_DIR/venv/bin/python\" ]; then
-              python3 -m venv \"\$APP_DIR/venv\"
+            APP_DIR="/home/ubuntu/app"
+            if [ ! -f "$APP_DIR/venv/bin/python" ]; then
+              python3 -m venv "$APP_DIR/venv"
             fi
-            \"\$APP_DIR/venv/bin/python\" -m pip install --upgrade pip
-            \"\$APP_DIR/venv/bin/python\" -m pip install -r \"\$APP_DIR/requirements.txt\"
+            "$APP_DIR/venv/bin/python" -m pip install --upgrade pip
+            "$APP_DIR/venv/bin/python" -m pip install -r "$APP_DIR/requirements.txt"
             sudo systemctl restart zplus-backend
             echo "Waiting for backend service to bind port 8000..."
-            for i in {1..10}; do
-              if curl -s -f http://127.0.0.1:8000/health > /dev/null; then
-                echo "✅ Backend is healthy and responding!"
-                break
-              fi
-              echo "Waiting for startup ($i/10)..."
-              sleep 2
-            done
+            sleep 4
             curl -f http://127.0.0.1:8000/health
-            echo "✅ Deployment finished!"
-          '"
+            echo "✅ Deployment finished successfully!"
+          EOF
