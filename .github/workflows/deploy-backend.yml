@@ -1,0 +1,64 @@
+name: Deploy Backend to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/prediction-api/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to AWS EC2 via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            echo "🚀 Starting Deployment on EC2..."
+
+            APP_DIR="/home/ubuntu/app"
+            REPO_DIR="/home/ubuntu/DOAB-Platform"
+
+            # 1. Clone repo if missing, otherwise pull latest
+            if [ ! -d "$REPO_DIR/.git" ]; then
+              rm -rf "$REPO_DIR"
+              git clone https://github.com/AWDAX/DOAB-Platform.git "$REPO_DIR"
+            else
+              cd "$REPO_DIR"
+              git fetch origin main
+              git reset --hard origin/main
+            fi
+
+            # 2. Sync backend service files to running app directory
+            mkdir -p "$APP_DIR"
+            rsync -av --delete "$REPO_DIR/services/prediction-api/" "$APP_DIR/"
+
+            # 3. Ensure virtual environment exists
+            if [ ! -d "$APP_DIR/venv" ]; then
+              python3 -m venv "$APP_DIR/venv"
+            fi
+
+            # 4. Install / Update dependencies
+            "$APP_DIR/venv/bin/pip" install --upgrade pip
+            "$APP_DIR/venv/bin/pip" install -r "$APP_DIR/requirements.txt"
+
+            # 5. Restart systemd backend service
+            sudo systemctl restart zplus-backend
+
+            # 6. Verify service health
+            sleep 3
+            curl -f http://127.0.0.1:8000/health || (echo "Health check failed!" && exit 1)
+
+            echo "✅ Deployment completed successfully!"
