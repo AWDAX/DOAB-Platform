@@ -55,10 +55,17 @@ DOAB is engineered on a resilient, high-availability AWS Cloud infrastructure de
 - **Amazon EC2 (t3/t4 Ubuntu 24.04 LTS)**: Hosts production dockerized container meshes running our FastAPI prediction service, geospatial routing algorithms, and proxy gateways.
 - **Amazon RDS (PostgreSQL 18.3)**: Enterprise managed database hosting civic telemetry logs, emergency dispatch orders, and verified road accessibility states.
 
-### 2. High-Value AWS Add-Ons (Platform Enhancements)
+### 2. High-Value AWS Add-Ons & Life-Safety SOS Mesh
 - **Amazon Location Service (ALS)**: 
   - **Pan-India Reverse Geocoding & Search**: Live landmark, address, and municipality search across all Indian states with zero third-party tracking.
-  - **Civic Place Index**: High-precision boundary search for municipal wards and vulnerable underpasses.
+  - **Civic Place Index**: High-precision boundary search for municipal wards, storm drains, and vulnerable underpasses.
+- **Amazon SNS (Simple Notification Service) — Immediate Broadcast Layer**:
+  - Broadcasts SOS payloads instantly via emergency SMS to Disaster Response Teams (NDRF/SDRF) and family contacts.
+  - Delivers high-priority multi-platform push notifications to emergency crew field apps with zero cold-start delay.
+- **Amazon SQS (Simple Queue Service) — Zero-Loss Distress Buffer**:
+  - Buffers and queues thousands of concurrent distress beacons during mass-casualty flash floods or dam releases so not a single SOS alert is ever dropped or lost.
+- **AWS Lambda (Serverless Emergency Compute)**:
+  - Serverless micro-function triggered instantaneously upon distress beacon ingestion, executing coordinate extraction and nearest safe haven routing independently of primary server load.
 - **Amazon Cognito Identity Pools**: Unauthenticated and role-based IAM temporary credential vending for client-side Amazon Location Service access without exposing static API keys.
 - **AWS CloudWatch**: Real-time telemetry monitoring, health probe alarms, and latency tracking across the EC2 prediction containers.
 
@@ -170,8 +177,11 @@ For jury presentations and official submission forms, use this concise architect
    - AWS EC2 (Ubuntu 24.04 LTS) running Docker Compose containers for FastAPI prediction service, real-time elevation routing, and sensor ingestion pipelines.
 3. **Database & Persistence**:
    - AWS RDS (PostgreSQL 18.3) managing relational civic disaster state, ward telemetry archives, and work order audit records.
-4. **AWS High-Value Services Used**:
+4. **AWS High-Value Services & Emergency Mesh Used**:
    - Amazon Location Service: Pan-India forward/reverse geocoding, address autocomplete, and boundary lookup without privacy-invasive third-party trackers.
+   - Amazon SNS (Simple Notification Service): Immediate SMS broadcast to Disaster Response Teams (NDRF/SDRF) and emergency contacts, plus push notifications to field crews with zero cold start.
+   - Amazon SQS (Simple Queue Service): Zero-loss distress buffer queuing thousands of concurrent SOS beacons during mass flash floods.
+   - AWS Lambda: Serverless emergency compute that extracts coordinates and computes nearest high-elevation relief centers on the fly.
    - AWS Cognito Identity Pools: Secure temporary credential vending for frontend Amazon Location Service SDK calls.
    - AWS CloudWatch: Container health monitoring and edge performance telemetry.
 ```

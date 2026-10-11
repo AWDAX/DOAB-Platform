@@ -299,7 +299,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
   const [mapCenter, setMapCenter] = useState<[number, number]>(defaultCenter);
   const [mapZoom, setMapZoom] = useState<number>(5);
-  const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
+  const [isMobileCollapsed, setIsMobileCollapsed] = useState(true);
   const [activeLeftTab, setActiveLeftTab] = useState<'search' | 'forecast' | 'incident' | 'clusters'>('search');
 
   // Combined National Master Telemetry Pool (Karnataka Ground-Truth + 17 Indian States via Amazon Location Geocoder)
@@ -937,14 +937,23 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         <div id="tour-map-search" className="neo-glass-card rounded-2xl pointer-events-auto shadow-xl backdrop-blur-xl border border-[var(--border-color)] overflow-hidden transition-all duration-200">
           
           {/* Header Bar with Mode Pill & Minimize Toggle */}
-          <div className="flex items-center justify-between gap-2 bg-[var(--bg-main)]/90 border-b border-[var(--border-color)] px-3 py-2">
+          <div 
+            onClick={(e) => {
+              // If click happened on the 2D/3D switcher buttons, don't toggle collapse
+              if ((e.target as HTMLElement).closest('[role="tablist"]')) return;
+              playClick();
+              setIsMobileCollapsed(!isMobileCollapsed);
+            }}
+            className="flex items-center justify-between gap-2 bg-[var(--bg-main)]/90 border-b border-[var(--border-color)] px-3 py-2 cursor-pointer select-none transition-colors hover:bg-[var(--bg-main)]"
+            title={isMobileCollapsed ? "Click to expand Search & Risk Monitor" : "Click to collapse"}
+          >
             <div className="flex items-center gap-2 truncate">
               <Crosshair className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0" />
               <span className="text-xs font-bold truncate text-[var(--text-main)]">
-                Urban WaterLogging Grid
+                Live Risk Monitor
               </span>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
               {/* Dual Engine Sliding Pill Bar (Professional Apple/Mapbox Standard) */}
               <div 
                 className="relative flex items-center p-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs select-none"
@@ -1013,7 +1022,11 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               </span>
               <button
                 type="button"
-                onClick={() => { playClick(); setIsMobileCollapsed(!isMobileCollapsed); }}
+                onClick={(e) => { 
+                  e.stopPropagation();
+                  playClick(); 
+                  setIsMobileCollapsed(!isMobileCollapsed); 
+                }}
                 className="p-1 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
                 aria-label={isMobileCollapsed ? "Expand Inspector" : "Collapse Inspector"}
                 title={isMobileCollapsed ? "Expand Inspector" : "Collapse Inspector"}
