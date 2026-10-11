@@ -490,8 +490,8 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
         </button>
 
         <div className="max-w-[1400px] mx-auto flex flex-col items-center">
-          <div className="w-full max-w-2xl mx-auto mb-6">
-            <FooterParticles text="DOAB" darkMode={isDarkMode} />
+          <div className="w-full max-w-4xl mx-auto mb-6">
+            <FooterParticles text="CONTRARIANS" darkMode={isDarkMode} />
           </div>
           <div className="w-full flex flex-col md:flex-row items-center justify-between gap-5 pt-6 border-t border-[var(--border-color)]">
             <div className="flex items-center gap-3">
