@@ -1,10 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X } from 'lucide-react';
+import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
+
+// High-fidelity Google Maps Pin SVG icon
+function GoogleMapsIcon({ className = 'h-3.5 w-3.5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
+      <path d="M12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5Z" fill="#FFFFFF" />
+      <path d="M10.2 19.3C10.8 20.3 11.4 21.2 12 22C12 22 19 14.25 19 9C19 8.2 18.8 7.4 18.6 6.7L10.2 19.3Z" fill="#4285F4" opacity="0.3" />
+      <path d="M5 9C5 10.1 5.3 11.2 5.8 12.2L12 4C12 3.3 12 2.6 12 2C8.13 2 5 5.13 5 9Z" fill="#FBBC04" opacity="0.4" />
+      <path d="M12 22C12 22 12.6 21.3 13.2 20.3L6.8 13.4C6 14.7 5 16.3 5 17.5C5 19.1 7.2 22 12 22Z" fill="#34A853" opacity="0.3" />
+    </svg>
+  );
+}
 
 const ORIGIN = { lat: 12.9716, lng: 77.5946 };
 const OFFLINE_ROUTES_KEY = 'doab_saved_offline_routes';
@@ -376,9 +389,11 @@ export default function BestRoutesPage() {
                           href={route.maps_url} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="inline-flex items-center justify-center whitespace-nowrap px-3.5 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
+                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
                         >
-                          {copy.openMaps}
+                          <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
+                          <span>{copy.openMaps}</span>
+                          <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
                         </a>
                         <button
                           type="button"
@@ -424,8 +439,15 @@ export default function BestRoutesPage() {
                     <span className="text-xs font-bold">{riskLabel(route, copy)}</span>
                   </div>
                 </div>
-                <a href={route.maps_url} target="_blank" rel="noopener noreferrer" className="block text-center w-full py-2.5 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold text-xs">
-                  {copy.openMaps}
+                <a 
+                  href={route.maps_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold text-xs shadow-xs"
+                >
+                  <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>{copy.openMaps}</span>
+                  <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
                 </a>
               </div>
             ))}

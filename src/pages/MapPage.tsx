@@ -1075,10 +1075,14 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => playClick()}
-                          className="px-2 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-semibold text-[var(--text-main)] hover:bg-[var(--bg-main)] flex items-center gap-1"
+                          className="px-2 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-semibold text-[var(--text-main)] hover:bg-[var(--bg-main)] flex items-center gap-1.5"
                         >
+                          <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
+                            <path d="M12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5Z" fill="#FFFFFF" />
+                          </svg>
                           <span>{copy.openMaps}</span>
-                          <ExternalLink className="h-2.5 w-2.5" />
+                          <ExternalLink className="h-2.5 w-2.5 opacity-70" />
                         </a>
 
                         <button
