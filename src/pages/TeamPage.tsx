@@ -18,7 +18,6 @@ import BrandLogo from '../components/BrandLogo';
 import ThemeToggle from '../components/ThemeToggle';
 import Tooltip from '../components/Tooltip';
 import FooterParticles from '../components/FooterParticles';
-import { PageTourButton } from '../components/GuidedTour';
 
 function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -192,10 +191,8 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
           </Link>
         </div>
 
-        {/* Right: Clean Theme Toggle & Page Guide */}
+        {/* Right: Clean Theme Toggle */}
         <div className="flex items-center gap-2 flex-shrink-0 z-10">
-          <PageTourButton pageKey="team" label="Team Guide" />
-
           <Tooltip content={isDarkMode ? "Light Mode" : "Dark Mode"} shortcut="Shift+T" position="bottom">
             <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
           </Tooltip>
