@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { geocodePlace } from '../lib/amazonLocation';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, GeoJSON, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -146,6 +147,20 @@ const USER_LIVE_ICON = L.divIcon({
   iconAnchor: [14, 14],
 });
 
+// Amazon Location Service Geocoded Pin Icon
+const ALS_GEOCODED_ICON = L.divIcon({
+  className: 'als-geocoded-pin',
+  html: `
+    <div style="position:relative; width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+      <span style="position:absolute; width:100%; height:100%; border-radius:50%; background:rgba(217,119,6,0.35); animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></span>
+      <div style="width:20px; height:20px; border-radius:50%; background:#d97706; border:3px solid #ffffff; box-shadow:0 4px 10px rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center;">
+        <div style="width:6px; height:6px; border-radius:50%; background:#ffffff;"></div>
+      </div>
+    </div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
 // Map Viewport Controller for Smooth Recenter and Immediate Tile Invalidation
 function MapViewController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
@@ -268,6 +283,37 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [isLocating, setIsLocating] = useState(false);
   const [isViewingMyLocation, setIsViewingMyLocation] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // Amazon Location Service — live geocoding state
+  const [alsSuggestions, setAlsSuggestions] = useState<import('../lib/amazonLocation').GeocodedPlace[]>([]);
+  const [alsLoading, setAlsLoading] = useState(false);
+  const [geocodedPin, setGeocodedPin] = useState<[number, number] | null>(null);
+  const alsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced ALS geocode — fires 400ms after the user stops typing
+  const handleSearchChange = useCallback((query: string) => {
+    setDestination(query);
+    setAlsSuggestions([]);
+    if (alsDebounceRef.current) clearTimeout(alsDebounceRef.current);
+    if (query.trim().length < 3) { setAlsLoading(false); return; }
+    setAlsLoading(true);
+    alsDebounceRef.current = setTimeout(async () => {
+      const results = await geocodePlace(query + ', India', 5);
+      setAlsSuggestions(results);
+      setAlsLoading(false);
+    }, 400);
+  }, []);
+
+  // When user picks an ALS suggestion — pan map + drop geocoded pin
+  const handleAlsSelect = useCallback((place: import('../lib/amazonLocation').GeocodedPlace) => {
+    playClick();
+    setGeocodedPin([place.lat, place.lng]);
+    setMapCenter([place.lat, place.lng]);
+    setMapZoom(13);
+    setDestination(place.label);
+    setAlsSuggestions([]);
+  }, []);
+
   const [showInfo, setShowInfo] = useState(false);
 
   // Unread AI Response indicator state (blue dot appears only when new response from AI is present)
@@ -700,12 +746,41 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
                     <input 
                       type="text" 
-                      placeholder="Search ward, street, or hotspot..."
-                      className="w-full pl-8.5 pr-3 py-1.5 text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                      placeholder="Search any place in India via ALS..."
+                      className="w-full pl-8.5 pr-16 py-1.5 text-xs border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
                       value={destination}
-                      onChange={(e) => setDestination(e.target.value)}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') { setAlsSuggestions([]); setDestination(''); }
+                      }}
                     />
+                    {/* ALS badge */}
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      {alsLoading && <span className="h-2 w-2 rounded-full border border-[var(--color-brand-accent)] border-t-transparent animate-spin" />}
+                      <span className="text-[8px] font-mono font-bold text-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/10 px-1 py-0.5 rounded">ALS</span>
+                    </span>
                   </div>
+
+                  {/* ALS Autocomplete Suggestions Dropdown */}
+                  {alsSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg overflow-hidden">
+                      {alsSuggestions.map((place, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleAlsSelect(place)}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--bg-main)] transition-colors flex flex-col gap-0.5 border-b border-[var(--border-color)] last:border-0 cursor-pointer"
+                        >
+                          <span className="font-semibold text-[var(--text-main)] truncate">{place.municipality || place.label.split(',')[0]}</span>
+                          <span className="text-[10px] text-[var(--text-muted)] truncate">{place.region ? `${place.region}, India` : place.label}</span>
+                        </button>
+                      ))}
+                      <div className="px-3 py-1 text-[9px] text-[var(--text-muted)] font-mono flex items-center gap-1 bg-[var(--bg-main)]">
+                        <span className="text-[var(--color-brand-accent)] font-bold">Powered by Amazon Location Service</span>
+                      </div>
+                    </div>
+                  )}
+
 
                   {/* Severity Filter Pill Row */}
                   <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
@@ -1360,6 +1435,27 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </Popup>
               </Marker>
             )}
+
+            {/* Amazon Location Service Search Result Pin */}
+            {geocodedPin && (
+              <Marker position={geocodedPin} icon={ALS_GEOCODED_ICON}>
+                <Popup className="neo-glass-popup">
+                  <div className="p-1 text-xs">
+                    <div className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                      <Globe2 className="h-3.5 w-3.5" />
+                      Amazon Location Service Pin
+                    </div>
+                    <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
+                      {destination}
+                    </div>
+                    <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
+                      {geocodedPin[0].toFixed(4)}° N, {geocodedPin[1].toFixed(4)}° E
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+
 
             {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
             {showHeatLayer && recurringClusters.slice(0, 8).map((cluster, cIdx) => (
