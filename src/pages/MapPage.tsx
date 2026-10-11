@@ -46,6 +46,7 @@ import Tooltip from '../components/Tooltip';
 import MapLibreView from '../components/MapLibreView';
 import AIOrbFace from '../components/AIOrbFace';
 import { WATERLOGGING_DATASET_INCIDENTS, type TelemetryIncident } from '../data/waterloggingIncidents';
+import { NATIONAL_MUNICIPAL_INCIDENTS } from '../data/nationalIncidents';
 import { useForecast } from '../hooks/useForecast';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 
@@ -187,6 +188,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const { forecast, incidents: apiIncidents, boundaries, status, usingDemo, reload } = useForecast();
   const [destination, setDestination] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
+  const [selectedState, setSelectedState] = useState<string>('all');
   const [showHeatLayer, setShowHeatLayer] = useState(false);
   const [mapEngine, setMapEngine] = useState<'leaflet' | 'maplibre'>('leaflet');
 
@@ -203,10 +205,15 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
   const [activeLeftTab, setActiveLeftTab] = useState<'search' | 'forecast' | 'incident' | 'clusters'>('search');
 
-  // Filter incidents based on criteria and curate density for clean map aesthetics
+  // Combined National Master Telemetry Pool (Karnataka Ground-Truth + 17 Indian States via Amazon Location Geocoder)
+  const allIncidentsPool = useMemo<TelemetryIncident[]>(() => {
+    return [...WATERLOGGING_DATASET_INCIDENTS, ...NATIONAL_MUNICIPAL_INCIDENTS];
+  }, []);
+
+  // Filter incidents based on criteria, state focus, and curate density for clean map aesthetics
   const incidentSource = useMemo<TelemetryIncident[]>(() => {
-    if (usingDemo || apiIncidents.length === 0) return WATERLOGGING_DATASET_INCIDENTS;
-    return apiIncidents.map((item) => ({
+    if (usingDemo || apiIncidents.length === 0) return allIncidentsPool;
+    const mapped = apiIncidents.map((item) => ({
       id: item.id,
       title: item.category || copy.historical,
       ward: 'Bengaluru',
@@ -220,10 +227,15 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       description: copy.historical,
       source: item.source,
     }));
-  }, [apiIncidents, usingDemo, copy.historical]);
+    return [...mapped, ...NATIONAL_MUNICIPAL_INCIDENTS];
+  }, [apiIncidents, usingDemo, copy.historical, allIncidentsPool]);
 
   const filteredIncidents = useMemo(() => {
     const matched = incidentSource.filter((item) => {
+      if (selectedState !== 'all') {
+        const itemText = `${item.ward} ${item.source || ''} ${item.description || ''} ${item.title}`.toLowerCase();
+        if (!itemText.includes(selectedState.toLowerCase())) return false;
+      }
       if (severityFilter !== 'all' && item.severity !== severityFilter) return false;
       if (destination.trim()) {
         const query = destination.toLowerCase();
@@ -236,12 +248,12 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       return true;
     });
 
-    // When unfiltered with no search, show a balanced, aesthetic sample of ~50 key nodes to avoid screen clutter
-    if (severityFilter === 'all' && !destination.trim()) {
-      return matched.slice(0, 50);
+    // When unfiltered with no search, show a balanced, aesthetic sample of ~80 key nodes to avoid screen clutter
+    if (severityFilter === 'all' && !destination.trim() && selectedState === 'all') {
+      return matched.slice(0, 80);
     }
-    return matched;
-  }, [severityFilter, destination, incidentSource]);
+    return matched.slice(0, 150);
+  }, [severityFilter, destination, incidentSource, selectedState]);
 
   const [isLocating, setIsLocating] = useState(false);
   const [isViewingMyLocation, setIsViewingMyLocation] = useState(false);
@@ -694,7 +706,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           key={sev}
                           type="button"
                           onClick={() => { playClick(); setSeverityFilter(sev); }}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap transition-colors cursor-pointer border ${
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap transition-colors cursor-pointer border ${
                             active 
                               ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]' 
                               : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] border-[var(--border-color)]'
@@ -704,6 +716,49 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* State / Region Focus Filter Chips (Amazon Location Service Multi-State Registry) */}
+                  <div className="flex flex-col gap-1 pt-1 border-t border-[var(--border-color)]">
+                    <div className="flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)]">
+                      <span className="flex items-center gap-1 font-semibold text-[var(--text-main)]">
+                        <Globe2 className="h-3 w-3 text-[var(--color-brand-accent)]" />
+                        Region Focus
+                      </span>
+                      <span className="text-[9px] opacity-75">18 States Ingested</span>
+                    </div>
+                    <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar pb-1">
+                      {[
+                        { label: '🇮🇳 All India', val: 'all', center: [20.5937, 78.9629] as [number, number], zoom: 5 },
+                        { label: 'Bengaluru', val: 'karnataka', center: [12.9716, 77.5946] as [number, number], zoom: 12 },
+                        { label: 'Bihar', val: 'bihar', center: [25.75, 85.50] as [number, number], zoom: 8 },
+                        { label: 'Telangana', val: 'telangana', center: [17.45, 78.50] as [number, number], zoom: 9 },
+                        { label: 'Manipur', val: 'manipur', center: [24.81, 93.94] as [number, number], zoom: 9 },
+                        { label: 'Assam', val: 'assam', center: [26.20, 92.50] as [number, number], zoom: 8 },
+                        { label: 'West Bengal', val: 'west bengal', center: [22.57, 88.36] as [number, number], zoom: 11 },
+                      ].map((reg) => {
+                        const active = selectedState === reg.val;
+                        return (
+                          <button
+                            key={reg.val}
+                            type="button"
+                            onClick={() => {
+                              playClick();
+                              setSelectedState(reg.val);
+                              setMapCenter(reg.center);
+                              setMapZoom(reg.zoom);
+                            }}
+                            className={`px-2 py-0.5 rounded-md text-[9px] font-mono font-medium whitespace-nowrap transition-all cursor-pointer border ${
+                              active
+                                ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] font-bold'
+                                : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] border-[var(--border-color)]'
+                            }`}
+                          >
+                            {reg.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   
                   <Link 
