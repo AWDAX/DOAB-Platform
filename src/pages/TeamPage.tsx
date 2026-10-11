@@ -163,7 +163,7 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
           <button
             type="button"
             onClick={handleBack}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] shadow-2xs hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-all cursor-pointer group"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] shadow-2xs hover:bg-[linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%)] hover:text-white dark:hover:!bg-white dark:hover:!text-neutral-950 dark:hover:!bg-none transition-all cursor-pointer group"
             aria-label="Back to previous page"
             title="Back to Platform"
           >
