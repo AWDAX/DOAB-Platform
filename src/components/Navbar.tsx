@@ -278,9 +278,11 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                   aria-label="Open Alerts Feed Window"
                   aria-expanded={isAlertsOpen}
                 >
-                  <Bell className="h-4.5 w-4.5" />
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-500 text-white font-mono font-bold text-[9px] shadow-xs">
-                    3
+                  <Bell className="h-4 w-4" />
+                  {/* Subtle, refined theme-harmonious notification badge */}
+                  <span className="absolute top-1 right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-brand-accent)] opacity-60" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-brand-accent)]" />
                   </span>
                 </button>
               </Tooltip>
