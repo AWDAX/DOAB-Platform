@@ -79,3 +79,56 @@ Inspired by Linear, Apple, and Vercel:
 
 ### 4.4 Copilot Window
 - Draggable and resizable with compact dimensions (~340px width), clean header bar (`h-10`), and micro-typography.
+
+---
+
+## 📐 5. Scrollbar Gutter Space Architecture & Page Isolation
+
+### 5.1 The Layout Shift Problem
+On dynamic full-height or centered pages (such as Login/Auth), modal reveals or small viewport changes cause vertical scrollbars to appear and disappear. In default browsers, this shifts the viewport width by ~15px-17px, causing jarring X-axis layout jumps and throwing centered cards off-balance.
+
+### 5.2 The Standard Fix: Scoped `scrollbar-gutter: stable`
+To eliminate layout shift **without** forcing gutter space onto edge-to-edge pages (like the Landing Page, Map, or Team Page), `scrollbar-gutter: stable` must be scoped strictly to the Auth route via lifecycle-bound classes.
+
+```tsx
+// In AuthPage.tsx (Mount & Cleanup lifecycle)
+useEffect(() => {
+  document.documentElement.classList.add('auth-page');
+  return () => {
+    document.documentElement.classList.remove('auth-page');
+  };
+}, []);
+```
+
+```css
+/* In index.css */
+/* Scrollbar gutter isolated strictly to login page */
+html.auth-page {
+  scrollbar-gutter: stable;
+  scrollbar-color: rgba(148, 163, 184, 0.35) #FFFFFF;
+  background-color: #FFFFFF;
+}
+
+html.auth-page.dark,
+html.auth-page .dark {
+  scrollbar-color: rgba(255, 255, 255, 0.2) #101A24;
+  background-color: #101A24;
+}
+
+html.auth-page.theme-drought.dark {
+  scrollbar-color: rgba(255, 255, 255, 0.2) #2C241E;
+  background-color: #2C241E;
+}
+
+html.auth-page ::-webkit-scrollbar-track {
+  background: var(--bg-card);
+}
+
+.login-page-container {
+  scrollbar-gutter: stable;
+}
+```
+
+### 5.3 Color Harmony Rule for Gutter Tracks
+The reserved scrollbar gutter track **must always match the background color of the page's fixed header and footer** (`var(--bg-card)`: `#FFFFFF` in Light Mode, `#101A24` in Dark Flood Mode, `#2C241E` in Dark Drought Mode). If the gutter track is transparent, raw OS or body canvas bleed will create an unsightly vertical line flanking the header and footer.
+
