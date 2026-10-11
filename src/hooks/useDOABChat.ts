@@ -19,7 +19,6 @@ export interface ChatSession {
 
 const STORAGE_KEY = 'doab_ai_sessions_v1';
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 
 // Fallback AWDAX Deep Research Endpoint & Live Token
 const AWDAX_API_TOKEN = 'awdax_live_8f92a4b1c7e6d039e51f8a2b';
@@ -337,34 +336,7 @@ Operational Directives:
         }
       }
 
-      // ── TIER 2: OPENROUTER LIVE BACKUP (If Groq key is absent or failing) ──
-      if (!assistantReply && OPENROUTER_API_KEY) {
-        try {
-          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${OPENROUTER_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash',
-              messages: [
-                { role: 'system', content: enrichedSystemPrompt },
-                ...activeSession.messages.map(m => ({ role: m.role, content: m.content })),
-                { role: 'user', content: userText }
-              ]
-            })
-          });
-          if (response.ok) {
-            const data = await response.json();
-            assistantReply = data.choices[0]?.message?.content || '';
-          }
-        } catch (e) {
-          console.warn('OpenRouter backup failed:', e);
-        }
-      }
-
-      // ── TIER 3: AWDAX RESEARCH PIPELINE (Deep Background Fallback) ──
+      // ── TIER 2: AWDAX RESEARCH PIPELINE (Deep Background Fallback) ──
       if (!assistantReply) {
         const awdaxResponse = await queryAwdaxFallback(userText, locString);
         if (awdaxResponse) {
@@ -372,7 +344,7 @@ Operational Directives:
         }
       }
 
-      // ── TIER 4: DETERMINISTIC SENSOR MATRIX FALLBACK (Zero-Failure Guarantee) ──
+      // ── TIER 3: DETERMINISTIC SENSOR MATRIX FALLBACK (Zero-Failure Guarantee) ──
       if (!assistantReply) {
         const lower = userText.toLowerCase();
         const primaryHazard = nearestIncidents[0];
@@ -453,6 +425,6 @@ Operational Directives:
     clearAllSessions,
     sendMessage,
     isThinking,
-    hasApiKey: Boolean(GROQ_API_KEY || OPENROUTER_API_KEY || AWDAX_API_TOKEN)
+    hasApiKey: Boolean(GROQ_API_KEY || AWDAX_API_TOKEN)
   };
 }
