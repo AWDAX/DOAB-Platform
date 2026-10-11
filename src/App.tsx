@@ -317,6 +317,18 @@ function AppContent({
             } 
           />
           <Route 
+            path="/map" 
+            element={
+              isAuthenticated ? (
+                <PageTransition>
+                  <MapPage envMode={envMode} isDarkMode={isDarkMode} />
+                </PageTransition>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } 
+          />
+          <Route 
             path="/routes/old" 
             element={
               isAuthenticated ? (
