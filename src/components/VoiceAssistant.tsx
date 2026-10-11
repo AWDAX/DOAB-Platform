@@ -457,7 +457,8 @@ export default function VoiceAssistant() {
                 isFullScreen ? '' : 'cursor-grab rounded-t-3xl'
               } ${isDragging ? 'cursor-grabbing bg-[var(--bg-main)]/95' : ''}`}
             >
-              <div className="flex items-center gap-3">
+              {/* Left Action Buttons: History & New Session */}
+              <div className="flex items-center gap-2 z-10">
                 <Tooltip content="History" position="bottom">
                   <button
                     onClick={() => { playClick(); setIsHistoryOpen(!isHistoryOpen); }}
@@ -487,10 +488,13 @@ export default function VoiceAssistant() {
                     <span className="hidden sm:inline">New</span>
                   </button>
                 </Tooltip>
+              </div>
                 
-                {/* Header AI Orb Face with Status Tooltip (Tracks cursor when chat window is open) */}
+              {/* Center Identity Section: In Full Expanded Window, centered with absolute inset-x; otherwise alongside controls */}
+              <div className={isFullScreen ? "absolute inset-x-0 mx-auto w-fit flex items-center gap-2.5 pointer-events-none select-none z-0" : "flex items-center gap-2.5"}>
+                {/* Header AI Orb Face with Status Tooltip */}
                 <Tooltip content={isListening ? "Listening..." : isThinking ? "Analyzing..." : "Online"} position="bottom">
-                  <div className="relative flex items-center justify-center cursor-pointer">
+                  <div className="relative flex items-center justify-center cursor-pointer pointer-events-auto">
                     <div className="absolute inset-0 -m-1 rounded-full bg-[var(--color-brand-accent)]/20 blur-md pointer-events-none" />
                     <div className="w-7 h-7 rounded-full overflow-hidden bg-black/5 dark:bg-white/10 flex items-center justify-center border border-[var(--border-color)] shrink-0 relative z-10">
                       <AIOrbFace state={activeOrbState} size={28} gaze={isOpen} />
@@ -498,7 +502,7 @@ export default function VoiceAssistant() {
                   </div>
                 </Tooltip>
 
-                <span className="font-bold tracking-tight text-[var(--text-main)] text-sm">
+                <span className="font-bold tracking-tight text-[var(--text-main)] text-sm pointer-events-auto">
                   DOAB Assistant
                 </span>
               </div>

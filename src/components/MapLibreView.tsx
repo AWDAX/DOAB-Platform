@@ -64,6 +64,15 @@ export default function MapLibreView({
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const currentStyleModeRef = useRef<boolean>(isDarkMode);
   const [bearing, setBearing] = useState<number>(-17.6);
+  const [pitch, setPitch] = useState<number>(45);
+  const [isDraggingZ, setIsDraggingZ] = useState<boolean>(false);
+  const dragStartRef = useRef<{
+    x: number;
+    y: number;
+    startBearing: number;
+    startPitch: number;
+    hasMoved: boolean;
+  } | null>(null);
 
   // Basemap style: Crisp Light Gray Canvas for light mode, High-Res Sat/Dark Night Imagery for dark mode
   const styleConfig = useMemo(() => {
@@ -409,6 +418,10 @@ export default function MapLibreView({
       setBearing(Math.round(map.getBearing()));
     });
 
+    map.on('pitch', () => {
+      setPitch(Math.round(map.getPitch()));
+    });
+
     map.on('load', () => {
       map.resize();
       syncLayers();
@@ -505,6 +518,74 @@ export default function MapLibreView({
     mapRef.current?.resetNorthPitch({ duration: 500 });
   };
 
+  // Hold & Drag to perform 3D Z-Rotation (Bearing) and Elevation Tilt (Pitch)
+  const handleZPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const map = mapRef.current;
+    if (!map) return;
+
+    playClick();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (_) {}
+
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      startBearing: map.getBearing(),
+      startPitch: map.getPitch(),
+      hasMoved: false
+    };
+    setIsDraggingZ(true);
+  };
+
+  const handleZPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragStartRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
+
+    const deltaX = e.clientX - dragStartRef.current.x;
+    const deltaY = e.clientY - dragStartRef.current.y;
+
+    if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+      dragStartRef.current.hasMoved = true;
+    }
+
+    // Horizontal drag controls Z-Rotation (Bearing); Vertical drag controls Elevation (Pitch)
+    const newBearing = (dragStartRef.current.startBearing + deltaX * 0.75) % 360;
+    const newPitch = Math.min(65, Math.max(0, dragStartRef.current.startPitch - deltaY * 0.45));
+
+    map.setBearing(newBearing);
+    map.setPitch(newPitch);
+    setBearing(Math.round(newBearing));
+    setPitch(Math.round(newPitch));
+  };
+
+  const handleZPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragStartRef.current) return;
+    const map = mapRef.current;
+    const hadMoved = dragStartRef.current.hasMoved;
+
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+
+    dragStartRef.current = null;
+    setIsDraggingZ(false);
+
+    // If simply tapped/clicked without dragging, toggle 3D tilt perspective (0° flat <-> 45° 3D)
+    if (!hadMoved && map) {
+      playClick();
+      const currentPitch = map.getPitch();
+      const nextPitch = currentPitch > 20 ? 0 : 45;
+      map.easeTo({ pitch: nextPitch, duration: 400 });
+      setPitch(nextPitch);
+    }
+  };
+
   return (
     <div className="w-full h-full relative">
       <div ref={mapContainerRef} className="w-full h-full" />
@@ -516,7 +597,7 @@ export default function MapLibreView({
           <span>3D GPU VECTOR ENGINE (MapLibre GL)</span>
         </div>
         <div className="hidden sm:inline-block px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-slate-300 text-[9px] font-mono">
-          Ctrl + Drag to orbit • Right-click to tilt
+          Hold 3D button & drag to orbit • Right-click to tilt
         </div>
       </div>
 
@@ -547,6 +628,65 @@ export default function MapLibreView({
         </Tooltip>
 
         <div className="w-5 h-px bg-[var(--border-color)] dark:bg-white/10 my-0.5" />
+
+        {/* 3D Z-Rotation & Orbit Drag Button (Hold & Drag to Orbit, Click to Toggle Tilt) */}
+        <div className="relative">
+          <Tooltip content={isDraggingZ ? `Orbiting Z: ${bearing}°` : "Hold & Drag for 3D Z-Rotation • Click to Tilt"} position="left">
+            <button
+              type="button"
+              onPointerDown={handleZPointerDown}
+              onPointerMove={handleZPointerMove}
+              onPointerUp={handleZPointerUp}
+              onPointerCancel={handleZPointerUp}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-grab active:cursor-grabbing select-none relative group ${
+                isDraggingZ
+                  ? 'bg-cyan-500 text-slate-950 shadow-lg ring-2 ring-cyan-400 scale-105'
+                  : 'text-[var(--text-main)] hover:bg-[var(--text-main)]/10'
+              }`}
+              aria-label="Hold and drag to rotate 3D camera around Z-axis"
+              title="Hold & Drag for 3D Z-Rotation"
+            >
+              <div 
+                className="w-5 h-5 flex items-center justify-center transition-transform duration-75"
+                style={{ transform: isDraggingZ ? `rotate(${bearing}deg)` : undefined }}
+              >
+                <svg 
+                  viewBox="0 0 24 24" 
+                  className="w-4 h-4" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.6" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  {/* Isometric 3D Cube with Central Z-Axis */}
+                  <path d="M12 2.5 L19.5 6.8 L12 11 L4.5 6.8 Z" className={isDraggingZ ? "fill-slate-950/20" : "fill-current/10"} />
+                  <path d="M4.5 6.8 L4.5 15.5 L12 19.8 L12 11" />
+                  <path d="M19.5 6.8 L19.5 15.5 L12 19.8" />
+                  {/* Orbital curved rotation arrow around Z axis */}
+                  <path d="M2.5 11 A9.5 5 0 0 0 21.5 11" strokeDasharray="2 1.5" strokeWidth="1.3" className={isDraggingZ ? "text-slate-950" : "text-cyan-500"} />
+                </svg>
+              </div>
+
+              {/* Mini "3D" indicator badge on button */}
+              <span className={`absolute -bottom-0.5 -right-0.5 text-[7px] font-mono font-black px-1 rounded-sm leading-tight ${
+                isDraggingZ ? 'bg-slate-950 text-cyan-400' : 'bg-[var(--bg-main)] text-[var(--color-brand-accent)] border border-[var(--border-color)]'
+              }`}>
+                3D
+              </span>
+            </button>
+          </Tooltip>
+
+          {/* Live Rotation HUD while dragging */}
+          {isDraggingZ && (
+            <div className="absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap px-2.5 py-1 rounded-xl bg-slate-900/95 text-cyan-400 border border-cyan-500/40 text-[10px] font-mono font-bold shadow-xl flex items-center gap-1.5 backdrop-blur-md pointer-events-none z-30">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping inline-block" />
+              <span>Z-Orbit: {bearing}°</span>
+              <span className="text-slate-600">•</span>
+              <span>Tilt: {pitch}°</span>
+            </div>
+          )}
+        </div>
 
         {/* Rotate / Compass Reset (Authentic Marine / GIS Navigation Needle) */}
         <Tooltip content={bearing !== 0 ? `Reset North (Bearing: ${bearing}°)` : "Orient to True North"} position="left">

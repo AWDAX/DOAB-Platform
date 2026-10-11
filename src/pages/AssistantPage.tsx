@@ -235,8 +235,12 @@ export default function AssistantPage() {
       }`}
     >
       {/* Page Header Bar */}
-      <div id="tour-assistant-header" className="flex items-center justify-between gap-3 mb-4 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
+      <div id="tour-assistant-header" className={`relative flex items-center justify-between gap-3 mb-4 shrink-0 ${isFullScreen ? 'min-h-12' : ''}`}>
+        <div className={`flex items-center gap-3 min-w-0 ${
+          isFullScreen 
+            ? 'absolute inset-x-0 mx-auto w-fit z-0 select-none' 
+            : ''
+        }`}>
           <div className="relative flex items-center justify-center shrink-0">
             <span
               aria-hidden="true"
@@ -251,7 +255,7 @@ export default function AssistantPage() {
               />
             </div>
           </div>
-          <div className="min-w-0">
+          <div className={`min-w-0 ${isFullScreen ? 'text-center' : ''}`}>
             <h1 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)] truncate">
               DOAB Operational Assistant
             </h1>
@@ -261,8 +265,11 @@ export default function AssistantPage() {
           </div>
         </div>
 
+        {/* Empty left spacer when fullscreen to balance layout */}
+        {isFullScreen && <div className="w-10 z-10" />}
+
         {/* Action Controls Toolbar */}
-        <div id="tour-assistant-actions" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div id="tour-assistant-actions" className="flex items-center gap-1.5 sm:gap-2 shrink-0 z-10">
           <PageTourButton pageKey="assistant" label="Assistant Guide" />
 
           <button
