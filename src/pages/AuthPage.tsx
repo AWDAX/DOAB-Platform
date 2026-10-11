@@ -143,8 +143,8 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
       <main className="relative flex-1 flex flex-col items-center justify-center w-full max-w-[540px] z-10 pt-16 pb-14 my-auto">
         <div className="w-full p-6 sm:p-8 md:p-9 login-form-card neo-glass-card shadow-2xl relative overflow-hidden transition-all duration-300">
           
-          <h1 className="h-7 sm:h-8 flex items-center justify-center gap-2 text-base sm:text-lg font-bold text-center mb-5 sm:mb-6 whitespace-nowrap tracking-tight font-sans text-neutral-950 dark:text-white">
-            <span className="hero-headline-black-gradient dark:!bg-none dark:!text-white dark:![-webkit-text-fill-color:white] inline-flex items-center gap-2">
+          <h1 className="h-7 sm:h-8 flex items-center justify-center gap-2 text-base sm:text-lg font-bold text-center mb-5 sm:mb-6 whitespace-nowrap tracking-tight font-sans">
+            <span className="hero-headline-black-gradient inline-flex items-center gap-2">
               {mode === 'login' ? (
                 <>
                   <LogIn size={16} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
