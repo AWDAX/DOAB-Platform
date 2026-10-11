@@ -198,7 +198,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [mapCenter, setMapCenter] = useState<[number, number]>(defaultCenter);
   const [mapZoom, setMapZoom] = useState<number>(12);
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
-  const [activeLeftTab, setActiveLeftTab] = useState<'search' | 'forecast' | 'incident'>('search');
+  const [activeLeftTab, setActiveLeftTab] = useState<'search' | 'forecast' | 'incident' | 'clusters'>('search');
 
   // Filter incidents based on criteria and curate density for clean map aesthetics
   const incidentSource = useMemo<TelemetryIncident[]>(() => {
@@ -587,8 +587,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           {!isMobileCollapsed && (
             <div className="p-3 flex flex-col gap-2.5">
               
-              {/* Segmented Tab Switcher (Search, Forecast, Inspector) */}
-              <div className="grid grid-cols-3 gap-1 p-1 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] text-[11px] font-semibold">
+              {/* Segmented Tab Switcher (Search, Forecast, Clusters, Hazard) */}
+              <div className="grid grid-cols-4 gap-1 p-1 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] text-[10px] font-semibold">
                 <button
                   type="button"
                   onClick={() => { playClick(); setActiveLeftTab('search'); }}
@@ -613,6 +613,23 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 >
                   <Activity className="h-3 w-3" />
                   <span>Forecast</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    setActiveLeftTab('clusters');
+                    if (!showHeatLayer) setShowHeatLayer(true);
+                  }}
+                  className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                    activeLeftTab === 'clusters'
+                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs font-bold'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                >
+                  <Layers className="h-3 w-3" />
+                  <span>Clusters</span>
                 </button>
 
                 <button
@@ -724,7 +741,90 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </div>
               )}
 
-              {/* TAB 3: Selected Incident Details */}
+              {/* TAB 3: SAHNIRMAAN Macro Danger Cluster Table */}
+              {activeLeftTab === 'clusters' && (
+                <div className="flex flex-col gap-2 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between pb-1 border-b border-[var(--border-color)]">
+                    <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-main)] flex items-center gap-1.5">
+                      <Layers className="h-3 w-3 text-rose-500" />
+                      <span>Macro Risk Clusters ({recurringClusters.length})</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        setShowHeatLayer(!showHeatLayer);
+                      }}
+                      className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+                        showHeatLayer
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                          : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)]'
+                      }`}
+                    >
+                      {showHeatLayer ? 'Halos ON' : 'Halos OFF'}
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-[var(--text-muted)] leading-tight font-mono">
+                    Formed via SAHNIRMAAN Haversine clustering. Click any cluster row to center map halos on that sector.
+                  </p>
+
+                  {/* Micro Table of Hotspot Clusters */}
+                  <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto custom-scrollbar pr-0.5">
+                    {recurringClusters.slice(0, 10).map((cluster, cIdx) => {
+                      const isCrit = cluster.highestSeverity === 'Critical';
+                      const isHigh = cluster.highestSeverity === 'High';
+                      return (
+                        <div
+                          key={`cluster-row-${cIdx}`}
+                          onClick={() => {
+                            playClick();
+                            setMapCenter([cluster.lat, cluster.lng]);
+                            setMapZoom(13);
+                          }}
+                          className="p-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] hover:border-[var(--color-brand-accent)]/50 transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs group"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${
+                                isCrit ? 'bg-rose-500 animate-ping' : isHigh ? 'bg-amber-500' : 'bg-sky-500'
+                              }`} />
+                              <span className="font-bold text-xs text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] truncate">
+                                {cluster.ward}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-[var(--text-muted)] font-mono mt-0.5 flex items-center gap-2">
+                              <span>Radius: ~{cluster.clusterRadiusKm.toFixed(1)} km</span>
+                              {cluster.distFromUser != null && (
+                                <span className="text-[var(--color-brand-accent)]">
+                                  {cluster.distFromUser.toFixed(1)} km from you
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0 flex flex-col items-end">
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full border ${
+                              isCrit
+                                ? 'bg-rose-500/10 text-rose-600 border-rose-500/30'
+                                : isHigh
+                                  ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                                  : 'bg-sky-500/10 text-sky-600 border-sky-500/30'
+                            }`}>
+                              {cluster.count} reports
+                            </span>
+                            <span className="text-[9px] font-mono text-[var(--text-muted)] mt-0.5">
+                              {cluster.highestSeverity}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: Selected Incident Details */}
               {activeLeftTab === 'incident' && (
                 <div className="flex flex-col gap-2 animate-in fade-in duration-150">
                   {selectedIncident ? (
@@ -829,16 +929,24 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         </Tooltip>
 
         {/* 2. Focused Risk Halo / Telemetry Layer Toggle */}
-        <Tooltip content={showHeatLayer ? "Hide Risk Halos & Clusters" : "Show Risk Halos & Clusters"} position="left">
+        <Tooltip content={showHeatLayer ? "Hide Risk Halos & Clusters" : "Show Risk Halos & Cluster Table"} position="left">
           <button
             type="button"
-            onClick={() => { playClick(); setShowHeatLayer(!showHeatLayer); }}
+            onClick={() => {
+              playClick();
+              const nextState = !showHeatLayer;
+              setShowHeatLayer(nextState);
+              if (nextState) {
+                setActiveLeftTab('clusters');
+                setIsMobileCollapsed(false);
+              }
+            }}
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
               showHeatLayer
-                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md'
+                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md ring-2 ring-rose-500/30'
                 : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
             }`}
-            aria-label="Toggle Risk Halo"
+            aria-label="Toggle Risk Halo and Cluster Table"
           >
             <Layers size={15} />
           </button>
