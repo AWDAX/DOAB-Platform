@@ -1213,6 +1213,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             isDarkMode={isDarkMode}
             envMode={envMode}
             userLocation={hasRealLocation ? { lat: userCoords[0], lng: userCoords[1] } : null}
+            clusters={recurringClusters}
+            showHeatLayer={showHeatLayer}
             activeRouteGeometry={
               hasRealLocation && selectedIncident 
                 ? [userCoords, [selectedIncident.lat, selectedIncident.lng]] 
