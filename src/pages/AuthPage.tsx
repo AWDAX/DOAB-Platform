@@ -108,7 +108,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
   };
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col items-center justify-center relative px-4 transition-colors duration-300 bg-[var(--bg-main)] overflow-y-auto sm:overflow-hidden select-none">
+    <div className="login-page-container h-[100dvh] max-h-[100dvh] w-full flex flex-col items-center justify-center relative px-4 transition-colors duration-300 bg-[var(--bg-main)] overflow-y-auto sm:overflow-hidden select-none">
       {/* SWATVA Minimal Brand Header */}
       <MinimalBrandHeader
         backLabel="Back to Home"

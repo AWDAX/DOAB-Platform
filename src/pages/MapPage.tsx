@@ -5,15 +5,20 @@ import 'leaflet/dist/leaflet.css';
 import { 
   AlertTriangle, 
   Route as RouteIcon, 
-  Crosshair, 
   Layers, 
   Search, 
   X, 
   ChevronDown, 
-  ChevronUp
+  ChevronUp,
+  Maximize2,
+  Minimize2,
+  Info,
+  Radar,
+  Crosshair
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
+import AnimatedCrosshair from '../components/AnimatedCrosshair';
 import { WATERLOGGING_DATASET_INCIDENTS, type TelemetryIncident } from '../data/waterloggingIncidents';
 import { useForecast } from '../hooks/useForecast';
 import { getPredictionCopy } from '../i18n/predictionCopy';
@@ -208,6 +213,11 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
     return matched;
   }, [severityFilter, destination, incidentSource]);
 
+  const [isLocating, setIsLocating] = useState(false);
+  const [isViewingMyLocation, setIsViewingMyLocation] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+
   const handleSelectIncident = (incident: TelemetryIncident) => {
     playClick();
     setSelectedIncident(incident);
@@ -217,18 +227,55 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
 
   const handleRecenter = () => {
     playClick();
-    setMapCenter(userCoords);
-    setMapZoom(12);
+    if (isViewingMyLocation) {
+      // Zoom out to city overview
+      setMapCenter(defaultCenter);
+      setMapZoom(11);
+      setIsViewingMyLocation(false);
+    } else {
+      // Zoom in to GPS
+      setIsLocating(true);
+      setTimeout(() => {
+        setIsLocating(false);
+        setMapCenter(userCoords);
+        setMapZoom(15);
+        setIsViewingMyLocation(true);
+      }, 400);
+    }
   };
 
+  const handleToggleFullscreen = () => {
+    playClick();
+    const mapElement = document.getElementById('tour-map-view');
+    if (!mapElement) return;
+
+    if (!document.fullscreenElement) {
+      mapElement.requestFullscreen().then(() => setIsFullScreen(true)).catch(() => {
+        setIsFullScreen(!isFullScreen);
+      });
+    } else {
+      document.exitFullscreen().then(() => setIsFullScreen(false)).catch(() => {
+        setIsFullScreen(false);
+      });
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
   return (
-    <div id="tour-map-view" className="flex-grow flex flex-col relative w-full h-full min-h-[420px] bg-[var(--bg-main)] overflow-hidden">
+    <div id="tour-map-view" className={`flex-grow flex flex-col relative w-full h-full min-h-[420px] bg-[var(--bg-main)] overflow-hidden ${isFullScreen ? 'fixed inset-0 z-[9999] rounded-none' : ''}`}>
       
       {/* ── Left Floating Controls & Incident Inspector Panel ── */}
       <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 w-[calc(100%-3.75rem)] sm:w-92 flex flex-col gap-2.5 pointer-events-none max-h-[calc(100%-1.5rem)] overflow-y-auto custom-scrollbar">
         
         {/* Search & Safe Routing Card */}
-        <div className="neo-glass-card p-2.5 sm:p-3.5 rounded-2xl flex flex-col gap-2.5 pointer-events-auto shadow-lg backdrop-blur-xl border border-[var(--border-color)]">
+        <div id="tour-map-search" className="neo-glass-card p-2.5 sm:p-3.5 rounded-2xl flex flex-col gap-2.5 pointer-events-auto shadow-lg backdrop-blur-xl border border-[var(--border-color)]">
           
           <div className="flex items-center justify-between gap-2 bg-[var(--bg-main)]/90 border border-[var(--border-color)] px-3 py-1.5 rounded-xl">
             <div className="flex items-center gap-2 truncate">
@@ -389,32 +436,111 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
         )}
       </div>
 
-      {/* ── Top-Right Map Controls ── */}
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col gap-2 pointer-events-auto">
+      {/* ── Top-Right SAHNIRMAAN Floating Neo-Glass Map Controls Toolbar ── */}
+      <div id="tour-map-controls" className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">
+        {/* 1. My Location FAB with AnimatedCrosshair */}
         <button
           type="button"
           onClick={handleRecenter}
-          className="p-2.5 rounded-xl bg-[var(--bg-card)]/90 backdrop-blur-md border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors shadow-lg cursor-pointer"
-          title="Recenter to GPS Location"
-          aria-label="Recenter to GPS"
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer relative group ${
+            isLocating
+              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md animate-pulse'
+              : isViewingMyLocation
+                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md'
+                : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+          }`}
+          title={isViewingMyLocation ? "Viewing My Location (Click to zoom out)" : "Go to My Location"}
+          aria-label={isViewingMyLocation ? "Zoom out to regional map overview" : "Fly map to my current GPS location"}
         >
-          <Crosshair className="h-4 w-4 text-[var(--color-brand-accent)]" />
+          <AnimatedCrosshair size={16} locating={isLocating} active={isViewingMyLocation} />
         </button>
 
+        {/* 2. Focused Risk Halo / Telemetry Layer Toggle */}
         <button
           type="button"
           onClick={() => { playClick(); setShowHeatLayer(!showHeatLayer); }}
-          className={`p-2.5 rounded-xl backdrop-blur-md border transition-colors shadow-lg cursor-pointer ${
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
             showHeatLayer
-              ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]'
-              : 'bg-[var(--bg-card)]/90 text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)]'
+              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md'
+              : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
           }`}
-          title="Toggle Focused Risk Halo"
-          aria-label="Toggle Focused Risk Halo"
+          title="Toggle Risk Halo & Prediction Cells"
+          aria-label="Toggle Risk Halo"
         >
-          <Layers className="h-4 w-4" />
+          <Layers size={15} />
+        </button>
+
+        {/* 3. Fullscreen Toggle Button */}
+        <button
+          type="button"
+          onClick={handleToggleFullscreen}
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
+            isFullScreen 
+              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
+              : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+          }`}
+          title={isFullScreen ? "Exit Fullscreen" : "Toggle Fullscreen Map"}
+          aria-label="Toggle Fullscreen"
+        >
+          {isFullScreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+        </button>
+
+        {/* 4. Map Telemetry Info / Legend Button */}
+        <button
+          type="button"
+          onClick={() => { playClick(); setShowInfo(!showInfo); }}
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
+            showInfo 
+              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
+              : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+          }`}
+          title={showInfo ? "Close Map Intelligence" : "Open Map Intelligence"}
+          aria-label="Toggle Map Intelligence"
+        >
+          {showInfo ? <X size={15} /> : <Info size={15} />}
         </button>
       </div>
+
+      {/* ── SAHNIRMAAN Floating Map Intelligence & Legend Card (Anchored below toolbar) ── */}
+      {showInfo && (
+        <div className="absolute top-16 right-3 sm:right-4 z-20 w-72 sm:w-80 p-4 rounded-2xl backdrop-blur-2xl bg-[var(--bg-card)]/95 dark:bg-[#12100e]/95 border border-[var(--border-color)] dark:border-white/15 shadow-2xl space-y-3 pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center justify-between pb-2 border-b border-[var(--border-color)] dark:border-white/10">
+            <div className="flex items-center space-x-1.5 text-xs font-bold text-neutral-900 dark:text-white">
+              <Radar size={14} className="text-[var(--color-brand-accent)]" />
+              <span>GIS Urban WaterLogging Grid</span>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              Live Telemetry
+            </span>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <p className="text-[11px] font-medium text-[var(--text-muted)] leading-relaxed">
+              Real-time spatial telemetry combining historical municipal complaints, radar precipitation, and one-hour elevation-aware forecasts.
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="p-2.5 rounded-xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
+                <div className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">Top Severity</div>
+                <div className="font-bold text-neutral-900 dark:text-white text-xs mt-0.5">
+                  {filteredIncidents.some(i => i.severity === 'Critical') ? 'Critical (40+ cm)' : 'High Hazard'}
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[var(--bg-main)]/90 border border-[var(--border-color)] dark:border-white/5">
+                <div className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">Active Nodes</div>
+                <div className="font-bold text-neutral-900 dark:text-white text-xs mt-0.5">
+                  {filteredIncidents.length} Hotspots
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[var(--border-color)] dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)]">
+              <span>GPS: WGS84 EPSG:4326</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">● Synchronized</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Leaflet Interactive Map View ── */}
       <div className="absolute inset-0 h-full w-full">

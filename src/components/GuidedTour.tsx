@@ -472,10 +472,135 @@ interface SpotlightRect {
   ry: number;
 }
 
+interface WelcomeTourPromptModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAccept: () => void;
+  envMode: 'flood' | 'drought';
+}
+
+export function WelcomeTourPromptModal({
+  isOpen,
+  onClose,
+  onAccept,
+  envMode
+}: WelcomeTourPromptModalProps) {
+  const isFlood = envMode === 'flood';
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        playClick();
+        onClose();
+      } else if (e.key === 'Enter') {
+        playClick();
+        onAccept();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, onAccept]);
+
+  if (!isOpen) return null;
+
+  return typeof document !== 'undefined' && createPortal(
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 sm:p-6 bg-black/65 dark:bg-black/80 backdrop-blur-xl animate-in fade-in duration-200 select-none">
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tour-prompt-title"
+        className="relative w-full max-w-lg rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] dark:border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.25)] dark:shadow-[0_30px_70px_rgba(0,0,0,0.9)] p-6 sm:p-8 text-[var(--text-main)] overflow-hidden animate-in zoom-in-95 duration-200"
+      >
+        {/* Subtle Warm Amber / Accent Obsidian Glow Halo */}
+        <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-amber-500/[0.08] dark:bg-amber-500/[0.12] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-amber-500/[0.06] dark:bg-amber-500/[0.10] blur-3xl pointer-events-none" />
+
+        {/* Close Button */}
+        <button
+          onClick={() => {
+            playClick();
+            onClose();
+          }}
+          type="button"
+          aria-label="Close"
+          className="absolute top-4 right-4 h-8 w-8 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition cursor-pointer"
+        >
+          <X size={16} />
+        </button>
+
+        {/* Header Icon + Mode Pill */}
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-10 w-10 rounded-2xl bg-[var(--text-main)] text-[var(--bg-card)] flex items-center justify-center shadow-md">
+            <Compass size={20} className="stroke-[2.2]" />
+          </div>
+          <div>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)]">
+              {isFlood ? 'Monsoon Grid' : 'Scarcity Grid'} · Quick 1-Min Tour
+            </span>
+          </div>
+        </div>
+
+        {/* Title & Subtitle */}
+        <h2 id="tour-prompt-title" className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] leading-snug">
+          Welcome to DOAB Operations!
+        </h2>
+        <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed mt-2">
+          Would you like a quick interactive tour to navigate your dual-climate GIS map, safe computed elevation routes, and civic hazard response?
+        </p>
+
+        {/* Feature Highlights List */}
+        <div className="my-5 p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-2.5">
+          <div className="flex items-center gap-2.5 text-xs text-[var(--text-main)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-accent)] flex-shrink-0" />
+            <span>Interactive GPS telemetry toolbar & live one-hour model estimates</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-[var(--text-main)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-accent)] flex-shrink-0" />
+            <span>Safe elevation bypass routing to prevent stalling in standing water</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-[var(--text-main)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-accent)] flex-shrink-0" />
+            <span>Context-aware DOAB Voice Copilot terminal & full-screen SOS alerts</span>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              onClose();
+            }}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-semibold transition cursor-pointer text-center"
+          >
+            No thanks, explore on my own
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              onAccept();
+            }}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Start Guided Tour</span>
+            <ChevronRight size={14} className="stroke-[2.5]" />
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 interface PopoverPos {
   top: number;
   left: number;
   isTop: boolean;
+  arrowLeft: number;
 }
 
 import { useLocation } from 'react-router-dom';
@@ -505,7 +630,7 @@ export default function GuidedTour({
   const steps = getStepsForCurrentRoute();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [spotlightCoords, setSpotlightCoords] = useState<SpotlightRect | null>(null);
-  const [popoverPos, setPopoverPos] = useState<PopoverPos>({ top: 0, left: 0, isTop: false });
+  const [popoverPos, setPopoverPos] = useState<PopoverPos>({ top: 0, left: 0, isTop: false, arrowLeft: 175 });
   const [isScrolling, setIsScrolling] = useState(false);
   const [hasTarget, setHasTarget] = useState(false);
 
@@ -565,7 +690,10 @@ export default function GuidedTour({
       let left = targetCenterX - effectiveCardWidth / 2;
       left = Math.max(screenPadding, Math.min(viewportWidth - effectiveCardWidth - screenPadding, left));
 
-      setPopoverPos({ top, left, isTop });
+      // Calculate relative pointer arrow X offset so notch points directly at target element
+      const arrowLeft = Math.max(20, Math.min(effectiveCardWidth - 20, targetCenterX - left));
+
+      setPopoverPos({ top, left, isTop, arrowLeft });
     } else {
       // Fallback: Center spotlight and card in viewport if target not mounted
       const centerW = Math.min(viewportWidth - 32, 500);
@@ -579,7 +707,7 @@ export default function GuidedTour({
       const effectiveCardWidth = Math.min(cardWidth, viewportWidth - screenPadding * 2);
       const left = Math.max(screenPadding, (viewportWidth - effectiveCardWidth) / 2);
       const top = Math.max(screenPadding, (viewportHeight - cardHeight) / 2);
-      setPopoverPos({ top, left, isTop: false });
+      setPopoverPos({ top, left, isTop: false, arrowLeft: effectiveCardWidth / 2 });
     }
   }, [isOpen, currentStep]);
 
@@ -824,9 +952,24 @@ export default function GuidedTour({
               maxWidth: 'calc(100vw - 32px)',
               zIndex: 99999
             }}
-            className="neo-glass-card rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl overflow-hidden p-5 sm:p-5.5 flex flex-col pointer-events-auto"
+            className="relative neo-glass-card rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl p-5 sm:p-5.5 flex flex-col pointer-events-auto"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Dynamic Arrow Notch pointing directly to target element */}
+            {hasTarget && (
+              <div 
+                className={`absolute w-3.5 h-3.5 bg-[var(--bg-card)] border-[var(--border-color)] pointer-events-none transform rotate-45 ${
+                  popoverPos.isTop 
+                    ? '-bottom-1.75 border-b border-r' 
+                    : '-top-1.75 border-t border-l'
+                }`}
+                style={{
+                  left: `${popoverPos.arrowLeft}px`,
+                  transform: 'translateX(-50%) rotate(45deg)'
+                }}
+              />
+            )}
+
             {/* Header: Step Counter Badge & Close */}
             <div className="flex items-center justify-between gap-3 mb-3.5 pb-2.5 border-b border-[var(--border-color)]">
               <div className="flex items-center gap-2">

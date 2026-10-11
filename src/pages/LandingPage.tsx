@@ -16,7 +16,8 @@ import {
   Menu, 
   X, 
   Layers, 
-  HelpCircle
+  HelpCircle,
+  Compass
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '../components/ThemeToggle';
@@ -102,9 +103,10 @@ interface LandingPageProps {
   toggleEnvMode?: () => void;
   user?: any;
   onOpenPreferences?: () => void;
+  onOpenTour?: () => void;
 }
 
-export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', user }: LandingPageProps) {
+export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', user, onOpenTour }: LandingPageProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
@@ -242,6 +244,10 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             <HelpCircle className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
             <span>FAQ</span>
           </button>
+          <Link to="/team" onClick={() => playClick()} className="portfolio-nav-link text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer flex items-center gap-1.5">
+            <BrandLogo size="sm" />
+            <span>Meet Team</span>
+          </Link>
         </nav>
 
         {/* Center-to-Right Vertical Divider Line (Scrolled only) */}
@@ -254,6 +260,20 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
             <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
           </Tooltip>
+
+          {onOpenTour && (
+            <Tooltip content="Start Guided Tour" shortcut="Shift+T" position="bottom">
+              <button
+                type="button"
+                id="tour-landing-guide-btn"
+                onClick={() => { playClick(); onOpenTour(); }}
+                className="w-8 h-8 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                aria-label="Start Landing Page Guided Tour"
+              >
+                <Compass className="h-4 w-4 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-45" />
+              </button>
+            </Tooltip>
+          )}
 
           <Link
             to={user ? "/" : "/login"}
@@ -322,6 +342,28 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
                   <button type="button" onClick={() => scrollTo('faq')} className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-left flex items-center gap-2">
                     <HelpCircle className="h-4 w-4 text-[var(--color-brand-accent)]" /> Architecture FAQ
                   </button>
+
+                  <Link 
+                    to="/team" 
+                    onClick={() => { playClick(); setIsMobileMenuOpen(false); }} 
+                    className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-left flex items-center gap-2"
+                  >
+                    <BrandLogo size="sm" /> Team Contrarians
+                  </Link>
+
+                  {onOpenTour && (
+                    <button 
+                      type="button" 
+                      onClick={() => { 
+                        playClick(); 
+                        setIsMobileMenuOpen(false); 
+                        onOpenTour(); 
+                      }} 
+                      className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-left flex items-center gap-2 cursor-pointer"
+                    >
+                      <Compass className="h-4 w-4 text-[var(--color-brand-accent)]" /> Start Guided Tour
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -349,7 +391,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         />
 
         {/* High-Impact Headline with Kinetic Rolling */}
-        <div className="relative w-full max-w-4xl z-10 flex flex-col items-center">
+        <div id="tour-landing-hero" className="relative w-full max-w-4xl z-10 flex flex-col items-center">
           <h1 className="tracking-tight text-balance relative z-10 mb-3 flex flex-col items-center w-full">
             <span className="hero-headline-black-gradient relative max-w-fit group cursor-default whitespace-nowrap font-black text-[clamp(1.65rem,6.8vw,4.25rem)] leading-tight sm:leading-none py-1.5 px-1">
               Civic crisis response?
@@ -366,7 +408,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         </div>
 
         {/* Dynamic Typewriter Search Bar (Ctrl+K) */}
-        <div className="relative group w-full max-w-xl mb-8 z-10">
+        <div id="tour-landing-search" className="relative group w-full max-w-xl mb-8 z-10">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-1.5 shadow-md focus-within:border-[var(--color-brand-accent)] focus-within:ring-2 focus-within:ring-[var(--color-brand-accent)]/20 transition-all">
             <Search className="h-4.5 w-4.5 text-[var(--text-muted)] ml-3 shrink-0" />
             <input
@@ -411,7 +453,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         </div>
 
         {/* Hero 4-Stat Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 w-full max-w-4xl mx-auto">
+        <div id="tour-landing-bento" className="grid grid-cols-2 md:grid-cols-4 gap-3.5 w-full max-w-4xl mx-auto">
           {COVERAGE_STATS.map((stat, i) => (
             <div key={i} className="neo-glass-card p-4 rounded-2xl border border-[var(--border-color)] text-left flex flex-col justify-between shadow-2xs">
               <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
@@ -430,7 +472,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
 
       {/* ── SECTION: THE DOAB 4-STAGE LOOP ── */}
       <section id="loop" className="py-14 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
-        <div className="mb-10 text-center max-w-2xl mx-auto">
+        <div id="tour-landing-loop" className="mb-10 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
             <span>Operating Framework</span>
           </div>
@@ -475,7 +517,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
 
       {/* ── SECTION: CLIMATE MODES COMPARISON ── */}
       <section id="modes" className="py-14 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
-        <div className="mb-8 text-center max-w-2xl mx-auto">
+        <div id="tour-landing-modes" className="mb-8 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
             <span>Dual Crisis Engine</span>
           </div>

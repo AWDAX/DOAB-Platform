@@ -544,32 +544,41 @@ export default function PreferencesModal({
                     </button>
                   </div>
                 )}
-              </div>
-
             </div>
 
-            {/* Modal Footer */}
-            <div className="pt-4 border-t border-[var(--border-color)] flex items-center justify-between gap-3 flex-shrink-0">
-              {onOpenTour ? (
+            {/* SECTION 6: Platform Guided Tour Card (Contained within Preferences) */}
+            {onOpenTour && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-neutral-950 dark:bg-white flex items-center justify-center shrink-0 shadow-md">
+                    <Compass size={16} className="text-white dark:text-neutral-950 stroke-[2.2]" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-[var(--text-main)] leading-snug">
+                      Interactive Platform Guided Tour
+                    </div>
+                    <div className="text-[10px] text-[var(--text-muted)] leading-tight mt-0.5">
+                      Explore key features, dual-climate modes, GIS flood telemetry & route safety.
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => { playClick(); onClose(); onOpenTour(); }}
-                  className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center gap-1.5 transition-colors cursor-pointer"
+                  onClick={() => {
+                    playClick();
+                    onClose();
+                    onOpenTour();
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold tracking-tight hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
                 >
-                  <Compass size={14} className="text-[var(--color-brand-accent)]" />
+                  <Compass size={14} className="stroke-[2.2]" />
                   <span>Start Guided Tour</span>
+                  <span className="opacity-70 font-mono">→</span>
                 </button>
-              ) : (
-                <div />
-              )}
+              </div>
+            )}
 
-              <button
-                type="button"
-                onClick={() => { playClick(); onClose(); }}
-                className="px-5 py-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
-              >
-                Done
-              </button>
             </div>
           </motion.div>
         </div>

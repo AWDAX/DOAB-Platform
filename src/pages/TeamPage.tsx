@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   Radio,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Compass
 } from 'lucide-react';
 import { TEAM_MEMBERS, PLATFORM_STATS, CORE_PILLARS, type TeamMember } from '../data/team';
 import { playClick } from '../utils/soundFx';
@@ -44,9 +45,10 @@ interface TeamPageProps {
   toggleTheme: () => void;
   envMode: 'flood' | 'drought';
   toggleEnvMode: () => void;
+  onOpenTour?: () => void;
 }
 
-export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMode }: TeamPageProps) {
+export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMode, onOpenTour }: TeamPageProps) {
   const navigate = useNavigate();
   const [lightboxMember, setLightboxMember] = useState<TeamMember | null>(null);
   const [lightboxTilt, setLightboxTilt] = useState({ x: 0, y: 0 });
@@ -179,6 +181,20 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
               <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
             </Tooltip>
+
+            {onOpenTour && (
+              <Tooltip content="Start Team Tour" shortcut="Shift+T" position="bottom">
+                <button
+                  type="button"
+                  id="tour-team-guide-btn"
+                  onClick={() => { playClick(); onOpenTour(); }}
+                  className="w-8 h-8 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                  aria-label="Start Team Page Tour"
+                >
+                  <Compass className="h-4 w-4 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-45" />
+                </button>
+              </Tooltip>
+            )}
           </div>
         </div>
       </header>

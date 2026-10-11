@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Truck, Shield, LogOut, Clock } from 'lucide-react';
+import { User, Truck, Shield, LogOut, Clock, Settings, Users2, Award } from 'lucide-react';
 import { signInWithGoogle, firebaseSignOut, onDOABAuthStateChanged } from '../lib/firebase';
+import { playClick } from '../utils/soundFx';
 import BrandLogo from '../components/BrandLogo';
 
 function formatLastLogin(dateString?: string | null) {
@@ -269,16 +270,80 @@ export default function ProfilePage() {
           </label>
         </div>
       </div>
-      
-      {user && (
-        <button 
-          onClick={handleLogout}
-          className="sm:hidden mt-4 w-full max-w-3xl flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold btn-danger-subtle cursor-pointer shadow-2xs mx-auto"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </button>
-      )}
+
+      {/* ── Mobile-Only / Touch-Friendly Quick Action Grid (SAHNIRMAAN Standard) ── */}
+      <div className="w-full max-w-3xl mx-auto flex flex-col gap-3.5 sm:hidden my-2">
+        {/* Civic Standing & Trust Score Card */}
+        <div className="w-full p-4 rounded-2xl neo-glass-card border border-[var(--border-color)] flex flex-col items-center justify-center text-center gap-1.5 shadow-2xs">
+          <div className="inline-flex items-center justify-center gap-2 max-w-full">
+            <div className="w-6 h-6 rounded-lg bg-[var(--text-main)] text-[var(--bg-card)] flex items-center justify-center shrink-0">
+              <Award size={13} />
+            </div>
+            <span className="text-xs font-semibold text-[var(--text-main)] truncate">
+              <span className="font-bold">Civic Standing:</span>{' '}
+              <span className="font-mono text-[var(--text-muted)]">Verified Commuter (Top 5% Bengaluru Grid)</span>
+            </span>
+          </div>
+          <span className="text-[10px] font-mono font-bold text-[var(--color-brand-accent)] inline-flex items-center gap-1">
+            <span>Level 3 Hydrology Back-Checker</span>
+          </span>
+        </div>
+
+        {/* 3-Column Symmetrical Grid: Preferences, Team, Logout */}
+        <div className="grid grid-cols-3 gap-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              window.dispatchEvent(new CustomEvent('doab:open-preferences'));
+            }}
+            className="p-3.5 rounded-2xl bg-[var(--bg-card)] hover:bg-[var(--bg-main)] border border-[var(--border-color)] transition-all flex flex-col items-center justify-center gap-2 text-center group cursor-pointer shadow-2xs"
+          >
+            <Settings size={18} className="text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors" />
+            <span className="text-[11px] font-medium text-[var(--text-main)] text-center leading-tight">
+              Settings & Theme
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              navigate('/team');
+            }}
+            className="p-3.5 rounded-2xl bg-[var(--bg-card)] hover:bg-[var(--bg-main)] border border-[var(--border-color)] transition-all flex flex-col items-center justify-center gap-2 text-center group cursor-pointer shadow-2xs"
+          >
+            <Users2 size={18} className="text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors" />
+            <span className="text-[11px] font-medium text-[var(--text-main)] text-center leading-tight">
+              Meet Team
+            </span>
+          </button>
+
+          {user ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="p-3.5 rounded-2xl bg-rose-500/[0.06] hover:bg-rose-500/[0.12] dark:bg-rose-500/[0.08] dark:hover:bg-rose-500/[0.16] border border-rose-200/80 dark:border-rose-500/20 transition-all flex flex-col items-center justify-center gap-2 text-center group cursor-pointer shadow-2xs"
+            >
+              <LogOut size={18} className="text-rose-500 dark:text-rose-400 group-hover:scale-105 transition-transform" />
+              <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400 text-center leading-tight">
+                Sign Out
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleLogin}
+              className="p-3.5 rounded-2xl bg-[var(--bg-card)] hover:bg-[var(--bg-main)] border border-[var(--border-color)] transition-all flex flex-col items-center justify-center gap-2 text-center group cursor-pointer shadow-2xs"
+            >
+              <User size={18} className="text-[var(--color-brand-accent)] group-hover:scale-105 transition-transform" />
+              <span className="text-[11px] font-medium text-[var(--text-main)] text-center leading-tight">
+                Sign In
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

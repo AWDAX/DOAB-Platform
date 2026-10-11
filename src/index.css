@@ -73,8 +73,11 @@
 
   html {
     scroll-behavior: smooth;
-    scrollbar-gutter: stable;
     scrollbar-color: rgba(115, 115, 115, 0.28) transparent;
+  }
+
+  .login-page-container {
+    scrollbar-gutter: stable;
   }
 
   .dark html, html.dark {

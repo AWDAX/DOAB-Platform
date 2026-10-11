@@ -73,7 +73,7 @@ function BottomNav() {
 import { onDOABAuthStateChanged } from './lib/firebase';
 import PermissionsModal from './components/PermissionsModal';
 import EmergencyDangerBroadcast from './components/EmergencyDangerBroadcast';
-import GuidedTour from './components/GuidedTour';
+import GuidedTour, { WelcomeTourPromptModal } from './components/GuidedTour';
 
 function DashboardLayout({ 
   children,
@@ -134,6 +134,34 @@ function AppContent({
       if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, []);
+
+  const [showWelcomeTour, setShowWelcomeTour] = useState(false);
+
+  // Check for first-time login welcome tour prompt (SAHNIRMAAN standard)
+  useEffect(() => {
+    if (user) {
+      const alreadyPrompted = localStorage.getItem('doab_tour_first_login_prompted');
+      const alreadyCompleted = localStorage.getItem('doab_tour_completed');
+      if (!alreadyPrompted && !alreadyCompleted) {
+        // Slight delay to allow dashboard components to fully mount
+        const timer = setTimeout(() => {
+          setShowWelcomeTour(true);
+        }, 600);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user]);
+
+  const handleAcceptWelcomeTour = () => {
+    localStorage.setItem('doab_tour_first_login_prompted', 'true');
+    setShowWelcomeTour(false);
+    setIsTourOpen(true);
+  };
+
+  const handleCloseWelcomeTour = () => {
+    localStorage.setItem('doab_tour_first_login_prompted', 'true');
+    setShowWelcomeTour(false);
+  };
 
   const isAuthenticated = Boolean(user);
   const isLanding = location.pathname === '/landing' || (location.pathname === '/' && !isAuthenticated);
@@ -201,6 +229,7 @@ function AppContent({
                   toggleEnvMode={toggleEnvMode} 
                   user={user} 
                   onOpenPreferences={() => { playClick(); setIsPreferencesOpen(true); }}
+                  onOpenTour={() => { playClick(); setIsTourOpen(true); }}
                 />
               </PageTransition>
             } 
@@ -209,7 +238,13 @@ function AppContent({
             path="/team" 
             element={
               <PageTransition>
-                <TeamPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} envMode={envMode} toggleEnvMode={toggleEnvMode} />
+                <TeamPage 
+                  isDarkMode={isDarkMode} 
+                  toggleTheme={toggleTheme} 
+                  envMode={envMode} 
+                  toggleEnvMode={toggleEnvMode} 
+                  onOpenTour={() => { playClick(); setIsTourOpen(true); }}
+                />
               </PageTransition>
             } 
           />
@@ -321,6 +356,14 @@ function AppContent({
       <GuidedTour
         isOpen={isTourOpen}
         onClose={() => setIsTourOpen(false)}
+        envMode={envMode}
+      />
+
+      {/* First-Time Login Welcome Guided Tour Prompt Modal (SAHNIRMAAN standard) */}
+      <WelcomeTourPromptModal
+        isOpen={showWelcomeTour}
+        onClose={handleCloseWelcomeTour}
+        onAccept={handleAcceptWelcomeTour}
         envMode={envMode}
       />
 
