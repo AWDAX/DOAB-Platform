@@ -18,6 +18,7 @@ Developed by **Team Contrarians** for WeMakeDevs Hackathon.
 
 ## ⚡ Key Highlights & Architecture
 
+- **Enterprise AWS Cloud Architecture**: Production-grade deployment across **AWS S3 + CloudFront CDN**, **AWS EC2 (Ubuntu 24.04)**, and **AWS RDS PostgreSQL 18.3**, with automated GitHub Actions CI/CD and edge proxying. See [`DEPLOYMENT_ARCHITECTURE.md`](./DEPLOYMENT_ARCHITECTURE.md).
 - **Dual-Engine Interactive Mapping**: Adaptive toggle between **2D Lite** (battery-efficient Leaflet raster pipeline) and **3D Vector GPU** (MapLibre GL hardware-accelerated 3D tilt/orbit engine). See [`GEOSPATIAL_ARCHITECTURE.md`](./GEOSPATIAL_ARCHITECTURE.md) for data sources and tile mechanics.
 - **Precision Safe Routing**: Multi-modal navigation avoiding high-risk flood zones and waterlogged roads, with vehicle clearance thresholds and elevation biasing.
 - **Zero-Jerk Route Transitions**: Hardware-accelerated CSS keyframe transitions and synchronous pre-paint scroll coordination (`scrollbar-gutter: stable`).
