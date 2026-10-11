@@ -219,22 +219,17 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         {/* Left: Brand Logo & Title */}
         <Link to="/" onClick={() => playClick()} className="flex items-center gap-2.5 group cursor-pointer flex-shrink-0">
           <BrandLogo size="md" />
-          <div className={`flex flex-col overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-            scrolled ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none' : 'max-w-[140px] opacity-100 translate-x-0'
-          }`}>
+          <div className="flex flex-col transition-opacity duration-300">
             <span className="font-bold text-xs tracking-tight text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] transition-colors whitespace-nowrap">
               DOAB
             </span>
-            <span className="text-[9px] text-[var(--text-muted)] tracking-tight leading-none mt-0.5 whitespace-nowrap">
+            <span className={`text-[9px] text-[var(--text-muted)] tracking-tight leading-none transition-all duration-300 whitespace-nowrap ${
+              scrolled ? 'hidden' : 'block mt-0.5'
+            }`}>
               Two Waters System
             </span>
           </div>
         </Link>
-
-        {/* Left-to-Center Vertical Divider Line (Scrolled only) */}
-        <div className={`hidden md:block h-3.5 w-[1px] bg-[var(--border-color)] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          scrolled ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'
-        }`} />
 
         {/* Center: Clean Nav Links with Dotted Animated Underlines */}
         <nav className="hidden md:flex items-center gap-5 text-xs font-semibold text-[var(--text-muted)]">
@@ -256,10 +251,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           </button>
         </nav>
 
-        {/* Center-to-Right Vertical Divider Line (Scrolled only) */}
-        <div className={`hidden md:block h-3.5 w-[1px] bg-[var(--border-color)] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          scrolled ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'
-        }`} />
+
 
         {/* Right: Controls & Clean Sign In CTA */}
         <div className="flex items-center gap-2 flex-shrink-0">
