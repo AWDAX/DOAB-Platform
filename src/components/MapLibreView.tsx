@@ -411,7 +411,13 @@ export default function MapLibreView({
       maxZoom: 18,
       pitch: 45, // 3D tilt
       bearing: -17.6,
-      attributionControl: false // Removes standard bottom-right attribution bar cleanly
+      attributionControl: false, // Removes standard bottom-right attribution bar cleanly
+      // Touch screen & pinch gesture controls:
+      dragPan: true,
+      touchZoomRotate: true, // Enables two-finger pinch-to-zoom and two-finger rotate
+      touchPitch: true, // Enables two-finger swipe up/down to tilt 3D pitch
+      doubleClickZoom: true,
+      scrollZoom: true,
     });
 
     map.on('rotate', () => {
