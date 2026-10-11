@@ -427,6 +427,21 @@ body.dark .cursor-grab:active {
   background-color: rgba(44, 36, 30, 0.88);
 }
 
+/* Compact Pill Navbar for Minimalist Pages (e.g. Team Page without text navlinks) */
+.portfolio-header.team-header.scrolled {
+  width: 84%;
+  max-width: 480px;
+  padding: 0.4rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .portfolio-header.team-header.scrolled {
+    width: 60%;
+    max-width: 440px;
+    padding: 0.45rem 1.25rem;
+  }
+}
+
 /* Portfolio Navbar Clean Text Link with Dotted Animated Underline */
 .portfolio-nav-link {
   position: relative;

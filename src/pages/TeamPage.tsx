@@ -157,7 +157,7 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
       </div>
 
       {/* ── Dynamic Floating Morphing Navbar (SAHNIRMAAN / SWATVA Standard) ── */}
-      <header className={`portfolio-header relative ${scrolled ? 'scrolled' : ''}`}>
+      <header className={`portfolio-header team-header relative ${scrolled ? 'scrolled' : ''}`}>
         {/* Left: Back Button with SAHNIRMAAN Oval Styling */}
         <div className="flex items-center flex-shrink-0 z-10">
           <button
