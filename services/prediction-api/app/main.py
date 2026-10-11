@@ -65,7 +65,26 @@ async def rate_limit(request: Request, call_next):
 @app.get("/health")
 def health() -> dict:
     status = model_status()
-    return {"status": "ok", "model_ready": status["ready"]}
+    db_connected = False
+    db_error = None
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        try:
+            import psycopg2
+            conn = psycopg2.connect(db_url, connect_timeout=3)
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1;")
+            conn.close()
+            db_connected = True
+        except Exception as e:
+            db_error = str(e)
+            log.warning("Database health check failed: %s", e)
+
+    return {
+        "status": "ok",
+        "model_ready": status["ready"],
+        "database": "connected" if db_connected else ("unreachable" if db_error else "not_configured")
+    }
 
 
 @app.get("/model")
