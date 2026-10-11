@@ -5,6 +5,7 @@ import {
   ChevronRight, X
 } from 'lucide-react';
 import AIOrbFace from '../components/AIOrbFace';
+import { FormattedChatText } from '../components/FormattedChatText';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import { useDOABChat } from '../hooks/useDOABChat';
@@ -480,7 +481,7 @@ export default function AssistantPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="rounded-2xl rounded-tl-xs px-4 sm:px-5 py-3.5 text-xs sm:text-sm leading-relaxed border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] shadow-xs">
-                      <p className="whitespace-pre-wrap">{m.content}</p>
+                      <FormattedChatText content={m.content} />
                     </div>
 
                     <div className="mt-1.5 flex items-center gap-2 px-1">

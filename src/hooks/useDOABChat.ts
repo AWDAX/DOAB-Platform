@@ -28,7 +28,7 @@ Your core mission is the DOAB Loop:
 Guidelines:
 - Keep answers concise, high-density, and actionable.
 - Prioritize street safety, route distance, and waterlog depth estimates.
-- Use clear bullet points when comparing multiple routes.`;
+- Use natural plain text with clear bullet points. Avoid decorative asterisks or messy markdown markers.`;
 
 export function useDOABChat() {
   const [sessions, setSessions] = useState<ChatSession[]>(() => {

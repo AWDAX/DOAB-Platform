@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AIOrbFace from './AIOrbFace';
+import { FormattedChatText } from './FormattedChatText';
 import Tooltip from './Tooltip';
 import { playClick } from '../utils/soundFx';
 import { useDOABChat } from '../hooks/useDOABChat';
@@ -673,7 +674,11 @@ export default function VoiceAssistant() {
                             : 'bg-[var(--bg-card)] text-[var(--text-main)] rounded-tl-xs border border-[var(--border-color)]'
                         } ${playingMessageId === m.id ? 'ring-2 ring-sky-400/40' : ''}`}
                       >
-                        {m.content}
+                        {m.role === 'assistant' ? (
+                          <FormattedChatText content={m.content} />
+                        ) : (
+                          m.content
+                        )}
 
                         {/* Saystack-style Read Aloud / Audio Playback Trigger */}
                         {m.role === 'assistant' && (
