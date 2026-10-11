@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { 
   Mic, MicOff, Send, X, Maximize2, Minimize2, 
-  Minus, History, Plus, Trash2, Sparkles, Volume2, VolumeX
+  Minus, History, Plus, Trash2, MessageSquarePlus, Volume2, VolumeX
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AIOrbFace from './AIOrbFace';
@@ -731,7 +731,7 @@ export default function VoiceAssistant() {
                   transition={{ duration: 0.18, ease: "easeOut" }}
                   className="px-4 py-2 bg-[var(--bg-card)]/60 border-t border-[var(--border-color)] flex items-center gap-2 overflow-hidden"
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0 animate-pulse" />
+                  <MessageSquarePlus className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0 opacity-80" />
                   <div className="min-w-0 flex-1 overflow-hidden">
                     <AnimatePresence mode="wait">
                       <motion.button
