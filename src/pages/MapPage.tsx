@@ -1223,6 +1223,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           <MapContainer
             center={mapCenter}
             zoom={mapZoom}
+            maxZoom={18}
             zoomControl={false}
             scrollWheelZoom={true}
             dragging={true}
@@ -1247,6 +1248,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   ? 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
                   : 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
               }
+              maxNativeZoom={16}
               maxZoom={18}
             />
 

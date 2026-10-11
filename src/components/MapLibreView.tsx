@@ -40,13 +40,17 @@ export default function MapLibreView({
       ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
       : 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
+    // Canvas tiles natively cap at zoom 16 in India/global, whereas satellite imagery goes to 18+
+    const maxNativeTileZoom = isDarkMode ? 18 : 16;
+
     return {
       version: 8 as const,
       sources: {
         'esri-base-tiles': {
           type: 'raster' as const,
           tiles: [tileUrl],
-          tileSize: 256
+          tileSize: 256,
+          maxzoom: maxNativeTileZoom
         }
       },
       layers: [
@@ -55,7 +59,7 @@ export default function MapLibreView({
           type: 'raster' as const,
           source: 'esri-base-tiles',
           minzoom: 0,
-          maxzoom: 18
+          maxzoom: 22
         }
       ]
     };
@@ -69,6 +73,7 @@ export default function MapLibreView({
       style: styleConfig as any,
       center: [center[1], center[0]], // MapLibre takes [lng, lat]
       zoom: zoom,
+      maxZoom: 18,
       pitch: 45, // 3D tilt
       bearing: -17.6,
       attributionControl: false // Removes standard bottom-right attribution bar cleanly
