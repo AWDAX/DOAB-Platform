@@ -57,12 +57,12 @@ export default function NotificationPage() {
       {/* Page Header */}
       <div id="tour-alerts-header" className="mb-5 w-full max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
               <Bell className="h-6 w-6 text-[var(--color-brand-accent)]" />
               All Alerts
             </h1>
-            <span className="mono-badge text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] font-medium uppercase tracking-wider shadow-2xs">
               Prototype Mockup
             </span>
           </div>
@@ -85,17 +85,19 @@ export default function NotificationPage() {
       </div>
 
       <div className="flex flex-col gap-4 w-full max-w-3xl mx-auto">
-        {/* Explicit Mockup & Status Disclaimer Callout Banner */}
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        {/* Subtle, Crisp Status Disclaimer Callout */}
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-sky-500/10 text-[var(--color-brand-accent)] border border-sky-500/20 shrink-0 mt-0.5">
+            <AlertTriangle className="h-4 w-4" />
+          </div>
           <div className="flex-1 min-w-0 text-xs leading-relaxed">
-            <div className="font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 flex-wrap">
+            <div className="font-semibold text-[var(--text-main)] flex items-center gap-2 flex-wrap">
               <span>Interactive Demonstration & Mockup Feed</span>
-              <span className="text-[10px] font-mono font-normal opacity-90">
-                ({!isModelResponding ? 'Offline Mode • Backed by Ground-Truth BBMP Complaints' : 'Live ML Estimator Connected'})
+              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
+                {!isModelResponding ? 'Offline Ground-Truth BBMP Feed' : 'Live ML Estimator Connected'}
               </span>
             </div>
-            <p className="text-amber-800/80 dark:text-amber-200/80 text-[11px] mt-1">
+            <p className="text-[var(--text-muted)] text-[11px] mt-1 leading-normal">
               {!isModelResponding
                 ? `${copy.error} Displaying high-fidelity civic telemetry mockups from historical Bengaluru waterlogging reports with verified GPS coordinates and rainfall metrics.`
                 : copy.notASensor}
@@ -104,21 +106,30 @@ export default function NotificationPage() {
         </div>
 
         {/* Severity Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          {(['all', 'Critical', 'High', 'Medium'] as const).map((sev) => (
-            <button
-              key={sev}
-              type="button"
-              onClick={() => { playClick(); setFilterSeverity(sev); }}
-              className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer border ${
-                filterSeverity === sev
-                  ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-2xs'
-                  : 'bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] border-[var(--border-color)]'
-              }`}
-            >
-              {sev === 'all' ? `All Alerts (${activeAlerts.length})` : `${sev} (${activeAlerts.filter(a => a.severity === sev).length})`}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {(['all', 'Critical', 'High', 'Medium'] as const).map((sev) => {
+            const isSelected = filterSeverity === sev;
+            const count = sev === 'all' ? activeAlerts.length : activeAlerts.filter(a => a.severity === sev).length;
+            return (
+              <button
+                key={sev}
+                type="button"
+                onClick={() => { playClick(); setFilterSeverity(sev); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                  isSelected
+                    ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-2xs font-semibold'
+                    : 'bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] border-[var(--border-color)]'
+                }`}
+              >
+                <span>{sev === 'all' ? 'All Alerts' : sev}</span>
+                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
+                  isSelected ? 'bg-[var(--bg-card)]/20 text-[var(--bg-card)]' : 'bg-[var(--bg-main)] text-[var(--text-muted)]'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Alerts Stream List */}
@@ -134,41 +145,42 @@ export default function NotificationPage() {
               <div
                 key={`${alert.lat}-${alert.lng}-${index}`}
                 id={index === 0 ? 'tour-alerts-critical' : index === 1 ? 'tour-alerts-tanker' : index === 2 ? 'tour-alerts-backcheck' : undefined}
-                className="neo-glass-card p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-4 items-start border border-[var(--border-color)] shadow-sm hover:border-[var(--color-brand-accent)]/40 transition-all duration-200"
+                className="bg-[var(--bg-card)] p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-4 items-start border border-[var(--border-color)] shadow-2xs hover:border-[var(--color-brand-accent)]/40 hover:shadow-sm transition-all duration-200"
               >
-                <div className={`h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                {/* Severity Badge Icon */}
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border transition-colors ${
                   isCritical
-                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
                     : isHigh
-                      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                      : 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30'
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                      : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
                 }`}>
                   <ShieldAlert className="h-5 w-5" />
                 </div>
 
                 <div className="flex-grow min-w-0 w-full">
-                  <div className="flex flex-wrap justify-between items-start mb-1.5 gap-2">
+                  <div className="flex flex-wrap justify-between items-start mb-2 gap-2">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-bold text-[var(--text-main)] text-sm">
+                        <h3 className="font-semibold text-[var(--text-main)] text-sm">
                           {alert.title}
                         </h3>
-                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                        <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${
                           isCritical
-                            ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30'
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
                             : isHigh
-                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
-                              : 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30'
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                              : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
                         }`}>
                           {alert.severity}
                         </span>
                         {alert.isMockup && (
-                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)]">
-                            Demonstration
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] font-normal">
+                            Ground-Truth
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] font-mono text-[var(--text-muted)] mt-0.5 block">
+                      <span className="text-[11px] font-mono text-[var(--text-muted)] mt-0.5 block">
                         {alert.ward} • {alert.updatedTime}
                       </span>
                     </div>
@@ -177,25 +189,26 @@ export default function NotificationPage() {
                       <div className="font-mono font-bold text-xs text-[var(--text-main)]">
                         {Math.round((alert.probability ?? 0) * 100)}% Risk
                       </div>
-                      <span className="text-[10px] font-mono text-[var(--text-muted)] inline-flex items-center gap-1">
+                      <span className="text-[10px] font-mono text-[var(--text-muted)] inline-flex items-center gap-1 mt-0.5">
                         <Clock className="h-3 w-3" />
                         {copy.oneHour}
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 my-2.5 p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[11px] font-mono">
-                    <div>
-                      <span className="text-[9px] text-[var(--text-muted)] block">Est. Water Depth</span>
-                      <span className="font-bold text-[var(--text-main)]">{alert.waterDepthCm} cm</span>
+                  {/* Clean Telemetry Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 my-3 p-2.5 rounded-xl bg-[var(--bg-main)]/70 border border-[var(--border-color)] text-[11px] font-mono">
+                    <div className="p-1">
+                      <span className="text-[10px] text-[var(--text-muted)] block">Est. Water Depth</span>
+                      <span className="font-semibold text-[var(--text-main)] text-xs mt-0.5 block">{alert.waterDepthCm} cm</span>
                     </div>
-                    <div>
-                      <span className="text-[9px] text-[var(--text-muted)] block">Rainfall Rate</span>
-                      <span className="font-bold text-[var(--text-main)]">{alert.rainfallMmH} mm/h</span>
+                    <div className="p-1">
+                      <span className="text-[10px] text-[var(--text-muted)] block">Rainfall Intensity</span>
+                      <span className="font-semibold text-[var(--text-main)] text-xs mt-0.5 block">{alert.rainfallMmH} mm/h</span>
                     </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <span className="text-[9px] text-[var(--text-muted)] block">Coordinates</span>
-                      <span className="font-bold text-[var(--text-main)] truncate block">
+                    <div className="col-span-2 sm:col-span-1 p-1">
+                      <span className="text-[10px] text-[var(--text-muted)] block">GPS Coordinates</span>
+                      <span className="font-semibold text-[var(--text-main)] text-xs mt-0.5 truncate block">
                         {alert.lat.toFixed(4)}, {alert.lng.toFixed(4)}
                       </span>
                     </div>
@@ -210,7 +223,7 @@ export default function NotificationPage() {
                       <Link
                         to={`/routes/best?lat=${alert.lat}&lng=${alert.lng}`}
                         onClick={() => playClick()}
-                        className="px-3 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity shadow-2xs"
+                        className="px-3.5 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all shadow-2xs"
                       >
                         <span>Compute Bypass</span>
                       </Link>
@@ -219,7 +232,7 @@ export default function NotificationPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => playClick()}
-                        className="p-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors"
+                        className="p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors"
                         title="Open in Google Maps"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
