@@ -104,7 +104,7 @@ interface LandingPageProps {
   onOpenPreferences?: () => void;
 }
 
-export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', user }: LandingPageProps) {
+export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', toggleEnvMode, user }: LandingPageProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
@@ -492,7 +492,13 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           <div className="inline-flex p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs">
             <button
               type="button"
-              onClick={() => { playClick(); setSelectedModeTab('flood'); }}
+              onClick={() => {
+                playClick();
+                setSelectedModeTab('flood');
+                if (envMode !== 'flood' && toggleEnvMode) {
+                  toggleEnvMode();
+                }
+              }}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 selectedModeTab === 'flood'
                   ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
@@ -504,7 +510,13 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             </button>
             <button
               type="button"
-              onClick={() => { playClick(); setSelectedModeTab('drought'); }}
+              onClick={() => {
+                playClick();
+                setSelectedModeTab('drought');
+                if (envMode !== 'drought' && toggleEnvMode) {
+                  toggleEnvMode();
+                }
+              }}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 selectedModeTab === 'drought'
                   ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
