@@ -11,6 +11,7 @@ import AssistantPage from './pages/AssistantPage';
 import AuthPage from './pages/AuthPage';
 import LandingPage from './pages/LandingPage';
 import TeamPage from './pages/TeamPage';
+import NotFoundPage from './pages/NotFoundPage';
 import PageTransition, { ScrollToTop } from './components/PageTransition';
 import SplashLoader from './components/SplashLoader';
 import PreferencesModal from './components/PreferencesModal';
@@ -373,6 +374,14 @@ function AppContent({
               ) : (
                 <Navigate to="/login" replace />
               )
+            } 
+          />
+          <Route 
+            path="*" 
+            element={
+              <PageTransition>
+                <NotFoundPage envMode={envMode} />
+              </PageTransition>
             } 
           />
         </Routes>
