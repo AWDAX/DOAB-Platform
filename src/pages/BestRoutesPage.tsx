@@ -1,12 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check } from 'lucide-react';
+import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check, Bookmark, BookmarkCheck } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 
 const ORIGIN = { lat: 12.9716, lng: 77.5946 };
+const OFFLINE_ROUTES_KEY = 'doab_saved_offline_routes';
+
+interface SavedOfflineRoute {
+  id: string;
+  savedAt: string;
+  summary: string;
+  distanceKm: string;
+  durationMin: string;
+  riskPct: string;
+  mapsUrl: string;
+  origin: { lat: number; lng: number };
+  destination: { lat: number; lng: number };
+}
 
 function formatKm(meters: number | null): string {
   if (meters == null) return '—';
@@ -79,6 +92,49 @@ export default function BestRoutesPage() {
   const [active, setActive] = useState(0);
   const [copied, setCopied] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
+  const [savedOffline, setSavedOffline] = useState(false);
+
+  const routes = body?.routes ?? [];
+  const current = routes[active];
+
+  // Check if current route is already saved
+  useEffect(() => {
+    if (!current) return;
+    try {
+      const existing: SavedOfflineRoute[] = JSON.parse(localStorage.getItem(OFFLINE_ROUTES_KEY) || '[]');
+      const isSaved = existing.some(r => r.summary === current.summary && r.destination.lat === destination.lat);
+      setSavedOffline(isSaved);
+    } catch {
+      setSavedOffline(false);
+    }
+  }, [current, destination.lat]);
+
+  const handleSaveOffline = () => {
+    if (!current) return;
+    playClick();
+    try {
+      const existing: SavedOfflineRoute[] = JSON.parse(localStorage.getItem(OFFLINE_ROUTES_KEY) || '[]');
+      const routeId = `route-${Date.now()}`;
+      const newEntry: SavedOfflineRoute = {
+        id: routeId,
+        savedAt: new Date().toISOString(),
+        summary: current.summary,
+        distanceKm: formatKm(current.distance_meters),
+        durationMin: formatMinutes(current.duration_seconds),
+        riskPct: riskLabel(current, copy),
+        mapsUrl: current.maps_url,
+        origin: ORIGIN,
+        destination,
+      };
+
+      const filtered = existing.filter(r => !(r.summary === current.summary && r.destination.lat === destination.lat));
+      const updated = [newEntry, ...filtered].slice(0, 20); // Keep last 20 routes
+      localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify(updated));
+      setSavedOffline(true);
+    } catch (e) {
+      console.warn('Could not save route offline', e);
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -101,9 +157,6 @@ export default function BestRoutesPage() {
       });
     return () => controller.abort();
   }, [destination.lat, destination.lng]);
-
-  const routes = body?.routes ?? [];
-  const current = routes[active];
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto custom-scrollbar">
@@ -150,6 +203,30 @@ export default function BestRoutesPage() {
               <>
                 <Share2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)] group-hover:text-current transition-colors shrink-0" />
                 <span className="whitespace-nowrap">Share Route</span>
+              </>
+            )}
+          </button>
+
+          {/* Save Route Offline Button (Emergency Fallback) */}
+          <button
+            type="button"
+            onClick={handleSaveOffline}
+            className={`px-3.5 py-2 rounded-full border border-[var(--border-color)] text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95 group ${
+              savedOffline
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold'
+                : 'bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)]'
+            }`}
+            title="Save safe elevation route to device for offline access during network loss"
+          >
+            {savedOffline ? (
+              <>
+                <BookmarkCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span className="whitespace-nowrap">Saved Offline</span>
+              </>
+            ) : (
+              <>
+                <Bookmark className="h-3.5 w-3.5 text-[var(--color-brand-accent)] group-hover:text-current transition-colors shrink-0" />
+                <span className="whitespace-nowrap">Save Offline</span>
               </>
             )}
           </button>
