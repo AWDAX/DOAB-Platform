@@ -114,6 +114,56 @@ export function playAlertAlarm() {
   } catch (err) {}
 }
 
+/**
+ * Playful, cute giggling sound effect synthesized using musical chimes & bubbly frequency modulations
+ */
+export function playChildGiggle() {
+  if (!isSoundEnabled() || typeof window === 'undefined') return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    const start = ctx.currentTime;
+
+    // Pattern of playful bubbly laughs: "hee-hee-hee-hee!"
+    const chuckleTones = [
+      { freq: 880, startOffset: 0.00, dur: 0.10 },
+      { freq: 1100, startOffset: 0.09, dur: 0.11 },
+      { freq: 1320, startOffset: 0.20, dur: 0.12 },
+      { freq: 1040, startOffset: 0.33, dur: 0.10 },
+      { freq: 1396, startOffset: 0.44, dur: 0.13 },
+      { freq: 1568, startOffset: 0.58, dur: 0.16 }
+    ];
+
+    chuckleTones.forEach(({ freq, startOffset, dur }, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      // Sine wave with slight vibrato for cute, soft organic laugh
+      osc.type = 'sine';
+      const t = start + startOffset;
+      osc.frequency.setValueAtTime(freq, t);
+      // Pitch inflection upward like a giggle
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.15, t + dur * 0.7);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.95, t + dur);
+
+      // Amplitude envelope
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.16 + (idx % 2) * 0.04, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(t);
+      osc.stop(t + dur);
+    });
+  } catch (err) {}
+}
+
 export function initGlobalClickSound() {
   if (typeof document === 'undefined') return;
   if (document.documentElement.dataset.soundInit === '1') return;
