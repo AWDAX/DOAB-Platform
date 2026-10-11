@@ -25,6 +25,7 @@ import Tooltip from '../components/Tooltip';
 import BrandLogo from '../components/BrandLogo';
 import KineticRollingHeadline from '../components/KineticRollingHeadline';
 import FooterParticles from '../components/FooterParticles';
+import ClimateDualWaveSvg from '../components/ClimateDualWaveSvg';
 import { playClick } from '../utils/soundFx';
 import { CIVIC_INCIDENTS } from './MapPage';
 
@@ -726,6 +727,50 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* ── SAHNIRMAAN-INSPIRED MINIMAL FINAL CALL-TO-ACTION WITH DUAL-CLIMATE VECTOR ARTWORK ── */}
+      <section className="w-full flex flex-col justify-center items-center text-center relative px-4 sm:px-6 py-16 sm:py-24 overflow-hidden border-t border-[var(--border-color)]">
+        {/* Dual-Climate Dynamic Water Flowing / Desert Dunes Vector Artwork */}
+        <div className="w-full max-w-4xl mx-auto mb-6 sm:mb-8 px-2 flex justify-center">
+          <ClimateDualWaveSvg envMode={envMode} />
+        </div>
+
+        {/* Section Headline */}
+        <div className="max-w-2xl mx-auto z-10 flex flex-col items-center">
+          <span className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest text-[var(--color-brand-accent)] mb-2 px-3 py-1 rounded-full bg-[var(--color-brand-accent)]/10 border border-[var(--color-brand-accent)]/20">
+            {envMode === 'flood' ? 'Dual-Climate Monsoon Response' : 'Groundwater Deficit Telemetry'}
+          </span>
+          
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-[var(--text-main)] tracking-tight mb-4 text-balance leading-tight">
+            Ready to Protect Your Commute & City?
+          </h2>
+          
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-lg mx-auto mb-8 text-balance">
+            Access 1-hour hydrological forecast estimates, compute safe elevation bypasses around waterlogged corridors, or log citizen ground-truth back-checks.
+          </p>
+
+          {/* Action CTAs: Solid Primary Button + Secondary Outlined Button */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to={user ? "/" : "/login"}
+              onClick={() => playClick()}
+              className="px-6 sm:px-7 py-3 bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-bold rounded-full hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md cursor-pointer flex items-center gap-2 group"
+            >
+              <span>{user ? 'Enter Operations Grid' : 'Initialize DOAB Account'}</span>
+              <ArrowUpRight className="h-4 w-4 stroke-[2.5] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </Link>
+
+            <Link
+              to="/team"
+              onClick={() => playClick()}
+              className="px-6 py-3 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] text-xs font-semibold rounded-full hover:bg-[var(--bg-main)] transition-colors shadow-2xs cursor-pointer flex items-center gap-2"
+            >
+              <BrandLogo size="sm" />
+              <span>Meet Contrarians</span>
+            </Link>
+          </div>
         </div>
       </section>
 
