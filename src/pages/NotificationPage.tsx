@@ -20,20 +20,37 @@ export default function NotificationPage() {
     } catch (_) {}
   }, []);
 
-  // Ground truth / realistic mock alerts derived from Bengaluru BBMP dataset
-  const mockAlerts = WATERLOGGING_DATASET_INCIDENTS.slice(0, 8).map((inc, i) => ({
-    lat: inc.lat,
-    lng: inc.lng,
-    title: inc.title,
-    ward: inc.ward,
-    severity: inc.severity,
-    waterDepthCm: inc.waterDepthCm || 45,
-    rainfallMmH: inc.rainfallMmH || 32,
-    probability: inc.severity === 'Critical' ? 0.88 - i * 0.05 : inc.severity === 'High' ? 0.65 - i * 0.04 : 0.42,
-    confidence: 'Historical sensor-backed ground truth',
-    updatedTime: inc.updatedTime,
-    isMockup: true,
-  }));
+  // Ground truth / realistic flood and inundation alerts derived from municipal datasets
+  // Filter out non-flood, pipeline maintenance, and informal user complaints
+  const mockAlerts = WATERLOGGING_DATASET_INCIDENTS
+    .filter((inc) => {
+      const lowerTitle = (inc.title || '').toLowerCase();
+      const lowerDesc = (inc.description || '').toLowerCase();
+      const isUnwanted = 
+        lowerTitle.includes('leaking pipeline') ||
+        lowerTitle.includes('urinating') ||
+        lowerTitle.includes('shitting') ||
+        lowerTitle.includes('dangerous road condiyion') ||
+        lowerDesc.includes('urinat') ||
+        lowerDesc.includes('wine shop') ||
+        lowerTitle.includes('pipeline') ||
+        lowerTitle.includes('leak');
+      return !isUnwanted && inc.severity !== 'Low';
+    })
+    .slice(0, 8)
+    .map((inc, i) => ({
+      lat: inc.lat,
+      lng: inc.lng,
+      title: inc.title,
+      ward: inc.ward,
+      severity: inc.severity,
+      waterDepthCm: inc.waterDepthCm || 45,
+      rainfallMmH: inc.rainfallMmH || 32,
+      probability: inc.severity === 'Critical' ? 0.88 - i * 0.05 : inc.severity === 'High' ? 0.65 - i * 0.04 : 0.42,
+      confidence: 'Historical sensor-backed ground truth',
+      updatedTime: inc.updatedTime,
+      isMockup: true,
+    }));
 
   const liveCells = (forecast?.cells ?? [])
     .filter((cell) => cell.probability != null && cell.probability >= 0.35)
