@@ -1,6 +1,9 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { Plus, Minus, Compass, RotateCcw } from 'lucide-react';
+import Tooltip from './Tooltip';
+import { playClick } from '../utils/soundFx';
 import type { TelemetryIncident } from '../data/waterloggingIncidents';
 
 interface MapLibreViewProps {
@@ -29,30 +32,30 @@ export default function MapLibreView({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const [bearing, setBearing] = useState<number>(-17.6);
 
-  // Choose appropriate basemap style (use ArcGIS World Gray Canvas: 100% Free, No API Key, Clean Civic Map)
+  // Basemap style: Crisp Light Gray Canvas for light mode, High-Res Sat/Dark Night Imagery for dark mode
   const styleConfig = useMemo(() => {
     const tileUrl = isDarkMode
-      ? 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+      ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
       : 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
     return {
       version: 8 as const,
       sources: {
-        'esri-canvas-tiles': {
+        'esri-base-tiles': {
           type: 'raster' as const,
           tiles: [tileUrl],
-          tileSize: 256,
-          attribution: '&copy; Esri &copy; OpenStreetMap'
+          tileSize: 256
         }
       },
       layers: [
         {
-          id: 'esri-canvas-tiles-layer',
+          id: 'esri-base-tiles-layer',
           type: 'raster' as const,
-          source: 'esri-canvas-tiles',
+          source: 'esri-base-tiles',
           minzoom: 0,
-          maxzoom: 16
+          maxzoom: 18
         }
       ]
     };
@@ -67,16 +70,19 @@ export default function MapLibreView({
       center: [center[1], center[0]], // MapLibre takes [lng, lat]
       zoom: zoom,
       pitch: 45, // 3D tilt
-      bearing: -17.6
+      bearing: -17.6,
+      attributionControl: false // Removes standard bottom-right attribution bar cleanly
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.on('rotate', () => {
+      setBearing(Math.round(map.getBearing()));
+    });
 
     map.on('load', () => {
       map.resize();
     });
 
-    // Multiple micro-delays to guarantee canvas resize within parent absolute bounds
+    // Staggered micro-delays to guarantee canvas resize within parent absolute bounds
     const r1 = setTimeout(() => map.resize(), 60);
     const r2 = setTimeout(() => map.resize(), 300);
 
@@ -216,13 +222,117 @@ export default function MapLibreView({
     }
   }, [activeRouteGeometry, envMode]);
 
+  const handleZoomIn = () => {
+    playClick();
+    mapRef.current?.zoomIn({ duration: 300 });
+  };
+
+  const handleZoomOut = () => {
+    playClick();
+    mapRef.current?.zoomOut({ duration: 300 });
+  };
+
+  const handleRotateLeft = () => {
+    playClick();
+    const map = mapRef.current;
+    if (!map) return;
+    map.easeTo({ bearing: map.getBearing() - 45, duration: 400 });
+  };
+
+  const handleRotateRight = () => {
+    playClick();
+    const map = mapRef.current;
+    if (!map) return;
+    map.easeTo({ bearing: map.getBearing() + 45, duration: 400 });
+  };
+
+  const handleResetBearing = () => {
+    playClick();
+    mapRef.current?.resetNorthPitch({ duration: 500 });
+  };
+
   return (
     <div className="w-full h-full relative">
       <div ref={mapContainerRef} className="w-full h-full" />
-      {/* 3D Indicator Badge */}
-      <div className="absolute top-4 left-4 z-10 pointer-events-none flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/85 backdrop-blur-md border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold shadow-lg">
-        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" />
-        <span>3D GPU VECTOR ENGINE (MapLibre GL)</span>
+
+      {/* 3D Indicator Badge & Tip */}
+      <div className="absolute top-4 left-4 z-10 pointer-events-none flex flex-col gap-1.5">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/85 backdrop-blur-md border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold shadow-lg">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" />
+          <span>3D GPU VECTOR ENGINE (MapLibre GL)</span>
+        </div>
+        <div className="hidden sm:inline-block px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-slate-300 text-[9px] font-mono">
+          Ctrl + Drag to orbit • Right-click to tilt
+        </div>
+      </div>
+
+      {/* ── Professional Neo-Glass 3D GPU Camera Control Rack (Bottom-Right) ── */}
+      <div className="absolute bottom-6 right-4 sm:bottom-8 sm:right-6 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">
+        {/* Zoom In (+) */}
+        <Tooltip content="Zoom In (+ or Scroll)" position="left">
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+            aria-label="Zoom in"
+          >
+            <Plus size={15} />
+          </button>
+        </Tooltip>
+
+        {/* Zoom Out (-) */}
+        <Tooltip content="Zoom Out (- or Scroll)" position="left">
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+            aria-label="Zoom out"
+          >
+            <Minus size={15} />
+          </button>
+        </Tooltip>
+
+        <div className="w-5 h-px bg-[var(--border-color)] dark:bg-white/10 my-0.5" />
+
+        {/* Rotate / Compass Reset */}
+        <Tooltip content={bearing !== 0 ? `Reset North (Bearing: ${bearing}°)` : "Orient to True North"} position="left">
+          <button
+            type="button"
+            onClick={handleResetBearing}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer relative"
+            aria-label="Reset orientation north"
+          >
+            <Compass 
+              size={16} 
+              className="text-cyan-500 transition-transform duration-300"
+              style={{ transform: `rotate(${-bearing}deg)` }}
+            />
+          </button>
+        </Tooltip>
+
+        {/* Orbit Left */}
+        <Tooltip content="Rotate Camera Left 45°" position="left">
+          <button
+            type="button"
+            onClick={handleRotateLeft}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+            aria-label="Orbit left"
+          >
+            <RotateCcw size={14} />
+          </button>
+        </Tooltip>
+
+        {/* Orbit Right */}
+        <Tooltip content="Rotate Camera Right 45°" position="left">
+          <button
+            type="button"
+            onClick={handleRotateRight}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+            aria-label="Orbit right"
+          >
+            <RotateCcw size={14} className="-scale-x-100" />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );

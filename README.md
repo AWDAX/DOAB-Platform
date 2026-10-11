@@ -60,6 +60,20 @@ npm run dev
 npm run build
 ```
 
+### 📱 Android Mobile App (.apk)
+```bash
+# Sync web assets to Android
+npm run apk:sync
+
+# Build native Android debug APK
+npm run apk:build
+
+# Open in Android Studio
+npm run apk:open
+```
+> For complete architecture, offline vs live-URL mode, and native SOS capabilities, see [`ANDROID_APP_GUIDE.md`](./ANDROID_APP_GUIDE.md).
+
+
 ### One-hour estimate API
 ```bash
 cd services/prediction-api
