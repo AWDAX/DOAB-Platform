@@ -34,12 +34,14 @@ import {
   CheckCircle2,
   Compass,
   Activity,
-  ExternalLink
+  ExternalLink,
+  Cpu
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
 import AnimatedCrosshair from '../components/AnimatedCrosshair';
 import Tooltip from '../components/Tooltip';
+import MapLibreView from '../components/MapLibreView';
 import { WATERLOGGING_DATASET_INCIDENTS, type TelemetryIncident } from '../data/waterloggingIncidents';
 import { useForecast } from '../hooks/useForecast';
 import { getPredictionCopy } from '../i18n/predictionCopy';
@@ -177,12 +179,13 @@ function MapViewController({ center, zoom }: { center: [number, number]; zoom: n
   return null;
 }
 
-export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'drought' }) {
+export default function MapPage({ envMode = 'flood', isDarkMode = false }: { envMode?: 'flood' | 'drought'; isDarkMode?: boolean }) {
   const copy = getPredictionCopy();
   const { forecast, incidents: apiIncidents, boundaries, status, usingDemo, stale, reload } = useForecast();
   const [destination, setDestination] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
   const [showHeatLayer, setShowHeatLayer] = useState(true);
+  const [mapEngine, setMapEngine] = useState<'leaflet' | 'maplibre'>('leaflet');
 
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(() => WATERLOGGING_DATASET_INCIDENTS[0] || null);
 
@@ -503,7 +506,69 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
               </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)]">
+              {/* Dual Engine Sliding Pill Bar (Professional Apple/Mapbox Standard) */}
+              <div 
+                className="relative flex items-center p-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs select-none"
+                role="tablist"
+                aria-label="Map rendering engine mode"
+              >
+                {/* Smooth Animated Sliding Background Pill */}
+                <span
+                  aria-hidden="true"
+                  className={`absolute top-0.5 bottom-0.5 rounded-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-xs pointer-events-none ${
+                    mapEngine === 'leaflet'
+                      ? 'left-0.5 w-[calc(50%-2px)] bg-[var(--text-main)]'
+                      : 'left-[calc(50%+1px)] w-[calc(50%-2px)] bg-cyan-500'
+                  }`}
+                />
+
+                {/* Option 1: 2D Standard / Low Data (Leaflet) */}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mapEngine === 'leaflet'}
+                  onClick={() => {
+                    if (mapEngine !== 'leaflet') {
+                      playClick();
+                      setMapEngine('leaflet');
+                    }
+                  }}
+                  className={`relative z-10 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold transition-colors duration-200 cursor-pointer flex items-center gap-1 ${
+                    mapEngine === 'leaflet'
+                      ? 'text-[var(--bg-card)]'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                  title="2D Standard Engine (Leaflet): Ultra-low battery, fast raster rendering"
+                >
+                  <span>2D</span>
+                  <span className="hidden sm:inline font-normal opacity-80">Lite</span>
+                </button>
+
+                {/* Option 2: 3D Vector GPU / High Detail (MapLibre) */}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mapEngine === 'maplibre'}
+                  onClick={() => {
+                    if (mapEngine !== 'maplibre') {
+                      playClick();
+                      setMapEngine('maplibre');
+                    }
+                  }}
+                  className={`relative z-10 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold transition-colors duration-200 cursor-pointer flex items-center gap-1 ${
+                    mapEngine === 'maplibre'
+                      ? 'text-white'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                  title="3D GPU Vector Engine (MapLibre GL): Hardware-accelerated, 3D tilt & bearing"
+                >
+                  <Cpu size={10} className={mapEngine === 'maplibre' ? 'animate-pulse' : ''} />
+                  <span>3D</span>
+                  <span className="hidden sm:inline font-normal opacity-90">GPU</span>
+                </button>
+              </div>
+
+              <span className="mono-badge text-[9px] px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hidden xs:inline">
                 {copy.oneHour}
               </span>
               <button
@@ -939,138 +1004,156 @@ export default function MapPage({ envMode = 'flood' }: { envMode?: 'flood' | 'dr
         </div>
       )}
 
-      {/* ── Leaflet Interactive Map View ── */}
+      {/* ── Dual-Engine Interactive Map View ── */}
       <div className="absolute inset-0 h-full w-full">
-        <MapContainer
-          center={mapCenter}
-          zoom={mapZoom}
-          zoomControl={false}
-          scrollWheelZoom={true}
-          dragging={true}
-          touchZoom={true}
-          doubleClickZoom={true}
-          boxZoom={true}
-          keyboard={true}
-          preferCanvas={true}
-          inertia={true}
-          inertiaDeceleration={3000}
-          inertiaMaxSpeed={2000}
-          easeLinearity={0.2}
-          className="h-full w-full z-0 cursor-grab active:cursor-grabbing"
-          style={{ height: '100%', width: '100%', minHeight: '100%' }}
-        >
-          {/* Universal OpenStreetMap Tile Layer (Fast, Reliable, No CORS/API Limits) */}
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            subdomains={['a', 'b', 'c']}
-            maxZoom={19}
+        {mapEngine === 'maplibre' ? (
+          <MapLibreView
+            center={mapCenter}
+            zoom={mapZoom}
+            incidents={filteredIncidents}
+            selectedIncident={selectedIncident}
+            onSelectIncident={handleSelectIncident}
+            isDarkMode={isDarkMode}
+            envMode={envMode}
+            userLocation={hasRealLocation ? { lat: userCoords[0], lng: userCoords[1] } : null}
+            activeRouteGeometry={
+              hasRealLocation && selectedIncident 
+                ? [userCoords, [selectedIncident.lat, selectedIncident.lng]] 
+                : undefined
+            }
           />
-
-          <MapViewController center={mapCenter} zoom={mapZoom} />
-
-          {boundaries && (
-            <GeoJSON
-              data={boundaries as never}
-              style={() => ({ color: '#64748b', weight: 1, fillOpacity: 0.04 })}
+        ) : (
+          <MapContainer
+            center={mapCenter}
+            zoom={mapZoom}
+            zoomControl={false}
+            scrollWheelZoom={true}
+            dragging={true}
+            touchZoom={true}
+            doubleClickZoom={true}
+            boxZoom={true}
+            keyboard={true}
+            preferCanvas={true}
+            inertia={true}
+            inertiaDeceleration={3000}
+            inertiaMaxSpeed={2000}
+            easeLinearity={0.2}
+            className="h-full w-full z-0 cursor-grab active:cursor-grabbing"
+            style={{ height: '100%', width: '100%', minHeight: '100%' }}
+          >
+            {/* Universal OpenStreetMap Tile Layer (Fast, Reliable, No CORS/API Limits) */}
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              subdomains={['a', 'b', 'c']}
+              maxZoom={19}
             />
-          )}
 
-          {envMode === 'flood' && forecast?.cells.map((cell) => (
-            cell.probability == null ? null : (
+            <MapViewController center={mapCenter} zoom={mapZoom} />
+
+            {boundaries && (
+              <GeoJSON
+                data={boundaries as never}
+                style={() => ({ color: '#64748b', weight: 1, fillOpacity: 0.04 })}
+              />
+            )}
+
+            {envMode === 'flood' && forecast?.cells.map((cell) => (
+              cell.probability == null ? null : (
+                <Circle
+                  key={`${cell.lat}-${cell.lng}`}
+                  center={[cell.lat, cell.lng]}
+                  radius={1800}
+                  pathOptions={{
+                    color: cell.probability >= 0.5 ? '#d97706' : '#64748b',
+                    fillColor: cell.probability >= 0.5 ? '#d97706' : '#64748b',
+                    fillOpacity: 0.08 + Math.min(cell.probability, 1) * 0.2,
+                    weight: 1,
+                  }}
+                />
+              )
+            ))}
+
+            {/* User Live GPS Marker: ONLY rendered when actual live coordinates have been fetched */}
+            {hasRealLocation && (
+              <Marker position={userCoords} icon={USER_LIVE_ICON}>
+                <Popup className="neo-glass-popup">
+                  <div className="p-1 text-xs">
+                    <div className="font-bold text-neutral-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
+                      Your Real Live GPS Location
+                    </div>
+                    <div className="text-[10px] text-neutral-500 font-mono mt-1">
+                      {userCoords[0].toFixed(4)}° N, {userCoords[1].toFixed(4)}° E
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+
+            {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
+            {showHeatLayer && recurringClusters.slice(0, 8).map((cluster, cIdx) => (
               <Circle
-                key={`${cell.lat}-${cell.lng}`}
-                center={[cell.lat, cell.lng]}
-                radius={1800}
+                key={`cluster-halo-${cIdx}`}
+                center={[cluster.lat, cluster.lng]}
+                radius={Math.max(cluster.clusterRadiusKm * 500, 1600)}
                 pathOptions={{
-                  color: cell.probability >= 0.5 ? '#d97706' : '#64748b',
-                  fillColor: cell.probability >= 0.5 ? '#d97706' : '#64748b',
-                  fillOpacity: 0.08 + Math.min(cell.probability, 1) * 0.2,
-                  weight: 1,
+                  color: cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706',
+                  fillColor: cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706',
+                  fillOpacity: 0.07,
+                  weight: 1.8,
+                  dashArray: '6, 8',
                 }}
               />
-            )
-          ))}
+            ))}
 
-          {/* User Live GPS Marker: ONLY rendered when actual live coordinates have been fetched */}
-          {hasRealLocation && (
-            <Marker position={userCoords} icon={USER_LIVE_ICON}>
-              <Popup className="neo-glass-popup">
-                <div className="p-1 text-xs">
-                  <div className="font-bold text-neutral-900 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
-                    Your Real Live GPS Location
-                  </div>
-                  <div className="text-[10px] text-neutral-500 font-mono mt-1">
-                    {userCoords[0].toFixed(4)}° N, {userCoords[1].toFixed(4)}° E
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          )}
-
-          {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
-          {showHeatLayer && recurringClusters.slice(0, 8).map((cluster, cIdx) => (
-            <Circle
-              key={`cluster-halo-${cIdx}`}
-              center={[cluster.lat, cluster.lng]}
-              radius={Math.max(cluster.clusterRadiusKm * 500, 1600)}
-              pathOptions={{
-                color: cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706',
-                fillColor: cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706',
-                fillOpacity: 0.07,
-                weight: 1.8,
-                dashArray: '6, 8',
-              }}
-            />
-          ))}
-
-          {/* Focused Risk Halo: Rendered for the currently inspected incident */}
-          {showHeatLayer && selectedIncident && (
-            <Circle
-              center={[selectedIncident.lat, selectedIncident.lng]}
-              radius={selectedIncident.severity === 'Critical' ? 480 : selectedIncident.severity === 'High' ? 320 : 180}
-              pathOptions={{
-                color: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
-                fillColor: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
-                fillOpacity: 0.16,
-                weight: 2,
-                dashArray: '4, 4',
-              }}
-            />
-          )}
-
-          {/* SAHNIRMAAN Spatial Proximity Vector from User GPS to Inspected Incident */}
-          {hasRealLocation && selectedIncident && (
-            <Polyline
-              positions={[
-                userCoords,
-                [selectedIncident.lat, selectedIncident.lng]
-              ]}
-              pathOptions={{
-                color: selectedIncident.severity === 'Critical' ? '#E11D48' : '#D97706',
-                weight: 2,
-                dashArray: '5, 8',
-                opacity: 0.75,
-              }}
-            />
-          )}
-
-          {/* Telemetry Incident Minimalist Pins */}
-          {filteredIncidents.map((incident) => {
-            const isSelected = selectedIncident?.id === incident.id;
-            return (
-              <Marker
-                key={incident.id}
-                position={[incident.lat, incident.lng]}
-                icon={createIncidentMarkerIcon(incident.severity, isSelected)}
-                eventHandlers={{
-                  click: () => handleSelectIncident(incident),
+            {/* Focused Risk Halo: Rendered for the currently inspected incident */}
+            {showHeatLayer && selectedIncident && (
+              <Circle
+                center={[selectedIncident.lat, selectedIncident.lng]}
+                radius={selectedIncident.severity === 'Critical' ? 480 : selectedIncident.severity === 'High' ? 320 : 180}
+                pathOptions={{
+                  color: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
+                  fillColor: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
+                  fillOpacity: 0.16,
+                  weight: 2,
+                  dashArray: '4, 4',
                 }}
               />
-            );
-          })}
-        </MapContainer>
+            )}
+
+            {/* SAHNIRMAAN Spatial Proximity Vector from User GPS to Inspected Incident */}
+            {hasRealLocation && selectedIncident && (
+              <Polyline
+                positions={[
+                  userCoords,
+                  [selectedIncident.lat, selectedIncident.lng]
+                ]}
+                pathOptions={{
+                  color: selectedIncident.severity === 'Critical' ? '#E11D48' : '#D97706',
+                  weight: 2,
+                  dashArray: '5, 8',
+                  opacity: 0.75,
+                }}
+              />
+            )}
+
+            {/* Telemetry Incident Minimalist Pins */}
+            {filteredIncidents.map((incident) => {
+              const isSelected = selectedIncident?.id === incident.id;
+              return (
+                <Marker
+                  key={incident.id}
+                  position={[incident.lat, incident.lng]}
+                  icon={createIncidentMarkerIcon(incident.severity, isSelected)}
+                  eventHandlers={{
+                    click: () => handleSelectIncident(incident),
+                  }}
+                />
+              );
+            })}
+          </MapContainer>
+        )}
       </div>
     </div>
   );

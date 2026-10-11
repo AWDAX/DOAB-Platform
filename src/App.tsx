@@ -295,7 +295,7 @@ function AppContent({
             element={
               isAuthenticated ? (
                 <PageTransition>
-                  <MapPage envMode={envMode} />
+                  <MapPage envMode={envMode} isDarkMode={isDarkMode} />
                 </PageTransition>
               ) : (
                 <PageTransition>
