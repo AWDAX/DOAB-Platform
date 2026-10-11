@@ -207,12 +207,12 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
           <div
             aria-hidden="true"
             className="absolute -top-12 sm:-top-16 left-1/2 -translate-x-1/2 w-[340px] sm:w-[540px] md:w-[620px] h-[200px] sm:h-[260px] md:h-[300px] rounded-full pointer-events-none -z-0 transition-all duration-500
-              /* Flood Light: Cyan-Cerulean soft mist with subtle depth */
-              bg-[radial-gradient(ellipse_at_center,_rgba(2,132,199,0.22),_rgba(14,165,233,0.10),_transparent_68%)]
+              /* Flood Light: Very subtle airy cerulean mist */
+              bg-[radial-gradient(ellipse_at_center,_rgba(2,132,199,0.09),_rgba(14,165,233,0.03),_transparent_68%)]
               /* Flood Dark: Luminous Abyssal Aqua-Cyan Glow */
               dark:bg-[radial-gradient(ellipse_at_center,_rgba(56,189,248,0.24),_rgba(2,132,199,0.12),_transparent_70%)]
-              /* Drought Light: Warm Golden-Bronze Smudge */
-              theme-drought:bg-[radial-gradient(ellipse_at_center,_rgba(217,119,6,0.18),_rgba(245,158,11,0.08),_transparent_68%)]
+              /* Drought Light: Very subtle warm amber mist */
+              theme-drought:bg-[radial-gradient(ellipse_at_center,_rgba(217,119,6,0.08),_rgba(245,158,11,0.03),_transparent_68%)]
               /* Drought Dark: Luminous Amber-Gold Halo */
               theme-drought:dark:bg-[radial-gradient(ellipse_at_center,_rgba(251,191,36,0.24),_rgba(217,119,6,0.14),_transparent_70%)]
               blur-2xl sm:blur-3xl filter"
@@ -222,8 +222,8 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
           <div
             aria-hidden="true"
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[260px] sm:w-[420px] h-[90px] sm:h-[130px] rounded-full pointer-events-none -z-0
-              bg-sky-500/15 dark:bg-sky-400/20 
-              theme-drought:bg-amber-500/15 theme-drought:dark:bg-amber-400/20
+              bg-sky-500/[0.05] dark:bg-sky-400/20 
+              theme-drought:bg-amber-500/[0.05] theme-drought:dark:bg-amber-400/20
               blur-xl sm:blur-2xl filter"
           />
 
@@ -232,7 +232,7 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
             <span>Team Contrarians · Core Engineering Architects</span>
           </div>
           
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[var(--text-main)] mb-4 text-balance relative z-10 drop-shadow-[0_2px_12px_rgba(2,132,199,0.08)] dark:drop-shadow-[0_2px_20px_rgba(56,189,248,0.15)] theme-drought:drop-shadow-[0_2px_12px_rgba(217,119,6,0.08)] theme-drought:dark:drop-shadow-[0_2px_20px_rgba(245,158,11,0.18)]">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[var(--text-main)] mb-4 text-balance relative z-10 drop-shadow-[0_1px_4px_rgba(2,132,199,0.03)] dark:drop-shadow-[0_2px_20px_rgba(56,189,248,0.15)] theme-drought:drop-shadow-[0_1px_4px_rgba(217,119,6,0.03)] theme-drought:dark:drop-shadow-[0_2px_20px_rgba(245,158,11,0.18)]">
             The Team Behind DOAB
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-lg mx-auto text-balance relative z-10">
