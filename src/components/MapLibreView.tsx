@@ -6,6 +6,16 @@ import Tooltip from './Tooltip';
 import { playClick } from '../utils/soundFx';
 import type { TelemetryIncident } from '../data/waterloggingIncidents';
 
+export interface MapLibreCluster {
+  lat: number;
+  lng: number;
+  clusterRadiusKm: number;
+  highestSeverity: 'Critical' | 'High' | 'Medium' | 'Low';
+  ward?: string;
+  category?: string;
+  count?: number;
+}
+
 interface MapLibreViewProps {
   center: [number, number];
   zoom: number;
@@ -16,6 +26,24 @@ interface MapLibreViewProps {
   envMode: 'flood' | 'drought';
   userLocation: { lat: number; lng: number } | null;
   activeRouteGeometry?: [number, number][];
+  clusters?: MapLibreCluster[];
+  showHeatLayer?: boolean;
+}
+
+// Generate accurate circle polygon coordinates in [lng, lat] for hardware-accelerated 3D WebGL rendering
+function createGeoJSONCircle(centerLngLat: [number, number], radiusInMeters: number, points = 48): [number, number][] {
+  const coords: [number, number][] = [];
+  const km = radiusInMeters / 1000;
+  const distanceX = km / (111.32 * Math.cos((centerLngLat[1] * Math.PI) / 180));
+  const distanceY = km / 110.574;
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta);
+    const y = distanceY * Math.sin(theta);
+    coords.push([centerLngLat[0] + x, centerLngLat[1] + y]);
+  }
+  coords.push(coords[0]);
+  return coords;
 }
 
 export default function MapLibreView({
@@ -27,11 +55,14 @@ export default function MapLibreView({
   isDarkMode,
   envMode,
   userLocation,
-  activeRouteGeometry
+  activeRouteGeometry,
+  clusters = [],
+  showHeatLayer = false
 }: MapLibreViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const currentStyleModeRef = useRef<boolean>(isDarkMode);
   const [bearing, setBearing] = useState<number>(-17.6);
 
   // Basemap style: Crisp Light Gray Canvas for light mode, High-Res Sat/Dark Night Imagery for dark mode
@@ -65,6 +96,282 @@ export default function MapLibreView({
     };
   }, [isDarkMode]);
 
+  // Synchronize all vector layers (Clusters, Focused Risk Halo, Proximity Vectors, Route)
+  const syncLayers = () => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    // 1. SAHNIRMAAN Macro Danger Cluster Halos
+    const clusterSourceId = 'cluster-halos-source';
+    const clusterFillId = 'cluster-halos-fill';
+    const clusterLineId = 'cluster-halos-line';
+
+    if (map.getLayer(clusterFillId)) map.removeLayer(clusterFillId);
+    if (map.getLayer(clusterLineId)) map.removeLayer(clusterLineId);
+    if (map.getSource(clusterSourceId)) map.removeSource(clusterSourceId);
+
+    if (showHeatLayer && clusters && clusters.length > 0) {
+      const clusterFeatures = clusters.slice(0, 8).map((cluster, idx) => {
+        const radiusM = Math.max(cluster.clusterRadiusKm * 500, 1600);
+        const circleCoords = createGeoJSONCircle([cluster.lng, cluster.lat], radiusM);
+        const color = cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706';
+        return {
+          type: 'Feature' as const,
+          id: idx,
+          properties: {
+            color,
+            severity: cluster.highestSeverity
+          },
+          geometry: {
+            type: 'Polygon' as const,
+            coordinates: [circleCoords]
+          }
+        };
+      });
+
+      map.addSource(clusterSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: clusterFeatures
+        }
+      });
+
+      map.addLayer({
+        id: clusterFillId,
+        type: 'fill',
+        source: clusterSourceId,
+        paint: {
+          'fill-color': ['get', 'color'],
+          'fill-opacity': 0.08
+        }
+      });
+
+      map.addLayer({
+        id: clusterLineId,
+        type: 'line',
+        source: clusterSourceId,
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 1.8,
+          'line-dasharray': [3, 2]
+        }
+      });
+    }
+
+    // 2. Focused Risk Halo for Currently Inspected Incident
+    const selectedHaloSourceId = 'selected-incident-halo-source';
+    const selectedHaloFillId = 'selected-incident-halo-fill';
+    const selectedHaloLineId = 'selected-incident-halo-line';
+
+    if (map.getLayer(selectedHaloFillId)) map.removeLayer(selectedHaloFillId);
+    if (map.getLayer(selectedHaloLineId)) map.removeLayer(selectedHaloLineId);
+    if (map.getSource(selectedHaloSourceId)) map.removeSource(selectedHaloSourceId);
+
+    if (showHeatLayer && selectedIncident) {
+      const radiusM = selectedIncident.severity === 'Critical' ? 480 : selectedIncident.severity === 'High' ? 320 : 180;
+      const haloCoords = createGeoJSONCircle([selectedIncident.lng, selectedIncident.lat], radiusM);
+      const color = selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7';
+
+      map.addSource(selectedHaloSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: { color },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [haloCoords]
+          }
+        }
+      });
+
+      map.addLayer({
+        id: selectedHaloFillId,
+        type: 'fill',
+        source: selectedHaloSourceId,
+        paint: {
+          'fill-color': color,
+          'fill-opacity': 0.16
+        }
+      });
+
+      map.addLayer({
+        id: selectedHaloLineId,
+        type: 'line',
+        source: selectedHaloSourceId,
+        paint: {
+          'line-color': color,
+          'line-width': 2,
+          'line-dasharray': [2, 2]
+        }
+      });
+    }
+
+    // 3. Spatial Proximity Vector from User GPS to Inspected Incident
+    const proximitySourceId = 'proximity-vector-source';
+    const proximityLayerId = 'proximity-vector-layer';
+
+    if (map.getLayer(proximityLayerId)) map.removeLayer(proximityLayerId);
+    if (map.getSource(proximitySourceId)) map.removeSource(proximitySourceId);
+
+    if (userLocation && selectedIncident) {
+      const color = selectedIncident.severity === 'Critical' ? '#E11D48' : '#D97706';
+      map.addSource(proximitySourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: { color },
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [userLocation.lng, userLocation.lat],
+              [selectedIncident.lng, selectedIncident.lat]
+            ]
+          }
+        }
+      });
+
+      map.addLayer({
+        id: proximityLayerId,
+        type: 'line',
+        source: proximitySourceId,
+        paint: {
+          'line-color': color,
+          'line-width': 2,
+          'line-dasharray': [3, 2],
+          'line-opacity': 0.75
+        }
+      });
+    }
+
+    // 4. Active Route Polyline
+    const routeSourceId = 'active-route-source';
+    const routeLayerId = 'active-route-layer';
+
+    if (map.getLayer(routeLayerId)) map.removeLayer(routeLayerId);
+    if (map.getSource(routeSourceId)) map.removeSource(routeSourceId);
+
+    if (activeRouteGeometry && activeRouteGeometry.length > 1) {
+      const coordinates = activeRouteGeometry.map(pt => [pt[1], pt[0]]);
+      map.addSource(routeSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: coordinates
+          }
+        }
+      });
+
+      map.addLayer({
+        id: routeLayerId,
+        type: 'line',
+        source: routeSourceId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': envMode === 'flood' ? '#0ea5e9' : '#f59e0b',
+          'line-width': 4,
+          'line-dasharray': [2, 1]
+        }
+      });
+    }
+  };
+
+  // Synchronize HTML DOM Markers (User GPS and Incident Pins)
+  const syncMarkers = () => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clean previous markers cleanly
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    // Add user marker if available
+    if (userLocation) {
+      const userEl = document.createElement('div');
+      userEl.className = 'w-7 h-7 flex items-center justify-center relative cursor-pointer';
+      userEl.innerHTML = `
+        <span class="absolute inset-0 rounded-full bg-sky-500/35 animate-ping"></span>
+        <div class="w-4 h-4 rounded-full bg-sky-500 border-2 border-white shadow-lg flex items-center justify-center">
+          <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+        </div>
+      `;
+      userEl.title = 'Your Live GPS Location';
+
+      const userMarker = new maplibregl.Marker({ element: userEl })
+        .setLngLat([userLocation.lng, userLocation.lat])
+        .addTo(map);
+      markersRef.current.push(userMarker);
+    }
+
+    // Add incident markers with clear visibility and click dispatching
+    incidents.slice(0, 150).forEach(incident => {
+      const isSelected = selectedIncident?.id === incident.id;
+      const isFlood = envMode === 'flood';
+
+      let dotColor = isFlood ? '#0284c7' : '#d97706';
+      if (incident.severity === 'Critical') dotColor = '#e11d48';
+      else if (incident.severity === 'High') dotColor = isFlood ? '#0369a1' : '#b45309';
+
+      const el = document.createElement('div');
+      el.style.pointerEvents = 'auto';
+      el.style.cursor = 'pointer';
+      el.style.zIndex = isSelected ? '30' : '10';
+      el.title = `${incident.title} (${incident.severity})`;
+
+      if (isSelected) {
+        el.className = 'relative flex items-center justify-center';
+        el.style.width = '28px';
+        el.style.height = '28px';
+        el.innerHTML = `
+          <span style="position:absolute; inset:0; border-radius:50%; background:${dotColor}40; animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
+          <div style="
+            width: 18px; 
+            height: 18px; 
+            border-radius: 50%; 
+            background: ${dotColor}30; 
+            border: 2px solid ${dotColor}; 
+            box-shadow: 0 0 12px ${dotColor}; 
+            display: flex; align-items:center; justify-content:center;
+          ">
+            <div style="width: 7px; height: 7px; border-radius: 50%; background: ${dotColor}; box-shadow: 0 0 4px #ffffff;"></div>
+          </div>
+        `;
+      } else {
+        el.className = 'flex items-center justify-center transition-transform hover:scale-125';
+        el.style.width = '18px';
+        el.style.height = '18px';
+        el.innerHTML = `
+          <div style="
+            width: 11px; 
+            height: 11px; 
+            border-radius: 50%; 
+            background: ${dotColor}; 
+            border: 2px solid #ffffff; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+          "></div>
+        `;
+      }
+
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onSelectIncident(incident);
+      });
+
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([incident.lng, incident.lat])
+        .addTo(map);
+
+      markersRef.current.push(marker);
+    });
+  };
+
+  // Map initialization
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -85,6 +392,8 @@ export default function MapLibreView({
 
     map.on('load', () => {
       map.resize();
+      syncLayers();
+      syncMarkers();
     });
 
     // Staggered micro-delays to guarantee canvas resize within parent absolute bounds
@@ -101,13 +410,21 @@ export default function MapLibreView({
     };
   }, []);
 
-  // Update style when theme changes
+  // Update style when theme changes and re-bind layers & markers
   useEffect(() => {
-    if (mapRef.current) {
-      mapRef.current.setStyle(styleConfig as any);
-      setTimeout(() => mapRef.current?.resize(), 60);
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (currentStyleModeRef.current !== isDarkMode) {
+      currentStyleModeRef.current = isDarkMode;
+      map.setStyle(styleConfig as any);
+      map.once('styledata', () => {
+        map.resize();
+        syncLayers();
+        syncMarkers();
+      });
     }
-  }, [styleConfig]);
+  }, [styleConfig, isDarkMode]);
 
   // Update center & zoom if changed from outside
   useEffect(() => {
@@ -120,112 +437,25 @@ export default function MapLibreView({
     }
   }, [center[0], center[1], zoom]);
 
-  // Render markers and layers
+  // Sync vector layers when relevant dependencies change
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-
-    // Clean previous markers
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-
-    // Add user marker if available
-    if (userLocation) {
-      const userEl = document.createElement('div');
-      userEl.className = 'w-6 h-6 rounded-full bg-sky-500 border-2 border-white shadow-lg flex items-center justify-center animate-pulse';
-      const innerDot = document.createElement('div');
-      innerDot.className = 'w-2 h-2 rounded-full bg-white';
-      userEl.appendChild(innerDot);
-
-      const userMarker = new maplibregl.Marker({ element: userEl })
-        .setLngLat([userLocation.lng, userLocation.lat])
-        .addTo(map);
-      markersRef.current.push(userMarker);
-    }
-
-    // Add incident markers
-    incidents.slice(0, 100).forEach(incident => {
-      const el = document.createElement('div');
-      const isSelected = selectedIncident?.id === incident.id;
-      const isFlood = envMode === 'flood';
-
-      let bg = isFlood ? '#0284c7' : '#d97706';
-      if (incident.severity === 'Critical') bg = '#e11d48';
-      else if (incident.severity === 'High') bg = isFlood ? '#0369a1' : '#b45309';
-
-      el.style.backgroundColor = bg;
-      el.style.width = isSelected ? '22px' : '14px';
-      el.style.height = isSelected ? '22px' : '14px';
-      el.style.borderRadius = '50%';
-      el.style.border = isSelected ? '3px solid #ffffff' : '2px solid rgba(255,255,255,0.85)';
-      el.style.boxShadow = isSelected ? '0 0 16px ' + bg : '0 2px 6px rgba(0,0,0,0.3)';
-      el.style.cursor = 'pointer';
-      el.style.transition = 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
-
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        onSelectIncident(incident);
-      });
-
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([incident.lng, incident.lat])
-        .addTo(map);
-
-      markersRef.current.push(marker);
-    });
-  }, [incidents, selectedIncident, envMode, userLocation]);
-
-  // Handle route polyline
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const routeSourceId = 'active-route-source';
-    const routeLayerId = 'active-route-layer';
-
-    const updateRoute = () => {
-      if (!map.isStyleLoaded()) return;
-
-      if (map.getLayer(routeLayerId)) map.removeLayer(routeLayerId);
-      if (map.getSource(routeSourceId)) map.removeSource(routeSourceId);
-
-      if (activeRouteGeometry && activeRouteGeometry.length > 1) {
-        const coordinates = activeRouteGeometry.map(pt => [pt[1], pt[0]]);
-        map.addSource(routeSourceId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: coordinates
-            }
-          }
-        });
-
-        map.addLayer({
-          id: routeLayerId,
-          type: 'line',
-          source: routeSourceId,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round'
-          },
-          paint: {
-            'line-color': envMode === 'flood' ? '#0ea5e9' : '#f59e0b',
-            'line-width': 4,
-            'line-dasharray': [2, 1]
-          }
-        });
-      }
-    };
 
     if (map.isStyleLoaded()) {
-      updateRoute();
+      syncLayers();
     } else {
-      map.once('styledata', updateRoute);
+      map.once('styledata', syncLayers);
     }
-  }, [activeRouteGeometry, envMode]);
+  }, [clusters, showHeatLayer, selectedIncident, userLocation, activeRouteGeometry, envMode]);
+
+  // Sync markers when incidents or selections change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    syncMarkers();
+  }, [incidents, selectedIncident, envMode, userLocation]);
 
   const handleZoomIn = () => {
     playClick();
