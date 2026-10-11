@@ -165,32 +165,32 @@ const ALS_GEOCODED_ICON = L.divIcon({
   iconAnchor: [16, 16],
 });
 
-// Interactive Safe Path Origin Pin Icon (Green)
+// Interactive Safe Path Origin Pin Icon (Theme-aligned Waypoint A)
 const PATH_ORIGIN_ICON = L.divIcon({
   className: 'path-origin-pin',
   html: `
-    <div style="position:relative; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
-      <span style="position:absolute; width:100%; height:100%; border-radius:50%; background:rgba(16,185,129,0.35); animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
-      <div style="width:22px; height:22px; border-radius:50%; background:#10B981; border:3px solid #ffffff; box-shadow:0 4px 12px rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:10px; font-weight:800; font-family:monospace;">
+    <div style="position:relative; width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+      <span style="position:absolute; width:100%; height:100%; border-radius:50%; background:rgba(30,27,75,0.25); animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
+      <div style="width:22px; height:22px; border-radius:8px; background:#18181b; border:2px solid #ffffff; box-shadow:0 3px 10px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:11px; font-weight:800; font-family:monospace;">
         A
       </div>
     </div>`,
-  iconSize: [34, 34],
-  iconAnchor: [17, 17],
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
 });
 
-// Interactive Safe Path Destination Pin Icon (Amber/Red)
+// Interactive Safe Path Destination Pin Icon (Theme-aligned Waypoint B)
 const PATH_DEST_ICON = L.divIcon({
   className: 'path-dest-pin',
   html: `
-    <div style="position:relative; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
-      <span style="position:absolute; width:100%; height:100%; border-radius:50%; background:rgba(239,68,68,0.35); animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
-      <div style="width:22px; height:22px; border-radius:50%; background:#EF4444; border:3px solid #ffffff; box-shadow:0 4px 12px rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:10px; font-weight:800; font-family:monospace;">
+    <div style="position:relative; width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+      <span style="position:absolute; width:100%; height:100%; border-radius:50%; background:rgba(217,119,6,0.30); animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
+      <div style="width:22px; height:22px; border-radius:8px; background:#0284c7; border:2px solid #ffffff; box-shadow:0 3px 10px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:11px; font-weight:800; font-family:monospace;">
         B
       </div>
     </div>`,
-  iconSize: [34, 34],
-  iconAnchor: [17, 17],
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
 });
 
 // Map Click Listener to pick Origin and Destination points when in Path Creation Mode
@@ -771,18 +771,18 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="absolute top-2.5 sm:top-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-1.5rem)] sm:w-[560px] max-w-full pointer-events-auto"
           >
-            <div className="neo-glass-card rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-2xl border-2 border-[var(--color-brand-accent)] bg-[var(--bg-card)]/95 flex flex-col gap-3">
+            <div className="neo-glass-card rounded-2xl p-3.5 sm:p-4 shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] bg-[var(--bg-card)]/95 flex flex-col gap-3">
               {/* Header */}
               <div className="flex items-center justify-between gap-2 border-b border-[var(--border-color)] pb-2.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="p-1.5 rounded-xl bg-[var(--color-brand-accent)]/15 text-[var(--color-brand-accent)] shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="p-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] shrink-0 shadow-2xs">
                     <RouteIcon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-bold text-xs sm:text-sm text-[var(--text-main)] truncate flex items-center gap-1.5">
+                    <h3 className="font-bold text-xs sm:text-sm text-[var(--text-main)] truncate flex items-center gap-2">
                       <span>Create Safe Elevation Path</span>
-                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                        Interactive Map
+                      <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
+                        Interactive Waypoints
                       </span>
                     </h3>
                     <p className="text-[10px] text-[var(--text-muted)] truncate">
@@ -800,27 +800,31 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </button>
               </div>
 
-              {/* Waypoint Selector Chips (Click target toggle: Origin vs Destination) */}
+              {/* Waypoint Selector Chips (Click target toggle: Origin A vs Destination B) */}
               <div className="grid grid-cols-2 gap-2">
                 {/* Waypoint A (Origin) */}
                 <button
                   type="button"
                   onClick={() => { playClick(); setPathPickingTarget('origin'); }}
-                  className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex items-center gap-2 ${
+                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex items-center gap-2.5 ${
                     pathPickingTarget === 'origin'
-                      ? 'border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500'
-                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-emerald-500/50'
+                      ? 'border-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/10 ring-1 ring-[var(--color-brand-accent)]/40 shadow-2xs'
+                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--color-brand-accent)]/50'
                   }`}
                 >
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                  <div className={`w-6 h-6 rounded-lg font-mono font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
+                    pathPickingTarget === 'origin'
+                      ? 'bg-[var(--color-brand-accent)] text-white'
+                      : 'bg-[var(--text-main)]/10 text-[var(--text-main)]'
+                  }`}>
                     A
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-[9px] font-mono text-[var(--text-muted)] font-semibold uppercase flex items-center justify-between">
-                      <span>Origin</span>
-                      {pathOrigin && <Check className="h-2.5 w-2.5 text-emerald-500" />}
+                      <span>Origin Point</span>
+                      {pathOrigin && <Check className="h-3 w-3 text-[var(--color-brand-accent)]" />}
                     </div>
-                    <div className="text-xs font-semibold text-[var(--text-main)] truncate">
+                    <div className="text-xs font-semibold text-[var(--text-main)] truncate mt-0.5">
                       {pathOrigin ? `${pathOrigin[0].toFixed(3)}°, ${pathOrigin[1].toFixed(3)}°` : 'Click map to place'}
                     </div>
                   </div>
@@ -830,21 +834,25 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 <button
                   type="button"
                   onClick={() => { playClick(); setPathPickingTarget('destination'); }}
-                  className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex items-center gap-2 ${
+                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex items-center gap-2.5 ${
                     pathPickingTarget === 'destination'
-                      ? 'border-rose-500 bg-rose-500/10 ring-1 ring-rose-500'
-                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-rose-500/50'
+                      ? 'border-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/10 ring-1 ring-[var(--color-brand-accent)]/40 shadow-2xs'
+                      : 'border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--color-brand-accent)]/50'
                   }`}
                 >
-                  <div className="w-5 h-5 rounded-full bg-rose-500 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                  <div className={`w-6 h-6 rounded-lg font-mono font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
+                    pathPickingTarget === 'destination'
+                      ? 'bg-[var(--color-brand-accent)] text-white'
+                      : 'bg-[var(--text-main)]/10 text-[var(--text-main)]'
+                  }`}>
                     B
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-[9px] font-mono text-[var(--text-muted)] font-semibold uppercase flex items-center justify-between">
                       <span>Safe Destination</span>
-                      {pathDest && <Check className="h-2.5 w-2.5 text-rose-500" />}
+                      {pathDest && <Check className="h-3 w-3 text-[var(--color-brand-accent)]" />}
                     </div>
-                    <div className="text-xs font-semibold text-[var(--text-main)] truncate">
+                    <div className="text-xs font-semibold text-[var(--text-main)] truncate mt-0.5">
                       {pathDest ? `${pathDest[0].toFixed(3)}°, ${pathDest[1].toFixed(3)}°` : 'Click map to place'}
                     </div>
                   </div>
@@ -862,7 +870,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     value={pathOriginAddress}
                     onChange={(e) => setPathOriginAddress(e.target.value)}
                     placeholder="e.g. Indiranagar Metro Station"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:outline-none focus:ring-1 focus:ring-emerald-500 text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
                   />
                 </div>
                 <div>
@@ -874,7 +882,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     value={pathDestAddress}
                     onChange={(e) => setPathDestAddress(e.target.value)}
                     placeholder="e.g. High Elevation Ridge / Whitefield"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:outline-none focus:ring-1 focus:ring-rose-500 text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
                   />
                 </div>
               </div>
@@ -888,13 +896,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                       key={tier}
                       type="button"
                       onClick={() => { playClick(); setPathRiskTier(tier); }}
-                      className={`px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold capitalize transition-all cursor-pointer border ${
+                      className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold capitalize transition-all cursor-pointer border ${
                         pathRiskTier === tier
-                          ? tier === 'low'
-                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs'
-                            : tier === 'moderate'
-                              ? 'bg-amber-500 text-white border-amber-500 shadow-2xs'
-                              : 'bg-rose-500 text-white border-rose-500 shadow-2xs'
+                          ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-2xs'
                           : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)]'
                       }`}
                     >
@@ -908,7 +912,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   <button
                     type="button"
                     onClick={handleCancelCustomPath}
-                    className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -916,7 +920,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     type="button"
                     onClick={handleSaveCustomPath}
                     disabled={(!pathOrigin && !pathOriginAddress.trim()) || (!pathDest && !pathDestAddress.trim())}
-                    className="px-4 py-1.5 rounded-xl bg-[var(--color-brand-accent)] hover:opacity-90 disabled:opacity-40 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                    className="px-4 py-1.5 rounded-xl bg-[var(--text-main)] hover:opacity-90 disabled:opacity-40 text-[var(--bg-card)] text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed active:scale-95"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     <span>Save Safe Path</span>

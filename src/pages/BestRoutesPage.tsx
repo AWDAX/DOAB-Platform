@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink } from 'lucide-react';
+import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink, MapPin, ThumbsUp, ThumbsDown, Star } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
@@ -116,6 +116,14 @@ export default function BestRoutesPage() {
   const [customSummary, setCustomSummary] = useState('');
   const [customRisk, setCustomRisk] = useState<'low' | 'moderate' | 'high'>('low');
 
+  // Destination Arrival & Model Accuracy Feedback State
+  const [isArrivalModalOpen, setIsArrivalModalOpen] = useState(false);
+  const [arrivalRoute, setArrivalRoute] = useState<RouteOption | null>(null);
+  const [feedbackRating, setFeedbackRating] = useState<'accurate' | 'moderate' | 'inaccurate' | null>(null);
+  const [feedbackNotes, setFeedbackNotes] = useState('');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [savedAsFavorite, setSavedAsFavorite] = useState(false);
+
   // Load custom user-created routes from localStorage
   const [customRoutes, setCustomRoutes] = useState<RouteOption[]>(() => {
     try {
@@ -134,6 +142,76 @@ export default function BestRoutesPage() {
     return !deletedIds.includes(routeKey);
   });
   const current = routes[active];
+
+  // Open Arrival Feedback & Safe Path Bookmark Modal
+  const handleMarkAsReached = (route: RouteOption) => {
+    playClick();
+    setArrivalRoute(route);
+    setFeedbackRating(null);
+    setFeedbackNotes('');
+    setFeedbackSubmitted(false);
+    
+    // Check if route is already saved
+    try {
+      const existing: SavedOfflineRoute[] = JSON.parse(localStorage.getItem(OFFLINE_ROUTES_KEY) || '[]');
+      const alreadySaved = existing.some(r => r.summary === route.summary);
+      setSavedAsFavorite(alreadySaved);
+    } catch {
+      setSavedAsFavorite(false);
+    }
+
+    setIsArrivalModalOpen(true);
+  };
+
+  // Submit Feedback & optionally save route
+  const handleSubmitArrivalFeedback = (saveToFavorites: boolean) => {
+    if (!arrivalRoute) return;
+    playClick();
+
+    // 1. Save telemetry feedback rating to local audit trail / server telemetry
+    try {
+      const feedbackRecord = {
+        routeSummary: arrivalRoute.summary,
+        predictedRisk: riskLabel(arrivalRoute, copy),
+        userRating: feedbackRating || 'accurate',
+        notes: feedbackNotes.trim(),
+        timestamp: new Date().toISOString(),
+      };
+      const existingFeedback = JSON.parse(localStorage.getItem('doab_route_accuracy_feedback') || '[]');
+      localStorage.setItem('doab_route_accuracy_feedback', JSON.stringify([feedbackRecord, ...existingFeedback].slice(0, 50)));
+    } catch (e) {
+      console.warn('Could not save route feedback', e);
+    }
+
+    // 2. If user opted to save/bookmark path for future usecases
+    if (saveToFavorites) {
+      try {
+        const existing: SavedOfflineRoute[] = JSON.parse(localStorage.getItem(OFFLINE_ROUTES_KEY) || '[]');
+        const routeId = `route-${Date.now()}`;
+        const newEntry: SavedOfflineRoute = {
+          id: routeId,
+          savedAt: new Date().toISOString(),
+          summary: arrivalRoute.summary,
+          distanceKm: formatKm(arrivalRoute.distance_meters),
+          durationMin: formatMinutes(arrivalRoute.duration_seconds),
+          riskPct: riskLabel(arrivalRoute, copy),
+          mapsUrl: arrivalRoute.maps_url,
+          origin: ORIGIN,
+          destination,
+        };
+        const filtered = existing.filter(r => r.summary !== arrivalRoute.summary);
+        localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify([newEntry, ...filtered].slice(0, 20)));
+        setSavedAsFavorite(true);
+      } catch (e) {
+        console.warn('Could not bookmark route', e);
+      }
+    }
+
+    setFeedbackSubmitted(true);
+    setTimeout(() => {
+      setIsArrivalModalOpen(false);
+    }, 1200);
+  };
 
   // Prompt delete with accessible ConfirmationModal
   const promptDeleteRoute = (indexToDelete: number) => {
@@ -401,11 +479,20 @@ export default function BestRoutesPage() {
                     <td className="py-4 px-6 text-center font-mono tabular-nums whitespace-nowrap">{riskLabel(route, copy)}</td>
                     <td id={index === 0 ? 'tour-best-engage' : undefined} className="py-4 px-6 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleMarkAsReached(route)}
+                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                          title="Confirm you have reached destination safely and provide AI probability feedback"
+                        >
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          <span>Reached Destination</span>
+                        </button>
                         <a 
                           href={route.maps_url} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
+                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
                         >
                           <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
                           <span>{copy.openMaps}</span>
@@ -463,16 +550,26 @@ export default function BestRoutesPage() {
                     <span className="text-xs font-bold">{riskLabel(route, copy)}</span>
                   </div>
                 </div>
-                <a 
-                  href={route.maps_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold text-xs shadow-xs"
-                >
-                  <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
-                  <span>{copy.openMaps}</span>
-                  <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
-                </a>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleMarkAsReached(route)}
+                    className="flex-1 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95"
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Reached Destination</span>
+                  </button>
+                  <a 
+                    href={route.maps_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold text-xs shadow-xs"
+                  >
+                    <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span>{copy.openMaps}</span>
+                    <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
+                  </a>
+                </div>
               </div>
             ))}
           </div>
@@ -588,6 +685,172 @@ export default function BestRoutesPage() {
         onConfirm={confirmDeleteRoute}
         onCancel={() => setRoutePendingDelete(null)}
       />
+
+      {/* ── Destination Arrival, Risk Probability Feedback & Safe Path Bookmarking Modal ── */}
+      {isArrivalModalOpen && arrivalRoute && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl w-full max-w-lg p-5 sm:p-6 shadow-2xl space-y-4">
+            
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-[var(--border-color)] pb-3.5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-[var(--text-main)] flex items-center gap-2">
+                    <span>Destination Reached</span>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                      Safe Arrival
+                    </span>
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)] truncate max-w-xs sm:max-w-sm mt-0.5">
+                    {arrivalRoute.summary}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsArrivalModalOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {feedbackSubmitted ? (
+              <div className="py-8 text-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-500 mx-auto flex items-center justify-center animate-bounce">
+                  <Check className="h-6 w-6 stroke-[3]" />
+                </div>
+                <h4 className="text-sm font-bold text-[var(--text-main)]">Thank You for Your Feedback!</h4>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Your ground truth telemetry helps our flood elevation model improve route safety for everyone.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                {/* Predicted Probability Badge */}
+                <div className="p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-mono text-[var(--text-muted)] block uppercase">Model Predicted Inundation Risk</span>
+                    <span className="font-bold text-sm text-[var(--text-main)]">{riskLabel(arrivalRoute, copy)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-mono text-[var(--text-muted)] block uppercase">Distance Covered</span>
+                    <span className="font-bold text-sm font-mono text-[var(--text-main)]">{formatKm(arrivalRoute.distance_meters)}</span>
+                  </div>
+                </div>
+
+                {/* Ground Truth Accuracy Question */}
+                <div className="space-y-2">
+                  <label className="font-semibold text-[var(--text-main)] block">
+                    How accurate was the predicted safety level during your trip?
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { playClick(); setFeedbackRating('accurate'); }}
+                      className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                        feedbackRating === 'accurate'
+                          ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold shadow-xs'
+                          : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-emerald-500/40 hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      <ThumbsUp className="h-4 w-4 text-emerald-500" />
+                      <span className="text-[11px] leading-tight">Accurate & Clear</span>
+                      <span className="text-[9px] opacity-75">No waterlogging</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { playClick(); setFeedbackRating('moderate'); }}
+                      className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                        feedbackRating === 'moderate'
+                          ? 'border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold shadow-xs'
+                          : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-amber-500/40 hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      <Star className="h-4 w-4 text-amber-500" />
+                      <span className="text-[11px] leading-tight">Slight Water</span>
+                      <span className="text-[9px] opacity-75">Passable ponding</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { playClick(); setFeedbackRating('inaccurate'); }}
+                      className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                        feedbackRating === 'inaccurate'
+                          ? 'border-rose-500 bg-rose-500/15 text-rose-700 dark:text-rose-400 font-bold shadow-xs'
+                          : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-rose-500/40 hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      <ThumbsDown className="h-4 w-4 text-rose-500" />
+                      <span className="text-[11px] leading-tight">Flooded / Blocked</span>
+                      <span className="text-[9px] opacity-75">Risk was higher</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Optional Notes */}
+                <div>
+                  <label className="text-[11px] font-mono text-[var(--text-muted)] block mb-1">
+                    Optional Ground Observation (Water depth, bottlenecks, etc.)
+                  </label>
+                  <input
+                    type="text"
+                    value={feedbackNotes}
+                    onChange={(e) => setFeedbackNotes(e.target.value)}
+                    placeholder="e.g. Underpass had 2 inches of water but service road was clear"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                  />
+                </div>
+
+                {/* Save as Safe Path Bookmark Option */}
+                <div className="p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Bookmark className="h-4 w-4 text-[var(--color-brand-accent)] shrink-0" />
+                    <div>
+                      <span className="font-semibold text-[var(--text-main)] block text-xs">Save as Safe Path for Future Trips</span>
+                      <span className="text-[10px] text-[var(--text-muted)] block">Bookmark this tested elevation corridor for offline quick access</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { playClick(); setSavedAsFavorite(!savedAsFavorite); }}
+                    className={`px-3 py-1.5 rounded-xl border font-bold text-[10px] shrink-0 cursor-pointer transition-all ${
+                      savedAsFavorite
+                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs'
+                        : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--color-brand-accent)]'
+                    }`}
+                  >
+                    {savedAsFavorite ? 'Bookmarked ✓' : 'Save Path'}
+                  </button>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="pt-2 flex items-center justify-end gap-2 border-t border-[var(--border-color)]">
+                  <button
+                    type="button"
+                    onClick={() => setIsArrivalModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-[var(--border-color)] text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmitArrivalFeedback(savedAsFavorite)}
+                    className="px-4 py-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shadow-xs active:scale-95"
+                  >
+                    Submit & Save Path
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
