@@ -192,7 +192,7 @@ export default function GlobalSidebar() {
         {isExpanded ? (
           <>
             <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold truncate">
-              Civic Dashboard
+              Navigation
             </span>
             <div className="flex items-center gap-1">
               <Tooltip content="Start Page Tour" shortcut="Shift+T" position="bottom">
