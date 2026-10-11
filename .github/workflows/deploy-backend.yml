@@ -45,7 +45,15 @@ jobs:
             \"\$APP_DIR/venv/bin/python\" -m pip install --upgrade pip
             \"\$APP_DIR/venv/bin/python\" -m pip install -r \"\$APP_DIR/requirements.txt\"
             sudo systemctl restart zplus-backend
-            sleep 3
-            curl -f http://127.0.0.1:8000/health || (echo \"Health check failed!\" && exit 1)
-            echo \"✅ Deployment finished!\"
+            echo "Waiting for backend service to bind port 8000..."
+            for i in {1..10}; do
+              if curl -s -f http://127.0.0.1:8000/health > /dev/null; then
+                echo "✅ Backend is healthy and responding!"
+                break
+              fi
+              echo "Waiting for startup ($i/10)..."
+              sleep 2
+            done
+            curl -f http://127.0.0.1:8000/health
+            echo "✅ Deployment finished!"
           '"
