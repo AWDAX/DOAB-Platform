@@ -143,20 +143,18 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
       <main className="relative flex-1 flex flex-col items-center justify-center w-full max-w-[540px] z-10 pt-16 pb-14 my-auto">
         <div className="w-full p-6 sm:p-8 md:p-9 login-form-card neo-glass-card shadow-2xl relative overflow-hidden transition-all duration-300">
           
-          <h1 className="h-7 sm:h-8 flex items-center justify-center gap-2 text-base sm:text-lg font-bold text-center mb-5 sm:mb-6 whitespace-nowrap tracking-tight font-sans text-neutral-950 dark:text-white">
-            <span className="[background-image:linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%)] [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] text-transparent dark:![background-image:none] dark:![-webkit-text-fill-color:unset] dark:!text-white inline-flex items-center gap-2">
-              {mode === 'login' ? (
-                <>
-                  <LogIn size={16} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
-                  <span>Sign in to DOAB</span>
-                </>
-              ) : (
-                <>
-                  <UserPlus size={16} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
-                  <span>Create your DOAB account</span>
-                </>
-              )}
-            </span>
+          <h1 className="h-7 sm:h-8 flex items-center justify-center gap-2 text-base sm:text-lg font-bold text-neutral-950 dark:text-white text-center mb-5 sm:mb-6 whitespace-nowrap tracking-tight font-sans">
+            {mode === 'login' ? (
+              <>
+                <LogIn size={16} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
+                <span>Sign in to DOAB</span>
+              </>
+            ) : (
+              <>
+                <UserPlus size={16} className="stroke-[2] flex-shrink-0" aria-hidden="true" />
+                <span>Create your DOAB account</span>
+              </>
+            )}
           </h1>
 
           {/* Clean Segmented Control / Pill Mode Switcher from SWATVA */}
@@ -164,7 +162,10 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             <div className="relative grid grid-cols-2 gap-1">
               <span
                 aria-hidden="true"
-                className={`absolute inset-y-0 left-0 w-[calc(50%-2px)] rounded-full bg-[linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%)] dark:bg-white shadow-xs transition-transform duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                style={{
+                  backgroundImage: 'var(--auth-pill-gradient, linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%))'
+                }}
+                className={`absolute inset-y-0 left-0 w-[calc(50%-2px)] rounded-full dark:!bg-white dark:!bg-none transition-transform duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
                   mode === 'register' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
                 }`}
               />
@@ -292,7 +293,10 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11.5 sm:h-12 mt-3 flex items-center justify-center gap-2 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-tight text-white bg-[linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%)] hover:opacity-95 active:scale-[0.99] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-100 disabled:opacity-50 transition-all shadow-md cursor-pointer font-sans"
+              style={{
+                backgroundImage: 'var(--auth-btn-gradient, linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%))'
+              }}
+              className="w-full h-11.5 sm:h-12 mt-3 flex items-center justify-center gap-2 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-tight text-white hover:opacity-95 active:scale-[0.99] dark:!bg-white dark:!bg-none dark:!text-neutral-950 dark:hover:!bg-neutral-100 disabled:opacity-50 transition-all shadow-md cursor-pointer font-sans"
             >
               <span className="whitespace-nowrap font-bold">
                 {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}

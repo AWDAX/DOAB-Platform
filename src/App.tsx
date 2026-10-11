@@ -430,10 +430,6 @@ function AppContent({
         envMode={envMode}
         toggleEnvMode={toggleEnvMode}
         user={user}
-        onOpenTour={() => {
-          setIsPreferencesOpen(false);
-          setIsTourOpen(true);
-        }}
       />
 
       {/* Global Draggable AI Orb & Adaptive Voice/Text Assistant Window */}

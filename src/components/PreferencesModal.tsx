@@ -10,7 +10,6 @@ import {
   SunMedium, 
   Volume2, 
   VolumeX,
-  Compass, 
   User, 
   LogOut, 
   MousePointer,
@@ -89,7 +88,6 @@ interface PreferencesModalProps {
   envMode: 'flood' | 'drought';
   toggleEnvMode: () => void;
   user?: any;
-  onOpenTour?: () => void;
 }
 
 export default function PreferencesModal({
@@ -99,8 +97,7 @@ export default function PreferencesModal({
   toggleTheme,
   envMode,
   toggleEnvMode,
-  user,
-  onOpenTour
+  user
 }: PreferencesModalProps) {
   const navigate = useNavigate();
 
@@ -545,39 +542,6 @@ export default function PreferencesModal({
                   </div>
                 )}
             </div>
-
-            {/* SECTION 6: Platform Guided Tour Card (Contained within Preferences) */}
-            {onOpenTour && (
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-neutral-950 dark:bg-white flex items-center justify-center shrink-0 shadow-md">
-                    <Compass size={16} className="text-white dark:text-neutral-950 stroke-[2.2]" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-[var(--text-main)] leading-snug">
-                      Interactive Platform Guided Tour
-                    </div>
-                    <div className="text-[10px] text-[var(--text-muted)] leading-tight mt-0.5">
-                      Explore key features, dual-climate modes, GIS flood telemetry & route safety.
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    playClick();
-                    onClose();
-                    onOpenTour();
-                  }}
-                  className="w-full py-2.5 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold tracking-tight hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
-                >
-                  <Compass size={14} className="stroke-[2.2]" />
-                  <span>Start Guided Tour</span>
-                  <span className="opacity-70 font-mono">→</span>
-                </button>
-              </div>
-            )}
 
             </div>
           </motion.div>
