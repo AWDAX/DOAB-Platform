@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Z+ Sentinel',
   webDir: 'dist',
   server: {
+    url: 'https://doab.sahnirmaan.live',
     androidScheme: 'https',
     cleartext: true
   },
