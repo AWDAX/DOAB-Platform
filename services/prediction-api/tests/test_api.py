@@ -10,7 +10,8 @@ def test_health_and_contract(monkeypatch):
     assert health.status_code == 200
     assert health.json()["status"] == "ok"
 
-    forecast = client.get("/forecast", params={"min_lat": 28, "max_lat": 29, "min_lng": 77, "max_lng": 78})
+    # Querying an area outside registered prediction corridors returns insufficient_data
+    forecast = client.get("/forecast", params={"min_lat": 27.0, "max_lat": 27.5, "min_lng": 70.0, "max_lng": 70.5})
     assert forecast.status_code == 200
     body = forecast.json()
     assert body["data_quality"] == "insufficient_data"

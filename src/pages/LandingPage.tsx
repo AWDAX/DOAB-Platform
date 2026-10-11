@@ -415,7 +415,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
 
           {/* Minimal Subtitle */}
           <p className="text-xs sm:text-sm md:text-base text-[var(--text-muted)] max-w-2xl leading-relaxed mb-8 font-normal">
-            A prototype estimate of waterlogging one hour ahead, limited to the Bengaluru area with labelled complaints.
+            Real-time dual-climate spatial intelligence, probabilistic flood clearance, and safe corridor routing for citizens, logistics riders, and emergency responders.
           </p>
         </div>
 

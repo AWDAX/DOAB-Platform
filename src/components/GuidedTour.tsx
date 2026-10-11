@@ -1294,11 +1294,15 @@ export default function GuidedTour({
               </div>
             </div>
 
-            {/* Micro Keyboard Hints Badge */}
-            <div className="mt-2.5 pt-2 border-t border-[var(--border-color)]/60 flex items-center justify-center gap-3 text-[9px] font-mono text-[var(--text-muted)]">
-              <span><kbd className="px-1 py-0.2 bg-[var(--bg-main)] rounded border border-[var(--border-color)] font-bold">←</kbd> Prev</span>
-              <span><kbd className="px-1 py-0.2 bg-[var(--bg-main)] rounded border border-[var(--border-color)] font-bold">→</kbd> Next</span>
-              <span><kbd className="px-1 py-0.2 bg-[var(--bg-main)] rounded border border-[var(--border-color)] font-bold">Esc</kbd> Exit</span>
+            {/* Micro Keyboard Hints Badge (Hidden on mobile/touch screens, grouped prev/next on left, esc on right) */}
+            <div className="mt-2.5 pt-2 border-t border-[var(--border-color)]/60 hidden sm:flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)] select-none">
+              <div className="flex items-center gap-2.5">
+                <span><kbd className="px-1 py-0.2 bg-[var(--bg-main)] rounded border border-[var(--border-color)] font-bold">←</kbd> Prev</span>
+                <span><kbd className="px-1 py-0.2 bg-[var(--bg-main)] rounded border border-[var(--border-color)] font-bold">→</kbd> Next</span>
+              </div>
+              <div>
+                <span><kbd className="px-1 py-0.2 bg-[var(--bg-main)] rounded border border-[var(--border-color)] font-bold">Esc</kbd> Exit</span>
+              </div>
             </div>
           </motion.div>
         )}

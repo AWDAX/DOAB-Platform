@@ -6,11 +6,11 @@ interface KineticRollingHeadlineProps {
 }
 
 const DEFAULT_PHRASES = [
-  "Estimating waterlogging one hour ahead.",
-  "Only where labelled complaints exist.",
-  "Opening a Google Maps link.",
-  "Not a municipal sensor reading.",
-  "Bengaluru pilot, not a national warning."
+  "Predicting urban flood risk one hour ahead.",
+  "Safe navigation for riders & commuters.",
+  "Real-time dual-climate GIS telemetry.",
+  "Probabilistic waterlog corridor models.",
+  "Commercial fleet dispatch risk routing."
 ];
 
 export default function KineticRollingHeadline({ 

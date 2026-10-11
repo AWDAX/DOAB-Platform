@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from .boundaries import locate
-from .config import DEFAULT_MODEL_PATH, LOCAL_TIMEZONE, PILOT_BBOX, get_settings
+from .config import DEFAULT_MODEL_PATH, LOCAL_TIMEZONE, PILOT_BBOX, NATIONAL_CORRIDORS, get_settings
 from .features import (
     FEATURE_COLUMNS,
     HOTSPOT_FEATURE,
@@ -33,8 +33,11 @@ _LOAD_ERROR: str | None = None
 
 
 def in_pilot(lat: float, lng: float) -> bool:
-    box = PILOT_BBOX
-    return box["min_lat"] <= lat <= box["max_lat"] and box["min_lng"] <= lng <= box["max_lng"]
+    """Check if point falls within any designated prediction corridor."""
+    for box in NATIONAL_CORRIDORS.values():
+        if box["min_lat"] <= lat <= box["max_lat"] and box["min_lng"] <= lng <= box["max_lng"]:
+            return True
+    return False
 
 
 def load_bundle(force: bool = False) -> dict | None:
@@ -209,33 +212,47 @@ def score_points(
     return results
 
 
-def pilot_grid(step: float = 0.1) -> list[tuple[float, float]]:
-    box = PILOT_BBOX
-    lats = np.round(np.arange(box["min_lat"] + step / 2, box["max_lat"], step), 4)
-    lngs = np.round(np.arange(box["min_lng"] + step / 2, box["max_lng"], step), 4)
+def pilot_grid(step: float = 0.1, box: dict[str, float] | None = None) -> list[tuple[float, float]]:
+    b = box or PILOT_BBOX
+    lats = np.round(np.arange(b["min_lat"] + step / 2, b["max_lat"], step), 4)
+    lngs = np.round(np.arange(b["min_lng"] + step / 2, b["max_lng"], step), 4)
     return [(float(lat), float(lng)) for lat in lats for lng in lngs]
 
 
 def forecast_area(min_lat: float, max_lat: float, min_lng: float, max_lng: float, now: datetime | None = None) -> dict:
-    """Score the overlap of the request box and the labelled pilot. Elsewhere: insufficient_data."""
+    """Score the overlap of the request box and designated corridors. Elsewhere: insufficient_data."""
     if min_lat > max_lat or min_lng > max_lng:
         raise ValueError("Bounding box is inverted.")
     span = (max_lat - min_lat) * (max_lng - min_lng)
     if span > 25:
         raise ValueError("Bounding box is too large. Request at most 5 by 5 degrees.")
+    
+    # Check overlap across all registered national corridors
+    grid = []
+    matched_corridors = []
+    for c_name, box in NATIONAL_CORRIDORS.items():
+        overlap_min_lat = max(min_lat, box["min_lat"])
+        overlap_max_lat = min(max_lat, box["max_lat"])
+        overlap_min_lng = max(min_lng, box["min_lng"])
+        overlap_max_lng = min(max_lng, box["max_lng"])
+        if overlap_min_lat < overlap_max_lat and overlap_min_lng < overlap_max_lng:
+            matched_corridors.append(c_name)
+            grid.extend(pilot_grid(box=box))
+            
+    # Deduplicate grid points and filter to requested window
     grid = [
-        point
-        for point in pilot_grid()
-        if min_lat <= point[0] <= max_lat and min_lng <= point[1] <= max_lng
+        pt for pt in dict.fromkeys(grid)
+        if min_lat <= pt[0] <= max_lat and min_lng <= pt[1] <= max_lng
     ]
     outside = not grid
     cells = score_points(grid, now=now) if grid else []
     generated = datetime.now(timezone.utc)
+    coverage_desc = ", ".join(matched_corridors) if matched_corridors else "national_coverage"
     return {
         "generated_at": generated.isoformat(),
         "stale_after_seconds": get_settings().forecast_cache_ttl_s,
         "horizon_hours": 1,
-        "coverage": "bengaluru_labelled_pilot",
+        "coverage": coverage_desc,
         "data_quality": "insufficient_data" if outside else "ok",
         "reason": "outside_labelled_area" if outside else None,
         "cells": cells,

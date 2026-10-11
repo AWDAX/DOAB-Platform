@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, LogIn, UserPlus, AlertTriangle } from 'lucide-react';
+import { Mail, Lock, ArrowRight, LogIn, UserPlus, AlertTriangle, User, Truck } from 'lucide-react';
 import { signInWithGoogle, signInWithFirebaseEmail, onDOABAuthStateChanged } from '../lib/firebase';
 import BrandLogo from '../components/BrandLogo';
 import MinimalBrandHeader from '../components/MinimalBrandHeader';
@@ -17,6 +17,20 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  const [selectedRole, setSelectedRole] = useState<'citizen' | 'delivery'>(() => {
+    try {
+      const saved = localStorage.getItem('doab_user_role');
+      if (saved === 'citizen' || saved === 'delivery') return saved;
+    } catch {}
+    return 'citizen';
+  });
+  const [vendorId, setVendorId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('doab_vendor_id') || '';
+    } catch {}
+    return '';
+  });
   
   const [lastGoogleAccount] = useState<any>(() => {
     try {
@@ -82,6 +96,10 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             photoURL: result.user.photoURL
           })
         );
+        localStorage.setItem('doab_user_role', selectedRole);
+        if (selectedRole === 'delivery' && vendorId.trim()) {
+          localStorage.setItem('doab_vendor_id', vendorId.trim());
+        }
       } catch {}
       navigate('/', { replace: true });
     }
@@ -105,6 +123,12 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
       if (res && res.error) {
         setError(res.error);
       } else {
+        try {
+          localStorage.setItem('doab_user_role', selectedRole);
+          if (selectedRole === 'delivery' && vendorId.trim()) {
+            localStorage.setItem('doab_vendor_id', vendorId.trim());
+          }
+        } catch {}
         navigate('/', { replace: true });
       }
     } catch (err: any) {
@@ -190,6 +214,74 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                 <span>Create Account</span>
               </button>
             </div>
+          </div>
+
+          {/* Stakeholder Role Selector (SAHNIRMAAN / SWATVA Standard) */}
+          <div className="mb-5 sm:mb-6">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-neutral-500 dark:text-neutral-400">
+                Operating Role
+              </span>
+              <span className="text-[10px] font-mono text-[var(--color-brand-accent)] font-semibold">
+                {selectedRole === 'citizen' ? 'Civic Safe Transit' : 'Commercial Dispatch SLA'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-neutral-100/80 dark:bg-white/[0.04] border border-neutral-200/80 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setSelectedRole('citizen')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedRole === 'citizen'
+                    ? 'bg-white dark:bg-white text-neutral-950 dark:text-neutral-950 shadow-xs'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                <User size={14} className="shrink-0" />
+                <span>Citizen Rider</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedRole('delivery')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedRole === 'delivery'
+                    ? 'bg-white dark:bg-white text-neutral-950 dark:text-neutral-950 shadow-xs'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                <Truck size={14} className="shrink-0" />
+                <span>Delivery Partner</span>
+              </button>
+            </div>
+
+            {/* If Commercial Delivery Partner is selected, show Vendor Identification Link */}
+            {selectedRole === 'delivery' && (
+              <div className="mt-3 p-3 rounded-xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-accent)]/5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold text-[var(--text-main)]">
+                    Vendor Identification Link
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setVendorId('SWIGGY-BLR-9021')}
+                    className="text-[10px] font-mono text-[var(--color-brand-accent)] hover:underline font-semibold cursor-pointer"
+                  >
+                    ⚡ Demo Partner ID
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. SWIGGY-BLR-8821 or ZEPTO-OPS-109"
+                  value={vendorId}
+                  onChange={(e) => setVendorId(e.target.value)}
+                  className="w-full p-2 text-xs font-mono border border-neutral-300 dark:border-white/15 rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-accent)] bg-[var(--bg-card)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                />
+                <p className="text-[10px] text-[var(--text-muted)] mt-1.5 leading-tight">
+                  Enables 15cm flood thresholds, SLA hazard alerts & commercial fleet API dispatch.
+                </p>
+              </div>
+            )}
           </div>
 
           {error && (

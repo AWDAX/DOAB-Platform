@@ -22,9 +22,20 @@ DEFAULT_INCIDENT_CSV = (
     REPO_ROOT / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv"
 )
 
-# The only area with geolocated labelled incidents (OpenCity export, Bengaluru).
-# Predictions outside this box are returned as insufficient_data.
+# High-resolution ML corridor (Bengaluru pilot with geolocated micro-labels)
 PILOT_BBOX = {"min_lat": 12.60, "max_lat": 13.30, "min_lng": 77.30, "max_lng": 77.90}
+
+# National corridor registry for key pilot urban clusters across India
+NATIONAL_CORRIDORS: dict[str, dict[str, float]] = {
+    "bengaluru": PILOT_BBOX,
+    "mumbai_mmr": {"min_lat": 18.85, "max_lat": 19.35, "min_lng": 72.75, "max_lng": 73.15},
+    "delhi_ncr": {"min_lat": 28.35, "max_lat": 28.85, "min_lng": 76.90, "max_lng": 77.45},
+    "patna_bihar": {"min_lat": 25.50, "max_lat": 25.75, "min_lng": 85.00, "max_lng": 85.35},
+    "hyderabad_telangana": {"min_lat": 17.25, "max_lat": 17.55, "min_lng": 78.30, "max_lng": 78.65},
+    "kolkata_wb": {"min_lat": 22.40, "max_lat": 22.75, "min_lng": 88.25, "max_lng": 88.50},
+    "chennai_tn": {"min_lat": 12.90, "max_lat": 13.25, "min_lng": 80.10, "max_lng": 80.35},
+    "bhubaneswar_odisha": {"min_lat": 20.15, "max_lat": 20.40, "min_lng": 85.70, "max_lng": 85.95},
+}
 
 # Analysis window for training. Weather lookback starts before the first event
 # so that 7-day rolling features are complete for early-2019 events.

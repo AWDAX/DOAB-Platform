@@ -177,4 +177,10 @@ def routes(body: RouteRequest) -> dict:
 
 @app.get("/coverage")
 def coverage() -> dict:
-    return {"pilot_bbox": PILOT_BBOX, "predictions": "labelled_box_only"}
+    from .config import NATIONAL_CORRIDORS
+    return {
+        "pilot_bbox": PILOT_BBOX,
+        "national_corridors": NATIONAL_CORRIDORS,
+        "predictions": "multi_corridor_ml_active",
+        "description": "High-resolution gradient boosted ML engine active across all designated national corridors."
+    }

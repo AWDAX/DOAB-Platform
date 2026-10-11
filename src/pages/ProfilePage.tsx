@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Truck, Shield, LogOut, Clock, Settings, Users2, Award } from 'lucide-react';
+import { User, Truck, Shield, ShieldCheck, LogOut, Clock, Settings, Users2, Award } from 'lucide-react';
 import { signInWithGoogle, firebaseSignOut, onDOABAuthStateChanged } from '../lib/firebase';
+import { ToggleSwitch } from '../components/PreferencesModal';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import BrandLogo from '../components/BrandLogo';
@@ -32,6 +33,40 @@ export default function ProfilePage() {
   const vendorId = profile.vendorId;
   const setRole = (r: 'citizen' | 'delivery') => updateProfile({ role: r });
   const setVendorId = (v: string) => updateProfile({ vendorId: v });
+
+  const [clearanceLimit, setClearanceLimit] = useState<'15' | '20' | '25'>(() => {
+    try {
+      const saved = localStorage.getItem('doab_clearance_limit');
+      if (saved === '15' || saved === '20' || saved === '25') return saved;
+    } catch {}
+    return '15';
+  });
+
+  const [highElevationPriority, setHighElevationPriority] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('doab_high_elevation');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {}
+    return true;
+  });
+
+  const handleClearanceChange = (val: '15' | '20' | '25') => {
+    playClick();
+    setClearanceLimit(val);
+    try {
+      localStorage.setItem('doab_clearance_limit', val);
+      window.dispatchEvent(new CustomEvent('doab:clearance-changed', { detail: { clearanceLimit: val } }));
+    } catch {}
+  };
+
+  const handleElevationToggle = (checked: boolean) => {
+    playClick();
+    setHighElevationPriority(checked);
+    try {
+      localStorage.setItem('doab_high_elevation', JSON.stringify(checked));
+      window.dispatchEvent(new CustomEvent('doab:elevation-changed', { detail: { highElevationPriority: checked } }));
+    } catch {}
+  };
 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -210,6 +245,56 @@ export default function ProfilePage() {
             )}
           </div>
         )}
+
+        {/* Two-Wheeler Flood Clearance Limit (Synced with Settings) */}
+        <div className="mb-6 p-4 sm:p-4.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-color)] w-full">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={16} className="text-[var(--color-brand-accent)] shrink-0" />
+              <div>
+                <div className="text-xs font-bold text-[var(--text-main)]">Two-Wheeler Flood Clearance Limit</div>
+                <div className="text-[10px] text-[var(--text-muted)]">Reroutes riders when standing water exceeds limit</div>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--color-brand-accent)] shrink-0">
+              {clearanceLimit} cm max
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 pt-1 mb-3">
+            {[
+              { val: '15', label: '15 cm', desc: 'Strict Safety' },
+              { val: '20', label: '20 cm', desc: 'Standard City' },
+              { val: '25', label: '25 cm', desc: 'High Clearance' },
+            ].map((item) => (
+              <button
+                key={item.val}
+                type="button"
+                onClick={() => handleClearanceChange(item.val as any)}
+                className={`p-2 rounded-xl text-center border transition-all cursor-pointer ${
+                  clearanceLimit === item.val
+                    ? 'border-[var(--text-main)] bg-[var(--bg-card)] shadow-xs ring-1 ring-[var(--text-main)]'
+                    : 'border-[var(--border-color)] bg-[var(--bg-card)]/50 hover:bg-[var(--bg-card)]'
+                }`}
+              >
+                <div className="text-xs font-bold text-[var(--text-main)]">{item.label}</div>
+                <div className="text-[9px] text-[var(--text-muted)] font-mono">{item.desc}</div>
+              </button>
+            ))}
+          </div>
+
+          <div className="pt-2.5 border-t border-[var(--border-color)] flex items-center justify-between gap-3">
+            <div className="text-xs font-medium text-[var(--text-main)]">
+              Prefer High-Elevation Ridges
+            </div>
+            <ToggleSwitch
+              size="sm"
+              checked={highElevationPriority}
+              onChange={handleElevationToggle}
+              ariaLabel="Toggle high-elevation priority"
+            />
+          </div>
+        </div>
 
         {/* Telemetry & Permissions Setting */}
         <div id="tour-profile-permissions" className="border-t border-[var(--border-color)] pt-5 w-full">

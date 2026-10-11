@@ -226,10 +226,10 @@
 
 .dark .auth-glass-card,
 .dark .login-form-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color) !important;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   outline: none !important;
-  box-shadow: 0 16px 45px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -654,12 +654,10 @@ body.dark .cursor-grab:active {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  opacity: 0.85;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  opacity: 1;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   color: inherit;
@@ -667,37 +665,38 @@ body.dark .cursor-grab:active {
 }
 
 :root:not(.dark) .footer-scroll-top {
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background-color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
   color: #0f172a;
 }
 
 :root:not(.dark) .footer-scroll-top:hover {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(0, 0, 0, 0.2) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   transform: translate(-50%, -50%) translateY(-2px);
   opacity: 1 !important;
 }
 
 .dark .footer-scroll-top {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background-color: var(--bg-card) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
   color: #ffffff;
 }
 
 .dark .footer-scroll-top:hover {
   opacity: 1 !important;
   transform: translate(-50%, -50%) translateY(-2px) !important;
-  background: rgba(2, 132, 199, 0.15) !important;
+  background-color: var(--bg-card) !important;
   border-color: rgba(56, 189, 248, 0.7) !important;
   box-shadow: 0 0 16px rgba(56, 189, 248, 0.4), inset 0 0 8px rgba(56, 189, 248, 0.3) !important;
 }
 
 .theme-drought.dark .footer-scroll-top:hover,
 .dark .theme-drought .footer-scroll-top:hover {
-  background: rgba(245, 158, 11, 0.15) !important;
+  background-color: var(--bg-card) !important;
   border-color: rgba(245, 158, 11, 0.7) !important;
   box-shadow: 0 0 16px rgba(245, 158, 11, 0.4), inset 0 0 8px rgba(245, 158, 11, 0.3) !important;
 }
@@ -727,43 +726,39 @@ body.dark .cursor-grab:active {
   font-family: inherit !important;
   z-index: 1 !important;
   outline: none;
-  cursor: url('/cursors/cover_hand_grab.svg') 12 8, grab !important;
+  cursor: url('/cursors/default_cursor.svg') 6 3, default !important;
   user-select: none;
   -webkit-user-select: none;
   touch-action: pan-x pan-y pinch-zoom;
 }
 
-/* Dark Mode Grab Cursor */
+/* Dark Mode Default Map Cursor */
 .dark .leaflet-container,
 .dark .maplibregl-map,
 .dark .maplibregl-canvas-container,
 .dark .maplibregl-canvas,
 html.dark .leaflet-container,
 html.dark .maplibregl-map {
-  cursor: url('/cursors/cover_hand_grab_dark.svg') 12 8, grab !important;
+  cursor: url('/cursors/default_cursor.svg') 6 3, default !important;
 }
 
-/* Default grab state when hovering over map */
+/* Default state when hovering over map background */
 .leaflet-grab,
 .maplibregl-canvas.maplibregl-interactive {
-  cursor: url('/cursors/cover_hand_grab.svg') 12 8, grab !important;
+  cursor: url('/cursors/default_cursor.svg') 6 3, default !important;
 }
 
 .dark .leaflet-grab,
 .dark .maplibregl-canvas.maplibregl-interactive {
-  cursor: url('/cursors/cover_hand_grab_dark.svg') 12 8, grab !important;
+  cursor: url('/cursors/default_cursor.svg') 6 3, default !important;
 }
 
-/* Grabbing state when holding mouse down & dragging across map */
+/* Grabbing state ONLY when actively holding mouse down & dragging across map */
 .leaflet-container:active,
 .leaflet-grab:active,
 .leaflet-dragging,
 .leaflet-dragging .leaflet-container,
 .leaflet-dragging .leaflet-grab,
-.leaflet-dragging .leaflet-interactive,
-.leaflet-dragging .leaflet-tile,
-.leaflet-dragging .leaflet-marker-pane,
-.leaflet-dragging .leaflet-overlay-pane,
 .maplibregl-canvas:active,
 .maplibregl-canvas-container.maplibregl-interactive:active,
 .maplibregl-map.maplibregl-touch-zoom-rotate:active,
@@ -776,10 +771,6 @@ html.dark .maplibregl-map {
 .dark .leaflet-dragging,
 .dark .leaflet-dragging .leaflet-container,
 .dark .leaflet-dragging .leaflet-grab,
-.dark .leaflet-dragging .leaflet-interactive,
-.dark .leaflet-dragging .leaflet-tile,
-.dark .leaflet-dragging .leaflet-marker-pane,
-.dark .leaflet-dragging .leaflet-overlay-pane,
 .dark .maplibregl-canvas:active,
 .dark .maplibregl-canvas-container.maplibregl-interactive:active,
 html.dark .leaflet-dragging,
@@ -787,13 +778,18 @@ html.dark .leaflet-container:active {
   cursor: url('/cursors/cover_hand_grab_dark.svg') 12 8, grabbing !important;
 }
 
-/* Interactive Marker Pins have crisp pointer cursor */
+/* Interactive Marker Pins, Halos & User Live GPS have crisp hand-pointer cursor */
 .leaflet-interactive,
 .leaflet-marker-icon,
 .custom-incident-pin,
+.custom-incident-pin *,
 .custom-incident-pin-selected,
-.user-live-pin {
-  cursor: pointer !important;
+.custom-incident-pin-selected *,
+.maplibregl-marker,
+.maplibregl-marker *,
+.user-live-pin,
+.user-live-pin * {
+  cursor: url('/cursors/hand-pointer.svg') 10 2, pointer !important;
 }
 
 /* While holding and dragging, maintain grabbing cursor across all child elements */
@@ -801,8 +797,7 @@ html.dark .leaflet-container:active {
 .leaflet-dragging .custom-incident-pin,
 .leaflet-dragging .custom-incident-pin-selected,
 .leaflet-dragging .user-live-pin {
-  cursor: grabbing !important;
-  cursor: -webkit-grabbing !important;
+  cursor: url('/cursors/cover_hand_grab.svg') 12 8, grabbing !important;
 }
 
 /* Dark Mode Tile Inversion Filter for High Legibility & Modern Dark Maps */

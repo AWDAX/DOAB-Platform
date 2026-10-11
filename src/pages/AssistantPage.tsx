@@ -441,10 +441,17 @@ export default function AssistantPage() {
 
         {/* Conversation Stream Scroll View */}
         <div id="tour-assistant-chat" className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 space-y-5 custom-scrollbar min-h-0">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center py-10">
-              <AIOrbFace size={78} state={orbState} className="mb-4" />
-              <h3 className="text-base font-bold tracking-tight text-[var(--text-main)]">
+          {!messages.some((m) => m.role === 'user') ? (
+            <div className="h-full flex flex-col items-center justify-center text-center py-8 sm:py-12 px-4">
+              <div 
+                className="relative mb-5 group cursor-pointer" 
+                onClick={handleToggleListening}
+                title={isListening ? "Listening... (Click to stop)" : "Click to speak with DOAB Copilot"}
+              >
+                <div className="absolute inset-0 -m-5 rounded-full bg-[var(--color-brand-accent)]/20 blur-2xl pointer-events-none transition-all group-hover:scale-125 animate-pulse" />
+                <AIOrbFace size={92} state={orbState} className="relative z-10 transition-transform group-hover:scale-105" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)]">
                 How can DOAB help you navigate or dispatch today?
               </h3>
               <p className="text-xs text-[var(--text-muted)] max-w-md mt-1.5 leading-relaxed">

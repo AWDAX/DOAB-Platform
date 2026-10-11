@@ -348,7 +348,7 @@ export default function MapLibreView({
 
       const el = document.createElement('div');
       el.style.pointerEvents = 'auto';
-      el.style.cursor = 'pointer';
+      el.style.cursor = "url('/cursors/hand-pointer.svg') 10 2, pointer";
       el.style.zIndex = isSelected ? '30' : '10';
       el.title = `${incident.title} (${incident.severity})`;
 
@@ -357,7 +357,7 @@ export default function MapLibreView({
         el.style.width = '28px';
         el.style.height = '28px';
         el.innerHTML = `
-          <span style="position:absolute; inset:0; border-radius:50%; background:${dotColor}40; animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
+          <span style="position:absolute; inset:0; border-radius:50%; background:${dotColor}40; animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite; pointer-events:none;"></span>
           <div style="
             width: 18px; 
             height: 18px; 
@@ -366,18 +366,19 @@ export default function MapLibreView({
             border: 2px solid ${dotColor}; 
             box-shadow: 0 0 12px ${dotColor}; 
             display: flex; align-items:center; justify-content:center;
+            pointer-events:none;
           ">
             <div style="width: 7px; height: 7px; border-radius: 50%; background: ${dotColor}; box-shadow: 0 0 4px #ffffff;"></div>
           </div>
         `;
       } else {
-        el.className = 'flex items-center justify-center transition-transform hover:scale-125';
-        el.style.width = '18px';
-        el.style.height = '18px';
+        el.className = 'group flex items-center justify-center';
+        el.style.width = '22px';
+        el.style.height = '22px';
         el.innerHTML = `
-          <div style="
-            width: 11px; 
-            height: 11px; 
+          <div class="transition-transform duration-200 ease-out group-hover:scale-130 pointer-events-none" style="
+            width: 12px; 
+            height: 12px; 
             border-radius: 50%; 
             background: ${dotColor}; 
             border: 2px solid #ffffff; 
@@ -385,6 +386,18 @@ export default function MapLibreView({
           "></div>
         `;
       }
+
+      el.addEventListener('mouseenter', () => {
+        try {
+          map.getCanvas().style.cursor = "url('/cursors/hand-pointer.svg') 10 2, pointer";
+        } catch (_) {}
+      });
+
+      el.addEventListener('mouseleave', () => {
+        try {
+          map.getCanvas().style.cursor = "url('/cursors/default_cursor.svg') 6 3, default";
+        } catch (_) {}
+      });
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -599,16 +612,6 @@ export default function MapLibreView({
     <div className="w-full h-full relative">
       <div ref={mapContainerRef} className="w-full h-full" />
 
-      {/* 3D Indicator Badge & Tip */}
-      <div className="absolute top-4 left-4 z-10 pointer-events-none flex flex-col gap-1.5">
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/85 backdrop-blur-md border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold shadow-lg">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" />
-          <span>3D GPU VECTOR ENGINE (MapLibre GL)</span>
-        </div>
-        <div className="hidden sm:inline-block px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-slate-300 text-[9px] font-mono">
-          Hold 3D button & drag to orbit • Right-click to tilt
-        </div>
-      </div>
 
       {/* ── Professional Neo-Glass 3D GPU Camera Control Rack (Bottom-Right) ── */}
       <div className="absolute bottom-6 right-4 sm:bottom-8 sm:right-6 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">

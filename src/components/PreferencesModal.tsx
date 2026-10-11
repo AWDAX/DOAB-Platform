@@ -27,7 +27,7 @@ import { useNavigate } from 'react-router-dom';
  * Replaces default checkboxes with a clean, semantic animated button slider.
  * Ported directly from SWATVA and SAHNIRMAAN design standard.
  */
-function ToggleSwitch({ 
+export function ToggleSwitch({ 
   checked, 
   onChange, 
   disabled = false, 

@@ -272,12 +272,12 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                   className={`w-9 h-9 rounded-full border transition-all flex items-center justify-center cursor-pointer shadow-2xs relative ${
                     isAlertsOpen
                       ? 'border-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/15 text-[var(--color-brand-accent)] ring-2 ring-[var(--color-brand-accent)]/20'
-                      : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/40'
+                      : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--color-brand-accent)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10'
                   }`}
                   aria-label="Open Alerts Feed Window"
                   aria-expanded={isAlertsOpen}
                 >
-                  <Bell className="h-4 w-4" />
+                  <Bell className="h-4 w-4 text-[var(--color-brand-accent)] transition-colors" />
                   {/* Subtle, refined theme-harmonious notification badge */}
                   <span className="absolute top-1 right-1 flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-brand-accent)] opacity-60" />
@@ -302,15 +302,17 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                         <Bell className="h-4 w-4 text-[var(--color-brand-accent)]" />
                         <span className="text-xs font-bold text-[var(--text-main)]">Recent Alerts</span>
                       </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold uppercase tracking-wider">
-                        Prototype Feed
-                      </span>
-                    </div>
-
-                    {/* Micro Explanatory Banner */}
-                    <div className="px-3 py-1.5 bg-[var(--bg-main)] border-b border-[var(--border-color)] text-[10px] text-[var(--text-muted)] leading-tight flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-accent)] shrink-0" />
-                      <span>Model estimates & verified Bengaluru BBMP reports.</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          setIsAlertsOpen(false);
+                        }}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+                        aria-label="Close Alerts Panel"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
 
                     {/* Quick Items List */}
@@ -361,32 +363,19 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                       })}
                     </div>
 
-                    {/* Footer View All Link & Close Controls */}
-                    <div className="p-2.5 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)]/80 backdrop-blur-md flex items-center justify-between gap-2 text-xs">
+                    {/* Footer View All Link */}
+                    <div className="p-2.5 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)]/80 backdrop-blur-md flex items-center justify-center">
                       <Link
                         to="/notifications"
                         onClick={() => {
                           playClick();
                           setIsAlertsOpen(false);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none group"
+                        className="w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none group"
                       >
                         <span>View All Alerts Page</span>
-                        <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+                        <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
                       </Link>
-                      
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playClick();
-                          setIsAlertsOpen(false);
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/30 hover:bg-[var(--text-main)]/5 active:scale-98 transition-all cursor-pointer select-none"
-                        aria-label="Close Alerts Panel"
-                      >
-                        <X size={12} />
-                        <span>Close</span>
-                      </button>
                     </div>
                   </motion.div>
                 )}

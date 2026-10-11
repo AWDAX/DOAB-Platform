@@ -188,6 +188,24 @@ For jury presentations and official submission forms, use this concise architect
 
 ---
 
+## 📚 Technical Documentation & Architecture Directory
+
+All detailed architecture specifications, deployment guides, and design docs are consolidated under [`docs/`](./docs/):
+
+| Document | Category | Description |
+|---|---|---|
+| [**B2B Logistics Monetization**](./docs/COMMERCIAL_LOGISTICS_BUSINESS_MODEL.md) | Commercial & Fleet | Enterprise fleet safety monetization model for Swiggy, Zepto, Zomato & 2-wheeler gig fleets |
+| [**Deployment Architecture**](./docs/DEPLOYMENT_ARCHITECTURE.md) | Cloud & Infra | AWS production deployment, ECS Fargate, Amplify, and serverless disaster mesh |
+| [**Geospatial Architecture**](./docs/GEOSPATIAL_ARCHITECTURE.md) | GIS & AI Engine | Elevation ridgelines, Dijkstra spatial risk engine, and hydraulic underpass models |
+| [**Architecture Diagrams**](./docs/ARCHITECTURE_MERMAID.md) | Architecture | Complete system diagrams, data pipelines, and real-time telemetry flows in Mermaid |
+| [**Docker & Local Setup**](./docs/DOCKER_AND_LOCAL_SETUP.md) | DevOps & Local | Full local environment bootstrap with Docker Compose & Python AI microservices |
+| [**Android Native App Guide**](./docs/ANDROID_APP_GUIDE.md) | Mobile (Android) | Capacitor native APK build, offline geolocation caching, and Android permissions |
+| [**UI Design System**](./docs/UI_DESIGN_SYSTEM.md) | Design & UX | Dual-climate color tokens, neo-glassmorphism, a11y standards, and custom SVG cursors |
+| [**Hackathon Video Script**](./docs/HACKATHON_VIDEO_SCRIPT.md) | Presentation | Step-by-step video demonstration flow and live product presentation script |
+| [**Verification Checklist**](./docs/Checklist.md) | QA & Audit | Full project readiness checklist and verification matrix |
+
+---
+
 ## 👥 Engineering Team — Contrarians
 
 - **Team**: Contrarians
