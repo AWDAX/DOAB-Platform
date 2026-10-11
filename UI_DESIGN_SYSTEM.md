@@ -132,3 +132,35 @@ html.auth-page ::-webkit-scrollbar-track {
 ### 5.3 Color Harmony Rule for Gutter Tracks
 The reserved scrollbar gutter track **must always match the background color of the page's fixed header and footer** (`var(--bg-card)`: `#FFFFFF` in Light Mode, `#101A24` in Dark Flood Mode, `#2C241E` in Dark Drought Mode). If the gutter track is transparent, raw OS or body canvas bleed will create an unsightly vertical line flanking the header and footer.
 
+---
+
+## 🏎️ 6. Morphing Floating Navbar Architecture & Layout-Shift Prevention
+
+### 6.1 The Problem: Morphing Jerk & Sibling Link Lurch
+When a top-attached edge-to-edge navbar morphs into a floating pill on scroll (e.g., in `LandingPage.tsx`), links in the center navigation (`The Loop`, `Dual Climate`, `Live Incidents`, `FAQ`) can suffer from noticeable jumps or "jerks" during the transition.
+
+### 6.2 Root Causes Identified
+1. **Asymmetric Flex Item Width Collapse**:
+   - The brand title container previously animated `max-w-[140px] opacity-100` down to `max-w-0 opacity-0` on scroll. In a flexbox container with `justify-between`, collapsing the left anchor's footprint abruptly by ~140px while the parent container's width was contracting caused the center navigation to immediately lurch leftwards.
+2. **Conditional Flex Sibling Injections (Dividers)**:
+   - Injecting vertical divider lines (`1px` with `scale-y-100`) conditionally when `scrolled === true` altered the flex children count and redistributed flex spacing abruptly mid-animation.
+3. **Un-transitioned Flex Gap Mismatches**:
+   - The `<nav>` container had a default Tailwind class `gap-5` (`1.25rem`), but the scrolled CSS rule overridden it with `gap: 0.75rem` without defining a CSS transition for `gap`. The items snapped into compact spacing instantaneously rather than gliding.
+
+### 6.3 The SAHNIRMAAN / SWATVA Standard Fix
+1. **Stable Anchor Footprint**:
+   - Keep the primary logo and brand acronym (`DOAB`) permanently visible at a stable flex footprint. Only secondary micro-subtitles (`Two Waters System`) gently fade without collapsing horizontal space.
+2. **Zero Conditional Flex Dividers**:
+   - Avoid injecting or removing structural flex siblings in a `justify-between` header on scroll.
+3. **Smooth Gap Interpolation**:
+   - Add explicit transition on `.portfolio-header nav`:
+     ```css
+     .portfolio-header nav {
+       transition: gap 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+     }
+     .portfolio-header.scrolled nav {
+       gap: 1.15rem;
+     }
+     ```
+   - Center navigation items now glide smoothly with the header without any lateral twitching or visual jerk.
+
