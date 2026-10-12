@@ -106,11 +106,27 @@ export function onDOABAuthStateChanged(callback: (user: any) => void) {
         } catch {}
         callback(enrichedUser);
       } else {
-        // When user is not signed in to Firebase, auth state is null
-        callback(null);
+        const stored = getStoredDemoUser();
+        if (stored?.isNativeSession) {
+          callback(stored);
+        } else {
+          callback(null);
+        }
       }
     });
-    return unsub;
+
+    const handleCustomAuth = () => {
+      const stored = getStoredDemoUser();
+      if (stored) callback(stored);
+    };
+    window.addEventListener('doab_auth_changed', handleCustomAuth);
+    window.addEventListener('storage', handleCustomAuth);
+
+    return () => {
+      if (typeof unsub === 'function') unsub();
+      window.removeEventListener('doab_auth_changed', handleCustomAuth);
+      window.removeEventListener('storage', handleCustomAuth);
+    };
   }
 
   // Fallback listener for offline demo state only when Firebase is unconfigured

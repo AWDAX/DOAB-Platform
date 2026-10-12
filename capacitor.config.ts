@@ -5,7 +5,6 @@ const config: CapacitorConfig = {
   appName: 'DOAB',
   webDir: 'dist',
   server: {
-    url: 'https://doab.sahnirmaan.live',
     androidScheme: 'https',
     cleartext: true
   },

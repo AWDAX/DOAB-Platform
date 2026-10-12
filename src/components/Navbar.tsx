@@ -382,8 +382,8 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
               </AnimatePresence>
             </div>
 
-            {/* Desktop Theme Toggle */}
-            <div className="hidden md:flex items-center">
+            {/* Theme Toggle (Visible on both mobile next to hamburger and desktop) */}
+            <div className="flex items-center">
               <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
             </div>
 
@@ -393,7 +393,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                   type="button"
                   id="tour-permissions"
                   onClick={() => { playClick(); onOpenPreferences(); }}
-                  className="w-9 h-9 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                  className="hidden md:flex w-9 h-9 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all items-center justify-center cursor-pointer shadow-2xs group"
                   aria-label="Open System Preferences"
                 >
                   <Settings className="h-4.5 w-4.5 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-90" />

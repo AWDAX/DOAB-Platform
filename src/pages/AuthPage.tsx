@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, LogIn, UserPlus, AlertTriangle, User, Truck } from 'lucide-react';
 import { signInWithGoogle, signInWithFirebaseEmail, onDOABAuthStateChanged } from '../lib/firebase';
+import { getAccountProfile, setAccountProfile } from '../hooks/useUserSettings';
 import BrandLogo from '../components/BrandLogo';
 import MinimalBrandHeader from '../components/MinimalBrandHeader';
 
@@ -20,13 +21,18 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
   
   const [selectedRole, setSelectedRole] = useState<'citizen' | 'delivery'>(() => {
     try {
+      const profile = getAccountProfile();
+      if (profile.role === 'citizen' || profile.role === 'delivery') return profile.role;
       const saved = localStorage.getItem('doab_user_role');
       if (saved === 'citizen' || saved === 'delivery') return saved;
     } catch {}
     return 'citizen';
   });
+
   const [vendorId, setVendorId] = useState<string>(() => {
     try {
+      const profile = getAccountProfile();
+      if (profile.vendorId) return profile.vendorId;
       return localStorage.getItem('doab_vendor_id') || '';
     } catch {}
     return '';
@@ -63,17 +69,52 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
     };
   }, []);
 
+  const handleRoleSelect = (role: 'citizen' | 'delivery') => {
+    setSelectedRole(role);
+    setAccountProfile({ role });
+    try {
+      localStorage.setItem('doab_user_role', role);
+    } catch {}
+  };
+
+  const handleVendorIdChange = (val: string) => {
+    setVendorId(val);
+    setAccountProfile({ vendorId: val.trim() });
+    try {
+      localStorage.setItem('doab_vendor_id', val.trim());
+    } catch {}
+  };
+
+  const handleFillDemoId = () => {
+    const demo = 'SWIGGY-BLR-9021';
+    setVendorId(demo);
+    setAccountProfile({ vendorId: demo });
+    try {
+      localStorage.setItem('doab_vendor_id', demo);
+    } catch {}
+  };
+
   useEffect(() => {
     const unsubscribe = onDOABAuthStateChanged((currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        setAccountProfile({
+          role: selectedRole,
+          vendorId: selectedRole === 'delivery' ? vendorId.trim() : ''
+        });
+        try {
+          localStorage.setItem('doab_user_role', selectedRole);
+          if (selectedRole === 'delivery' && vendorId.trim()) {
+            localStorage.setItem('doab_vendor_id', vendorId.trim());
+          }
+        } catch {}
         navigate('/', { replace: true });
       }
     });
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, selectedRole, vendorId]);
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -82,6 +123,18 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
   const handleGoogleSignIn = async (loginHint: any = null) => {
     setError(null);
     setGoogleLoading(true);
+
+    // Save selected role and delivery partner ID before opening Google OAuth
+    setAccountProfile({
+      role: selectedRole,
+      vendorId: selectedRole === 'delivery' ? vendorId.trim() : ''
+    });
+    try {
+      localStorage.setItem('doab_user_role', selectedRole);
+      if (selectedRole === 'delivery' && vendorId.trim()) {
+        localStorage.setItem('doab_vendor_id', vendorId.trim());
+      }
+    } catch {}
 
     const result = await signInWithGoogle(loginHint);
     if (result.error) {
@@ -96,6 +149,10 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             photoURL: result.user.photoURL
           })
         );
+        setAccountProfile({
+          role: selectedRole,
+          vendorId: selectedRole === 'delivery' ? vendorId.trim() : ''
+        });
         localStorage.setItem('doab_user_role', selectedRole);
         if (selectedRole === 'delivery' && vendorId.trim()) {
           localStorage.setItem('doab_vendor_id', vendorId.trim());
@@ -118,12 +175,21 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
       return;
     }
 
+    setAccountProfile({
+      role: selectedRole,
+      vendorId: selectedRole === 'delivery' ? vendorId.trim() : ''
+    });
+
     try {
       const res = await signInWithFirebaseEmail(emailTrimmed, password);
       if (res && res.error) {
         setError(res.error);
       } else {
         try {
+          setAccountProfile({
+            role: selectedRole,
+            vendorId: selectedRole === 'delivery' ? vendorId.trim() : ''
+          });
           localStorage.setItem('doab_user_role', selectedRole);
           if (selectedRole === 'delivery' && vendorId.trim()) {
             localStorage.setItem('doab_vendor_id', vendorId.trim());
@@ -216,21 +282,18 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             </div>
           </div>
 
-          {/* Stakeholder Role Selector (SAHNIRMAAN / SWATVA Standard) */}
+          {/* Your Role Selector */}
           <div className="mb-5 sm:mb-6">
             <div className="flex items-center justify-between mb-2 px-1">
               <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-neutral-500 dark:text-neutral-400">
-                Operating Role
-              </span>
-              <span className="text-[10px] font-mono text-[var(--color-brand-accent)] font-semibold">
-                {selectedRole === 'citizen' ? 'Civic Safe Transit' : 'Commercial Dispatch SLA'}
+                Your Role
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-neutral-100/80 dark:bg-white/[0.04] border border-neutral-200/80 dark:border-white/10">
               <button
                 type="button"
-                onClick={() => setSelectedRole('citizen')}
+                onClick={() => handleRoleSelect('citizen')}
                 className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   selectedRole === 'citizen'
                     ? 'bg-white dark:bg-white text-neutral-950 dark:text-neutral-950 shadow-xs'
@@ -243,7 +306,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
 
               <button
                 type="button"
-                onClick={() => setSelectedRole('delivery')}
+                onClick={() => handleRoleSelect('delivery')}
                 className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   selectedRole === 'delivery'
                     ? 'bg-white dark:bg-white text-neutral-950 dark:text-neutral-950 shadow-xs'
@@ -255,30 +318,30 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
               </button>
             </div>
 
-            {/* If Commercial Delivery Partner is selected, show Vendor Identification Link */}
+            {/* If Delivery Partner is selected, show Vendor Identification Link */}
             {selectedRole === 'delivery' && (
-              <div className="mt-3 p-3 rounded-xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-accent)]/5">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-bold text-[var(--text-main)]">
+              <div className="mt-3 p-3.5 rounded-xl border border-neutral-300/80 dark:border-white/10 bg-neutral-100/70 dark:bg-white/[0.04] transition-all">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-[11px] font-bold text-neutral-900 dark:text-neutral-100">
                     Vendor Identification Link
                   </span>
                   <button
                     type="button"
-                    onClick={() => setVendorId('SWIGGY-BLR-9021')}
-                    className="text-[10px] font-mono text-[var(--color-brand-accent)] hover:underline font-semibold cursor-pointer"
+                    onClick={handleFillDemoId}
+                    className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-neutral-200/90 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/15 text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-white/10 transition-colors cursor-pointer"
                   >
-                    ⚡ Demo Partner ID
+                    Demo Partner ID
                   </button>
                 </div>
                 <input
                   type="text"
                   placeholder="e.g. SWIGGY-BLR-8821 or ZEPTO-OPS-109"
                   value={vendorId}
-                  onChange={(e) => setVendorId(e.target.value)}
-                  className="w-full p-2 text-xs font-mono border border-neutral-300 dark:border-white/15 rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-accent)] bg-[var(--bg-card)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                  onChange={(e) => handleVendorIdChange(e.target.value)}
+                  className="w-full h-9 px-3 text-xs font-mono rounded-lg border border-neutral-300/90 dark:border-white/15 bg-white dark:bg-neutral-900/80 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-1.5 focus:ring-neutral-400 dark:focus:ring-white/30 transition-shadow"
                 />
-                <p className="text-[10px] text-[var(--text-muted)] mt-1.5 leading-tight">
-                  Enables 15cm flood thresholds, SLA hazard alerts & commercial fleet API dispatch.
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-2 leading-tight">
+                  Enables 15cm flood thresholds, hazard dispatch alerts & fleet telemetry routing.
                 </p>
               </div>
             )}
@@ -401,20 +464,20 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
       </main>
 
       {/* SWATVA Platform Fixed Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 px-4 sm:px-12 py-2.5 sm:py-3 border-t border-[var(--border-color)] bg-[var(--bg-card)]/90 backdrop-blur-xl flex items-center justify-between gap-2 sm:gap-3 shadow-xs pb-[calc(0.6rem+env(safe-area-inset-bottom))]">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <footer className="fixed bottom-0 left-0 right-0 z-40 px-3 sm:px-12 py-2 sm:py-3 border-t border-[var(--border-color)] bg-[var(--bg-card)]/90 backdrop-blur-xl flex items-center justify-between gap-1.5 sm:gap-3 shadow-xs pb-[calc(0.6rem+env(safe-area-inset-bottom))]">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
           <BrandLogo size="sm" animateOnHover={false} />
-          <span className="text-xs font-bold tracking-tight text-[var(--text-main)]">
+          <span className="text-xs font-bold tracking-tight text-[var(--text-main)] shrink-0">
             DOAB
           </span>
-          <span className="h-3 w-px bg-[var(--border-color)]" aria-hidden="true" />
-          <span className="text-[10px] uppercase tracking-[0.16em] font-mono text-[var(--text-muted)] font-medium truncate min-w-0">
+          <span className="h-3 w-px bg-[var(--border-color)] shrink-0" aria-hidden="true" />
+          <span className="text-[8px] sm:text-[10px] uppercase tracking-normal sm:tracking-[0.16em] font-mono text-[var(--text-muted)] font-medium whitespace-nowrap truncate min-w-0">
             DETECT. ORDER. ALERT. BACK-CHECK.
           </span>
         </div>
         <Link
           to="/team"
-          className="text-[9px] uppercase tracking-[0.18em] text-[var(--text-muted)] font-medium hover:text-[var(--text-main)] transition-colors cursor-pointer hover:underline flex-shrink-0 whitespace-nowrap font-mono"
+          className="text-[8px] sm:text-[9px] uppercase tracking-tight sm:tracking-[0.18em] text-[var(--text-muted)] font-medium hover:text-[var(--text-main)] transition-colors cursor-pointer hover:underline shrink-0 whitespace-nowrap font-mono ml-1"
         >
           BY Contrarians
         </Link>

@@ -268,43 +268,50 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
 
 
         {/* Right: Controls & Clean Sign In CTA */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
-            <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
-          </Tooltip>
-
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Desktop Guided Tour */}
           {onOpenTour && (
-            <Tooltip content="Start Guided Tour" shortcut="Shift+T" position="bottom">
-              <button
-                type="button"
-                id="tour-landing-guide-btn"
-                onClick={() => { playClick(); onOpenTour(); }}
-                className="w-8 h-8 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
-                aria-label="Start Landing Page Guided Tour"
-              >
-                <Compass className="h-4 w-4 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-45" />
-              </button>
-            </Tooltip>
+            <div className="hidden md:block">
+              <Tooltip content="Start Guided Tour" shortcut="Shift+T" position="bottom">
+                <button
+                  type="button"
+                  id="tour-landing-guide-btn"
+                  onClick={() => { playClick(); onOpenTour(); }}
+                  className="w-8 h-8 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                  aria-label="Start Landing Page Guided Tour"
+                >
+                  <Compass className="h-4 w-4 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-45" />
+                </button>
+              </Tooltip>
+            </div>
           )}
 
-          <Link
-            to={user ? "/" : "/login"}
-            onClick={() => playClick()}
-            className="flex px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap items-center gap-1.5 transition-all duration-200 border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] shadow-2xs cursor-pointer group ml-1"
-          >
-            <span>{user ? "Dashboard" : "Sign In"}</span>
-            <ArrowUpRight className="h-3.5 w-3.5 text-current transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 flex-shrink-0" />
-          </Link>
+          {/* Theme Toggle (On mobile, grouped immediately with Hamburger) */}
+          <div className="flex items-center">
+            <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
+              <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
+            </Tooltip>
+          </div>
 
-          {/* Mobile Menu Trigger */}
+          {/* Mobile Menu Trigger (Grouped with Theme Toggle on touch/mobile devices) */}
           <button
             type="button"
             onClick={() => { playClick(); setIsMobileMenuOpen(!isMobileMenuOpen); }}
-            className="md:hidden w-8 h-8 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors shadow-2xs cursor-pointer"
+            className="md:hidden w-8 h-8 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors shadow-2xs cursor-pointer active:scale-95"
             aria-label="Toggle Menu"
           >
             {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
+
+          {/* Primary CTA (By convention, always the LAST button on the right for both mobile and desktop) */}
+          <Link
+            to={user ? "/" : "/login"}
+            onClick={() => playClick()}
+            className="flex px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap items-center gap-1.5 transition-all duration-200 border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] shadow-2xs cursor-pointer group ml-0.5 sm:ml-1"
+          >
+            <span>{user ? "Dashboard" : "Sign In"}</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-current transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 flex-shrink-0" />
+          </Link>
         </div>
       </header>
 

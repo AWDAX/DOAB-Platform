@@ -36,8 +36,24 @@ const DEFAULT_PROFILE: AccountProfile = {
 function readProfile(): AccountProfile {
   try {
     const raw = localStorage.getItem(ACCOUNT_PROFILE_KEY);
-    if (!raw) return { ...DEFAULT_PROFILE };
-    return { ...DEFAULT_PROFILE, ...JSON.parse(raw) };
+    const parsed = raw ? JSON.parse(raw) : null;
+    const legacyRole = localStorage.getItem('doab_user_role');
+    const legacyVendor = localStorage.getItem('doab_vendor_id');
+
+    const mergedRole = (parsed?.role === 'delivery' || parsed?.role === 'citizen')
+      ? parsed.role
+      : (legacyRole === 'delivery' || legacyRole === 'citizen' ? legacyRole : DEFAULT_PROFILE.role);
+
+    const mergedVendor = typeof parsed?.vendorId === 'string' && parsed.vendorId
+      ? parsed.vendorId
+      : (legacyVendor || DEFAULT_PROFILE.vendorId);
+
+    return {
+      ...DEFAULT_PROFILE,
+      ...(parsed || {}),
+      role: mergedRole,
+      vendorId: mergedVendor,
+    };
   } catch {
     return { ...DEFAULT_PROFILE };
   }
