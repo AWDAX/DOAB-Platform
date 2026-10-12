@@ -1,6 +1,12 @@
 import { useEffect, useRef, useMemo, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+
+// Ensure MapLibre WebWorker loads correctly in Vite development and production
+if (typeof window !== 'undefined') {
+  maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs');
+}
+
 import { Plus, Minus, RotateCcw } from 'lucide-react';
 import Tooltip from './Tooltip';
 import { playClick } from '../utils/soundFx';
@@ -28,6 +34,7 @@ interface MapLibreViewProps {
   activeRouteGeometry?: [number, number][];
   clusters?: MapLibreCluster[];
   showHeatLayer?: boolean;
+  selectedClusterKey?: string | null;
 }
 
 // Generate accurate circle polygon coordinates in [lng, lat] for hardware-accelerated 3D WebGL rendering
@@ -57,7 +64,8 @@ export default function MapLibreView({
   userLocation,
   activeRouteGeometry,
   clusters = [],
-  showHeatLayer = false
+  showHeatLayer = false,
+  selectedClusterKey = null
 }: MapLibreViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -120,16 +128,36 @@ export default function MapLibreView({
     if (map.getSource(clusterSourceId)) map.removeSource(clusterSourceId);
 
     if (showHeatLayer && clusters && clusters.length > 0) {
-      const clusterFeatures = clusters.slice(0, 8).map((cluster, idx) => {
+      // Render up to 64 macro danger clusters in 3D WebGL mode
+      const topClusters = clusters.slice(0, 64);
+      const selectedClusterObj = selectedClusterKey
+        ? clusters.find((c, idx) => c.ward === selectedClusterKey || `${c.ward}-${idx}` === selectedClusterKey || (c.ward && selectedClusterKey.startsWith(c.ward)))
+        : null;
+      const renderedClusters = selectedClusterObj && !topClusters.some((c) => c.ward === selectedClusterObj.ward)
+        ? [...topClusters, selectedClusterObj]
+        : topClusters;
+
+      const clusterFeatures = renderedClusters.map((cluster, idx) => {
         const radiusM = Math.max(cluster.clusterRadiusKm * 500, 1600);
         const circleCoords = createGeoJSONCircle([cluster.lng, cluster.lat], radiusM);
-        const color = cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706';
+        const isSelected = selectedClusterKey != null && (
+          cluster.ward === selectedClusterKey || 
+          `${cluster.ward}-${idx}` === selectedClusterKey ||
+          (cluster.ward && selectedClusterKey.startsWith(cluster.ward))
+        );
+        let color = '#0284C7';
+        if (cluster.highestSeverity === 'Critical') color = '#E11D48';
+        else if (cluster.highestSeverity === 'High') color = '#D97706';
+        else if (cluster.highestSeverity === 'Medium') color = '#0284C7';
+        else if (cluster.highestSeverity === 'Low') color = '#64748B';
         return {
           type: 'Feature' as const,
           id: idx,
           properties: {
             color,
-            severity: cluster.highestSeverity
+            severity: cluster.highestSeverity,
+            opacity: isSelected ? 0.35 : 0.20,
+            lineWidth: isSelected ? 3.5 : 2.2
           },
           geometry: {
             type: 'Polygon' as const,
@@ -152,7 +180,7 @@ export default function MapLibreView({
         source: clusterSourceId,
         paint: {
           'fill-color': ['get', 'color'],
-          'fill-opacity': 0.08
+          'fill-opacity': ['get', 'opacity']
         }
       });
 
@@ -162,8 +190,8 @@ export default function MapLibreView({
         source: clusterSourceId,
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': 1.8,
-          'line-dasharray': [3, 2]
+          'line-width': ['get', 'lineWidth'],
+          'line-dasharray': [4, 2]
         }
       });
     }
@@ -338,13 +366,19 @@ export default function MapLibreView({
     }
 
     // Add incident markers with clear visibility and click dispatching
-    incidents.slice(0, 150).forEach(incident => {
+    // Render all filtered incidents (up to 600) without artificial 150 clipping
+    incidents.forEach(incident => {
       const isSelected = selectedIncident?.id === incident.id;
-      const isFlood = envMode === 'flood';
-
-      let dotColor = isFlood ? '#0284c7' : '#d97706';
-      if (incident.severity === 'Critical') dotColor = '#e11d48';
-      else if (incident.severity === 'High') dotColor = isFlood ? '#0369a1' : '#b45309';
+      let dotColor = '#0284c7'; // Medium (Sky Blue) default
+      if (incident.severity === 'Critical') {
+        dotColor = '#e11d48'; // Critical (Rose Red)
+      } else if (incident.severity === 'High') {
+        dotColor = '#d97706'; // High (Amber Orange)
+      } else if (incident.severity === 'Medium') {
+        dotColor = '#0284c7'; // Medium / Moderate (Sky Blue)
+      } else if (incident.severity === 'Low') {
+        dotColor = '#64748b'; // Low / Normal (Slate Gray)
+      }
 
       const el = document.createElement('div');
       el.style.pointerEvents = 'auto';
@@ -500,8 +534,9 @@ export default function MapLibreView({
       syncLayers();
     } else {
       map.once('styledata', syncLayers);
+      map.once('load', syncLayers);
     }
-  }, [clusters, showHeatLayer, selectedIncident, userLocation, activeRouteGeometry, envMode]);
+  }, [clusters, showHeatLayer, selectedClusterKey, selectedIncident, userLocation, activeRouteGeometry, envMode]);
 
   // Sync markers when incidents or selections change
   useEffect(() => {

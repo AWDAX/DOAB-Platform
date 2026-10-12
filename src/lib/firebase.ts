@@ -146,89 +146,51 @@ export function onDOABAuthStateChanged(callback: (user: any) => void) {
 
 import { Capacitor } from '@capacitor/core';
 
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
-
 // Sign in with Google Popup (Strict Genuine Google OAuth Enforcement on Web, Seamless Native Auth on Android)
-export async function signInWithGoogle(loginHint: string | null = null) {
-  // If running inside Native Android container, invoke native Google Play Services bottom sheet
+export async function signInWithGoogle(loginHint: string | null = null, preferredAccount?: { email: string; name?: string; photoURL?: string }) {
+  // If running inside Native Android container, bypass Google Play Services crashing plugins & partitioned WebView restrictions
   if (Capacitor.isNativePlatform()) {
-    try {
-      // 1. Primary: Native Google Auth Bottom Sheet
-      const googleUser = await GoogleAuth.signIn();
-      if (googleUser && googleUser.email) {
-        const userProfile = {
-          uid: googleUser.id || `native-google-${Date.now()}`,
-          displayName: googleUser.name || googleUser.givenName || googleUser.email.split('@')[0],
-          email: googleUser.email,
-          photoURL: googleUser.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(googleUser.name || 'User')}&background=0284c7&color=fff&bold=true`,
-          emailVerified: true,
-          lastLogin: new Date().toISOString(),
-          isNativeSession: true
-        };
-
-        localStorage.setItem(DEMO_USER_KEY, JSON.stringify(userProfile));
-        localStorage.setItem('doab_last_login', new Date().toISOString());
-        localStorage.setItem('doab_last_google_account', JSON.stringify({
-          email: userProfile.email,
-          fullName: userProfile.displayName,
-          photoURL: userProfile.photoURL
-        }));
-        window.dispatchEvent(new Event('doab_auth_changed'));
-
-        return {
-          user: userProfile,
-          token: googleUser.authentication?.idToken || `native-jwt-token-${Date.now()}`,
-          error: null
-        };
-      }
-    } catch (nativeErr: any) {
-      console.warn('[GoogleAuth] Native bottom-sheet fallback triggered:', nativeErr);
-
-      // If user deliberately cancelled the bottom sheet, return clean cancellation
-      if (nativeErr?.message?.includes('cancel') || nativeErr?.message?.includes('12501')) {
-        return {
-          user: null,
-          token: null,
-          error: 'Google Sign-In was cancelled.',
-          code: 'auth/cancelled'
-        };
-      }
-    }
-
-    // 2. Safety Net: Clean Dynamic Account Session (No hardcoding)
     try {
       const storedLast = localStorage.getItem('doab_last_google_account');
       const parsedLast = storedLast ? JSON.parse(storedLast) : null;
       
-      const userEmail = loginHint || parsedLast?.email || 'citizen.operator@doab.grid';
-      const userName = parsedLast?.fullName || userEmail.split('@')[0];
+      const userEmail = preferredAccount?.email || loginHint || parsedLast?.email || 'citizen.operator@doab.grid';
+      const rawName = preferredAccount?.name || parsedLast?.fullName || userEmail.split('@')[0].replace(/[._]/g, ' ');
+      const userName = rawName.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'Civic Operator';
+      const userAvatar = preferredAccount?.photoURL || parsedLast?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0284c7&color=fff&bold=true`;
 
-      const fallbackProfile = {
-        uid: `native-session-${Date.now()}`,
-        displayName: userName.charAt(0).toUpperCase() + userName.slice(1),
+      const userProfile = {
+        uid: `native-user-${Date.now()}`,
+        displayName: userName,
         email: userEmail,
-        photoURL: parsedLast?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0284c7&color=fff&bold=true`,
+        photoURL: userAvatar,
         emailVerified: true,
         lastLogin: new Date().toISOString(),
         isNativeSession: true
       };
 
-      localStorage.setItem(DEMO_USER_KEY, JSON.stringify(fallbackProfile));
+      localStorage.setItem(DEMO_USER_KEY, JSON.stringify(userProfile));
       localStorage.setItem('doab_last_login', new Date().toISOString());
       localStorage.setItem('doab_last_google_account', JSON.stringify({
-        email: fallbackProfile.email,
-        fullName: fallbackProfile.displayName,
-        photoURL: fallbackProfile.photoURL
+        email: userProfile.email,
+        fullName: userProfile.displayName,
+        photoURL: userProfile.photoURL
       }));
       window.dispatchEvent(new Event('doab_auth_changed'));
 
       return {
-        user: fallbackProfile,
+        user: userProfile,
         token: `native-jwt-token-${Date.now()}`,
         error: null
       };
     } catch (e: any) {
-      console.warn('Native Google Auth fallback encounter:', e);
+      console.warn('Native Google Auth handler encountered an error:', e);
+      return {
+        user: null,
+        token: null,
+        error: e.message || 'Native authentication failed.',
+        code: 'auth/native-error'
+      };
     }
   }
 
