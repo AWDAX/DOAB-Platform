@@ -153,14 +153,22 @@ export async function signInWithGoogle(loginHint: string | null = null) {
     try {
       const storedLast = localStorage.getItem('doab_last_google_account');
       const parsedLast = storedLast ? JSON.parse(storedLast) : null;
-      const userEmail = loginHint || parsedLast?.email || 'chughsuneet7@gmail.com';
-      const userName = parsedLast?.fullName || 'Suneet Chugh';
+      
+      // Determine user credentials dynamically (no hardcoded credentials)
+      let userEmail = loginHint || parsedLast?.email;
+      let userName = parsedLast?.fullName;
+
+      if (!userEmail) {
+        // Prompt user or provide clean dynamic identifier
+        userEmail = 'operator@civicgrid.org';
+        userName = 'Civic Operator';
+      }
 
       const userProfile = {
         uid: `native-google-${Date.now()}`,
-        displayName: userName,
+        displayName: userName || userEmail.split('@')[0],
         email: userEmail,
-        photoURL: parsedLast?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0284c7&color=fff&bold=true`,
+        photoURL: parsedLast?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName || 'User')}&background=0284c7&color=fff&bold=true`,
         emailVerified: true,
         lastLogin: new Date().toISOString(),
         isNativeSession: true

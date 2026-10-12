@@ -21,6 +21,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Map, Route as RouteIcon, Bell, User } from 'lucide-react';
 import AIOrbIcon from './components/AIOrbIcon';
 import { playClick, initGlobalClickSound } from './utils/soundFx';
+import { RemoteAdminChannel } from './services/remoteAdminChannel';
 import Lenis from 'lenis';
 
 /**
@@ -258,6 +259,9 @@ function AppContent({
     window.addEventListener('doab:open-preferences', handleOpenPreferences);
     window.addEventListener('doab:trigger-destination-arrival', handleTriggerArrival as EventListener);
 
+    // Initialize Global Real-Time Remote Admin Telemetry Channel (Connects Laptop Admin Console to Mobile Phone)
+    const stopRemoteListener = RemoteAdminChannel.listen();
+
     return () => {
       window.removeEventListener('doab:open-permissions', handleOpenPermissions);
       window.removeEventListener('doab:trigger-danger-broadcast', handleTriggerDanger as EventListener);
@@ -266,6 +270,7 @@ function AppContent({
       window.removeEventListener('doab:start-page-tour', handleOpenPageTour as EventListener);
       window.removeEventListener('doab:open-preferences', handleOpenPreferences);
       window.removeEventListener('doab:trigger-destination-arrival', handleTriggerArrival as EventListener);
+      if (typeof stopRemoteListener === 'function') stopRemoteListener();
     };
   }, [setIsPermissionsOpen, setIsDangerBroadcastOpen, setIsTourOpen, setIsPreferencesOpen]);
 

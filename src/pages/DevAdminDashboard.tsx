@@ -26,6 +26,7 @@ import {
 } from '../lib/adminAuth';
 import { playClick, playAlertAlarm } from '../utils/soundFx';
 import { NativeService } from '../utils/nativeService';
+import { RemoteAdminChannel } from '../services/remoteAdminChannel';
 
 export default function DevAdminDashboard() {
   const [session, setSession] = useState<AdminUser | null>(() => getCurrentAdminSession());
@@ -92,44 +93,43 @@ export default function DevAdminDashboard() {
     setTimeout(() => setStatusMsg(null), 4000);
   };
 
-  // 1. Trigger Full-Screen SOS Alarm Broadcast
+  // 1. Trigger Full-Screen SOS Alarm Broadcast (Local + Remote Mobile Devices)
   const triggerSosDanger = () => {
     playClick();
     playAlertAlarm();
     NativeService.triggerSosHaptics();
 
-    window.dispatchEvent(new CustomEvent('doab:trigger-danger-broadcast', {
-      detail: {
-        title: sosTitle,
-        ward: sosWard,
-        waterDepthCm: Number(sosDepth),
-        description: sosDesc,
-        distanceAhead: '250 meters'
-      }
-    }));
-    showToast(`Dispatched Full-Screen SOS Alarm to active screen: "${sosTitle}"`);
+    const payload = {
+      title: sosTitle,
+      ward: sosWard,
+      waterDepthCm: Number(sosDepth),
+      description: sosDesc,
+      distanceAhead: '250 meters'
+    };
+
+    RemoteAdminChannel.broadcast('sos_danger', payload);
+    showToast(`Dispatched Full-Screen SOS Alarm to active screen & remote devices: "${sosTitle}"`);
   };
 
-  // 2. Trigger Destination Reached Feedback Panel
+  // 2. Trigger Destination Reached Feedback Panel (Local + Remote Mobile Devices)
   const triggerDestinationArrival = () => {
     playClick();
-    window.dispatchEvent(new CustomEvent('doab:trigger-destination-arrival', {
-      detail: {
-        summary: 'Koramangala 80ft Road → Domlur Safe Haven Corridor',
-        distance_meters: 4200,
-        duration_seconds: 720,
-        mean_risk: 0.08,
-        maps_url: 'https://maps.google.com'
-      }
-    }));
-    showToast('Toggled Destination Arrival & AI Accuracy Feedback Panel across app.');
+    const payload = {
+      summary: 'Koramangala 80ft Road → Domlur Safe Haven Corridor',
+      distance_meters: 4200,
+      duration_seconds: 720,
+      mean_risk: 0.08,
+      maps_url: 'https://maps.google.com'
+    };
+
+    RemoteAdminChannel.broadcast('destination_arrival', payload);
+    showToast('Toggled Destination Arrival & AI Accuracy Feedback Panel across app & remote devices.');
   };
 
-  // 3. Inject Municipal Test Alert into All Alerts Page
+  // 3. Inject Municipal Test Alert into All Alerts Page (Local + Remote Mobile Devices)
   const injectMunicipalAlert = () => {
     playClick();
     try {
-      const existing = JSON.parse(localStorage.getItem('doab_admin_custom_alerts') || '[]');
       const newAlert = {
         lat: 12.9352,
         lng: 77.6245,
@@ -143,12 +143,9 @@ export default function DevAdminDashboard() {
         updatedTime: 'Just now (Admin Live Broadcast)',
         isMockup: false,
       };
-      localStorage.setItem('doab_admin_custom_alerts', JSON.stringify([newAlert, ...existing]));
-      localStorage.setItem('doab_notifications_read', 'false');
 
-      // Dispatch event to notify components
-      window.dispatchEvent(new CustomEvent('doab:admin-alerts-updated'));
-      showToast(`Injected alert "${alertTitle}" into Notification Stream.`);
+      RemoteAdminChannel.broadcast('custom_alert', newAlert);
+      showToast(`Injected alert "${alertTitle}" into Notification Stream on all devices.`);
     } catch (e) {
       showToast('Failed to save simulated alert.', 'error');
     }
