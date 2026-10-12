@@ -279,11 +279,11 @@ export default function OldRoutesPage() {
 
               {/* Photo Preview if uploaded */}
               {item.photoUrl && (
-                <div className="mb-3 rounded-xl overflow-hidden border border-[var(--border-color)] max-h-36 relative group">
+                <div className="mb-3 rounded-xl overflow-hidden border border-[var(--border-color)] max-h-36 relative group shadow-inner">
                   <img src={item.photoUrl} alt="Ground-truth back-check" className="w-full h-32 object-cover" />
-                  <div className="absolute bottom-1 right-1 bg-black/70 backdrop-blur-xs text-white text-[9px] font-mono font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3 text-emerald-400" />
-                    <span>Geo-Tagged</span>
+                  <div className="absolute bottom-1.5 right-1.5 bg-neutral-950/85 backdrop-blur-md text-white text-[9px] font-mono font-medium px-2 py-0.5 rounded-md flex items-center gap-1.5 border border-white/10 shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Visual Ground Truth</span>
                   </div>
                 </div>
               )}
@@ -308,13 +308,18 @@ export default function OldRoutesPage() {
 
             <div className="pt-2">
               {item.photoUrl ? (
-                <div id="tour-history-verified" className="flex items-center justify-between px-3.5 py-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-300">
-                  <span className="flex items-center gap-1.5 font-medium text-[11px]">
-                    <CheckCircle className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                    Photo verified ({item.verifiedByPhotos || 1} riders)
-                  </span>
-                  <span className="font-mono font-bold text-[10px] px-2 py-0.5 rounded-full bg-emerald-500 text-white shrink-0">
-                    +{item.riderVerificationScore} pts
+                <div id="tour-history-verified" className="flex items-center justify-between px-3 py-2 bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12] border border-emerald-500/25 rounded-xl text-xs">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <CheckCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span className="font-medium text-[11px] text-[var(--text-main)] truncate">
+                      Ground Verification Active
+                    </span>
+                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-md bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] shrink-0 hidden sm:inline">
+                      {item.verifiedByPhotos || 1} report{(item.verifiedByPhotos || 1) > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0 ml-1.5">
+                    +{item.riderVerificationScore} Trust Score
                   </span>
                 </div>
               ) : (

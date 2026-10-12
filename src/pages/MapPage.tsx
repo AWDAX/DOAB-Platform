@@ -41,7 +41,9 @@ import {
   RefreshCw,
   Globe2,
   MapPin,
-  Plus
+  Plus,
+  SlidersHorizontal,
+  Check
 } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
@@ -296,9 +298,63 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [destination, setDestination] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
   const [selectedState, setSelectedState] = useState<string>('all');
+  const [isMultiStateMode, setIsMultiStateMode] = useState<boolean>(false);
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [stateSearchQuery, setStateSearchQuery] = useState('');
   const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
   const stateComboboxRef = useRef<HTMLDivElement>(null);
+
+  const handleToggleMultiStateMode = () => {
+    playClick();
+    if (!isMultiStateMode) {
+      setIsMultiStateMode(true);
+      if (selectedState !== 'all' && !selectedStates.includes(selectedState)) {
+        setSelectedStates([selectedState]);
+      }
+      setIsStateDropdownOpen(true);
+    } else {
+      setIsMultiStateMode(false);
+      if (selectedStates.length > 0) {
+        setSelectedState(selectedStates[selectedStates.length - 1]);
+      }
+    }
+  };
+
+  const handleResetAllIndia = () => {
+    playClick();
+    setSelectedState('all');
+    setSelectedStates([]);
+    setIsMultiStateMode(false);
+    setMapCenter([20.5937, 78.9629]);
+    setMapZoom(5);
+    setIsStateDropdownOpen(false);
+    setStateSearchQuery('');
+  };
+
+  const handleSelectRegion = (reg: typeof ALL_REGIONS[0]) => {
+    playClick();
+    if (isMultiStateMode) {
+      setSelectedStates((prev) => {
+        const exists = prev.includes(reg.val);
+        const next = exists ? prev.filter((s) => s !== reg.val) : [...prev, reg.val];
+        if (next.length === 0) {
+          setSelectedState('all');
+        } else {
+          setSelectedState(next[next.length - 1]);
+        }
+        return next;
+      });
+      setMapCenter(reg.center);
+      setMapZoom(reg.zoom);
+    } else {
+      setSelectedState(reg.val);
+      setSelectedStates([reg.val]);
+      setMapCenter(reg.center);
+      setMapZoom(reg.zoom);
+      setIsStateDropdownOpen(false);
+      setStateSearchQuery('');
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -354,6 +410,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   // Selected Incident: null by default so no unwanted distance or vector line is computed until the user explicitly selects a point
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(null);
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
+  const [clusterSortBy] = useState<'proximity' | 'severity'>('proximity');
 
   // Default Coordinates: National All-India Overview Center
   const defaultCenter: [number, number] = [20.5937, 78.9629];
@@ -392,7 +449,15 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
   const filteredIncidents = useMemo(() => {
     const matched = incidentSource.filter((item) => {
-      if (selectedState !== 'all') {
+      // In Drought mode, show water scarcity, tanker, borewell & groundwater deficit incidents.
+      // In Flood mode, show waterlogging, drainage overflow, flood & submerged road incidents.
+      if (item.envType && item.envType !== envMode) return false;
+
+      if (isMultiStateMode && selectedStates.length > 0) {
+        const itemText = `${item.ward} ${item.source || ''} ${item.description || ''} ${item.title}`.toLowerCase();
+        const matchesAny = selectedStates.some((st) => itemText.includes(st.toLowerCase()));
+        if (!matchesAny) return false;
+      } else if (!isMultiStateMode && selectedState !== 'all') {
         const itemText = `${item.ward} ${item.source || ''} ${item.description || ''} ${item.title}`.toLowerCase();
         if (!itemText.includes(selectedState.toLowerCase())) return false;
       }
@@ -412,7 +477,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     // to guarantee geographic diversity. Bengaluru (BBMP) dominates the pool
     // since it comes first in the array — a naive slice(0,N) would show ONLY
     // Bengaluru pins. We take national incidents first, then fill with Bengaluru.
-    if (severityFilter === 'all' && !destination.trim() && selectedState === 'all') {
+    const isAllIndia = (!isMultiStateMode && selectedState === 'all') || (isMultiStateMode && selectedStates.length === 0);
+    if (severityFilter === 'all' && !destination.trim() && isAllIndia) {
       const isBengaluru = (i: TelemetryIncident) =>
         (i.source || '').includes('BBMP') || (i.source || '').includes('OpenCity') || (i.source || '').includes('WaterLogging Dataset');
       const bengaluru = matched.filter(isBengaluru);
@@ -421,7 +487,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       return [...national.slice(0, 140), ...bengaluru.slice(0, 60)];
     }
     return matched.slice(0, 350);
-  }, [severityFilter, destination, incidentSource, selectedState]);
+  }, [severityFilter, destination, incidentSource, selectedState, isMultiStateMode, selectedStates, envMode]);
 
   const [isLocating, setIsLocating] = useState(false);
   const [isViewingMyLocation, setIsViewingMyLocation] = useState(false);
@@ -599,7 +665,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     let nearestDist = Infinity;
     let nearestNodeTitle = 'None';
 
-    incidentSource.forEach((inc) => {
+    filteredIncidents.forEach((inc) => {
       const d = getDistKm(inc.lat, inc.lng);
       if (d < nearestDist) {
         nearestDist = d;
@@ -637,7 +703,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       routeInundationProb,
       hasRealGps: hasRealLocation
     };
-  }, [userCoords, incidentSource, hasRealLocation]);
+  }, [userCoords, filteredIncidents, hasRealLocation]);
 
   // SAHNIRMAAN Cluster Engine: Group incidents by Ward / Corridor into macro danger clusters
   const recurringClusters = useMemo(() => {
@@ -651,7 +717,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
     const SEVERITY_RANK: Record<string, number> = { 'Critical': 3, 'High': 2, 'Medium': 1, 'Low': 0 };
 
-    incidentSource.forEach((inc) => {
+    filteredIncidents.forEach((inc) => {
       const key = `${inc.ward || 'Bengaluru'}::${inc.category || 'waterlogging'}`;
       if (!clusterMap.has(key)) {
         clusterMap.set(key, {
@@ -692,8 +758,13 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         clusterRadiusKm: maxDist > 0 ? Math.max(maxDist, 1.2) : 2.5,
         distFromUser
       };
-    }).sort((a, b) => b.count - a.count);
-  }, [incidentSource, userCoords, hasRealLocation]);
+    }).sort((a, b) => {
+      if (clusterSortBy === 'proximity' && a.distFromUser != null && b.distFromUser != null) {
+        return a.distFromUser - b.distFromUser;
+      }
+      return b.count - a.count;
+    });
+  }, [filteredIncidents, userCoords, hasRealLocation, clusterSortBy]);
 
   const handleSelectIncident = (incident: TelemetryIncident) => {
     playClick();
@@ -1250,25 +1321,26 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                         Region Focus
                       </span>
                       <span className="text-[9px] font-bold text-black dark:text-white">
-                        {selectedState === 'all' ? 'All-India Active' : `Filter: ${selectedRegionObj?.label.split('(')[0]?.trim() || selectedState}`}
+                        {isMultiStateMode
+                          ? (selectedStates.length === 0
+                              ? 'Pick States (Multi-Mode)'
+                              : selectedStates.length === 1
+                                ? `Filter: ${ALL_REGIONS.find((r) => r.val === selectedStates[0])?.label.split('(')[0]?.trim() || selectedStates[0]}`
+                                : `Filter: ${selectedStates.length} States Active`)
+                          : (selectedState === 'all'
+                              ? 'All-India Active'
+                              : `Filter: ${selectedRegionObj?.label.split('(')[0]?.trim() || selectedState}`)}
                       </span>
                     </div>
 
                     <div className="relative pt-0.5 pb-1" ref={stateComboboxRef}>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
                         {/* Master All India Reset Button */}
                         <button
                           type="button"
-                          onClick={() => {
-                            playClick();
-                            setSelectedState('all');
-                            setMapCenter([20.5937, 78.9629]);
-                            setMapZoom(5);
-                            setIsStateDropdownOpen(false);
-                            setStateSearchQuery('');
-                          }}
+                          onClick={handleResetAllIndia}
                           className={`px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-medium whitespace-nowrap transition-all cursor-pointer border shrink-0 flex items-center gap-1 ${
-                            selectedState === 'all'
+                            !isMultiStateMode && selectedState === 'all'
                               ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] font-bold shadow-2xs'
                               : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/40 border-[var(--border-color)]'
                           }`}
@@ -1277,8 +1349,28 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           <span>🇮🇳 All India</span>
                         </button>
 
+                        {/* Specific State Filter Toggle Button */}
+                        <button
+                          type="button"
+                          onClick={handleToggleMultiStateMode}
+                          className={`px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-medium whitespace-nowrap transition-all cursor-pointer border shrink-0 flex items-center gap-1 ${
+                            isMultiStateMode
+                              ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] font-bold shadow-2xs'
+                              : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/40 border-[var(--border-color)]'
+                          }`}
+                          title={isMultiStateMode ? "Specific State: Filter Active (Click to Toggle Off)" : "Click to Toggle Specific State Multi-Filter"}
+                        >
+                          <SlidersHorizontal className="h-2.5 w-2.5 shrink-0" />
+                          <span>Specific State: Filter</span>
+                          {isMultiStateMode && selectedStates.length > 0 && (
+                            <span className="ml-0.5 px-1 py-0.2 rounded-full text-[8px] bg-[var(--color-brand-accent)] text-white font-bold shrink-0">
+                              {selectedStates.length}
+                            </span>
+                          )}
+                        </button>
+
                         {/* Searchable State Combobox Input */}
-                        <div className="relative flex-1 min-w-0">
+                        <div className="relative flex-1 min-w-[130px]">
                           <div 
                             onClick={() => {
                               if (!isStateDropdownOpen) {
@@ -1289,7 +1381,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                             className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-mono bg-[var(--bg-main)] transition-all cursor-text ${
                               isStateDropdownOpen 
                                 ? 'border-[var(--color-brand-accent)] ring-1 ring-[var(--color-brand-accent)]/20' 
-                                : selectedState !== 'all'
+                                : (isMultiStateMode && selectedStates.length > 0) || (!isMultiStateMode && selectedState !== 'all')
                                   ? 'border-[var(--text-main)] text-[var(--text-main)] font-semibold'
                                   : 'border-[var(--border-color)] text-[var(--text-muted)]'
                             }`}
@@ -1297,7 +1389,13 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                             <Search className="h-3 w-3 text-[var(--color-brand-accent)] shrink-0" />
                             <input
                               type="text"
-                              value={isStateDropdownOpen ? stateSearchQuery : (selectedRegionObj && selectedRegionObj.val !== 'all' ? selectedRegionObj.label : '')}
+                              value={
+                                isStateDropdownOpen 
+                                  ? stateSearchQuery 
+                                  : isMultiStateMode
+                                    ? (selectedStates.length > 0 ? `${selectedStates.length} State${selectedStates.length > 1 ? 's' : ''} Selected` : '')
+                                    : (selectedRegionObj && selectedRegionObj.val !== 'all' ? selectedRegionObj.label : '')
+                              }
                               onChange={(e) => {
                                 setStateSearchQuery(e.target.value);
                                 if (!isStateDropdownOpen) setIsStateDropdownOpen(true);
@@ -1306,18 +1404,27 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                                 setIsStateDropdownOpen(true);
                                 setStateSearchQuery('');
                               }}
-                              placeholder={selectedState !== 'all' ? selectedRegionObj?.label : "Search state or pick ▾"}
+                              placeholder={
+                                isMultiStateMode
+                                  ? (selectedStates.length > 0 ? `${selectedStates.length} selected ▾` : "Search & pick multiple ▾")
+                                  : (selectedState !== 'all' ? selectedRegionObj?.label : "Search state or pick ▾")
+                              }
                               className="w-full bg-transparent border-none outline-hidden text-[10px] font-mono text-[var(--text-main)] placeholder:text-[var(--text-muted)] placeholder:font-normal truncate cursor-text"
                             />
-                            {selectedState !== 'all' && !isStateDropdownOpen ? (
+                            {((!isMultiStateMode && selectedState !== 'all') || (isMultiStateMode && selectedStates.length > 0)) && !isStateDropdownOpen ? (
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   playClick();
-                                  setSelectedState('all');
-                                  setMapCenter([20.5937, 78.9629]);
-                                  setMapZoom(5);
+                                  if (isMultiStateMode) {
+                                    setSelectedStates([]);
+                                    setSelectedState('all');
+                                  } else {
+                                    setSelectedState('all');
+                                    setMapCenter([20.5937, 78.9629]);
+                                    setMapZoom(5);
+                                  }
                                   setStateSearchQuery('');
                                 }}
                                 className="p-0.5 hover:bg-[var(--border-color)] rounded-xs text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer shrink-0"
@@ -1352,8 +1459,44 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                             className="absolute left-0 right-0 top-full mt-1.5 max-h-64 overflow-y-auto z-[100] rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl p-1.5 flex flex-col gap-0.5 custom-scrollbar backdrop-blur-xl"
                           >
                             <div className="px-2 py-1 text-[9px] font-mono font-semibold text-[var(--text-muted)] border-b border-[var(--border-color)]/60 mb-0.5 flex justify-between items-center">
-                              <span>{stateSearchQuery.trim() ? `Matching (${filteredRegions.length})` : 'All States (24)'}</span>
-                              <span className="text-[var(--color-brand-accent)] text-[8px]">Click to Zoom</span>
+                              <span>
+                                {isMultiStateMode
+                                  ? `${selectedStates.length} Selected (Multi-State Mode)`
+                                  : stateSearchQuery.trim() ? `Matching (${filteredRegions.length})` : 'All States (24)'}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {isMultiStateMode && selectedStates.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      playClick();
+                                      setSelectedStates([]);
+                                      setSelectedState('all');
+                                    }}
+                                    className="text-[8px] text-[var(--text-muted)] hover:text-red-500 font-mono transition-colors cursor-pointer"
+                                  >
+                                    Clear
+                                  </button>
+                                )}
+                                {isMultiStateMode && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      playClick();
+                                      setIsStateDropdownOpen(false);
+                                      setStateSearchQuery('');
+                                    }}
+                                    className="text-[8px] text-[var(--color-brand-accent)] font-bold font-mono hover:underline cursor-pointer"
+                                  >
+                                    Done ✓
+                                  </button>
+                                )}
+                                {!isMultiStateMode && (
+                                  <span className="text-[var(--color-brand-accent)] text-[8px]">Click to Zoom</span>
+                                )}
+                              </div>
                             </div>
 
                             {filteredRegions.length === 0 ? (
@@ -1362,40 +1505,47 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                               </div>
                             ) : (
                               filteredRegions.map((reg) => {
-                                const active = selectedState === reg.val;
+                                const isSelected = isMultiStateMode 
+                                  ? selectedStates.includes(reg.val) 
+                                  : selectedState === reg.val;
                                 return (
                                   <button
                                     key={reg.val}
                                     type="button"
-                                    onClick={() => {
-                                      playClick();
-                                      setSelectedState(reg.val);
-                                      setMapCenter(reg.center);
-                                      setMapZoom(reg.zoom);
-                                      setIsStateDropdownOpen(false);
-                                      setStateSearchQuery('');
-                                    }}
+                                    onClick={() => handleSelectRegion(reg)}
                                     className={`w-full px-2.5 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between text-left transition-colors cursor-pointer ${
-                                      active
+                                      isSelected
                                         ? 'bg-[var(--text-main)] text-[var(--bg-card)] font-bold'
                                         : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
                                     }`}
                                   >
                                     <div className="flex items-center gap-1.5 min-w-0">
-                                      <MapPin className={`h-2.5 w-2.5 shrink-0 ${active ? 'text-[var(--bg-card)]' : 'text-[var(--color-brand-accent)]'}`} />
+                                      {isMultiStateMode ? (
+                                        <div className={`w-3.5 h-3.5 rounded-xs border flex items-center justify-center shrink-0 transition-colors ${
+                                          isSelected
+                                            ? 'border-[var(--bg-card)] bg-[var(--bg-card)] text-[var(--text-main)]'
+                                            : 'border-[var(--border-color)] bg-transparent'
+                                        }`}>
+                                          {isSelected && <Check className="h-2.5 w-2.5 stroke-[3]" />}
+                                        </div>
+                                      ) : (
+                                        <MapPin className={`h-2.5 w-2.5 shrink-0 ${isSelected ? 'text-[var(--bg-card)]' : 'text-[var(--color-brand-accent)]'}`} />
+                                      )}
                                       <span className="truncate">{reg.label}</span>
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0 ml-1">
                                       {reg.badge && (
                                         <span className={`text-[8px] px-1 py-0.2 rounded font-sans uppercase tracking-wider ${
-                                          active
-                                            ? 'bg-[var(--bg-card)] text-[var(--text-main)]'
+                                          isSelected
+                                            ? 'bg-[var(--bg-card)]/20 text-[var(--bg-card)]'
                                             : 'bg-[var(--border-color)]/50 text-[var(--text-muted)]'
                                         }`}>
                                           {reg.badge}
                                         </span>
                                       )}
-                                      {active && <CheckCircle2 className="h-3 w-3 text-[var(--bg-card)] shrink-0" />}
+                                      {!isMultiStateMode && isSelected && (
+                                        <CheckCircle2 className="h-3 w-3 text-[var(--bg-card)] shrink-0" />
+                                      )}
                                     </div>
                                   </button>
                                 );
