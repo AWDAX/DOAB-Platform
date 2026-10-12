@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "83391717697",
+    "project_id": "doab-civic-grid",
+    "storage_bucket": "doab-civic-grid.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:83391717697:android:c7b35a3cb72db49a19c1c0",
+        "android_client_info": {
+          "package_name": "org.doab.sentinel"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "83391717697-3e4n8oi2ffmu030cnc7o851tn7lq286o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwkULcsWFNDCULRK6hg3TsUU9vqjAn-dg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "83391717697-3e4n8oi2ffmu030cnc7o851tn7lq286o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
