@@ -7,7 +7,7 @@
 [![Android APK](https://img.shields.io/badge/Android-Native%20APK%20Ready-3DDC84?logo=android&logoColor=white)](https://github.com/AWDAX/DOAB-Platform)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-**Live Production URL:** [https://doab.sahnirmaan.live](https://doab.sahnirmaan.live) *(Direct CloudFront Edge: [d2o53556p8sz4l.cloudfront.net](https://d2o53556p8sz4l.cloudfront.net))*  
+**Live Production URL:** [https://doab.sahnirmaan.live](https://doab.sahnirmaan.live) *(Direct CloudFront Edge: [d38z2t6y9aj34z.cloudfront.net](https://d38z2t6y9aj34z.cloudfront.net))*  
 Developed by **Team Contrarians** for **WeMakeDevs Hackathon**.
 
 ---
