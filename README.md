@@ -4,10 +4,34 @@
 [![AWS Production](https://img.shields.io/badge/AWS-CloudFront%20%7C%20S3%20%7C%20EC2%20%7C%20RDS%20%7C%20ALS-232F3E?logo=amazon-aws&logoColor=white)](https://d2o53556p8sz4l.cloudfront.net)
 [![React 19](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20Tailwind-61DAFB?logo=react&logoColor=black)](https://vite.dev)
 [![Python 3.12](https://img.shields.io/badge/AI%20Service-FastAPI%20%7C%20XGBoost%20%7C%20PyTorch-3776AB?logo=python&logoColor=white)](https://fastapi.tiangolo.com)
+[![Android APK](https://img.shields.io/badge/Android-Native%20APK%20Ready-3DDC84?logo=android&logoColor=white)](https://github.com/AWDAX/DOAB-Platform)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 **Live Production URL:** [https://d2o53556p8sz4l.cloudfront.net](https://d2o53556p8sz4l.cloudfront.net)  
 Developed by **Team Contrarians** for **WeMakeDevs Hackathon**.
+
+---
+
+## 📸 Platform Interface & Live Visuals
+
+<div align="center">
+  <img src="./docs/assets/screenshots/live_3d_terrain_map.png" alt="DOAB Live 3D Terrain & Inundation Map" width="100%" />
+  <p><em>Figure 1: Hardware-accelerated 3D Terrain & Real-Time Inundation Risk Vector Engine</em></p>
+</div>
+
+<br />
+
+| 🌐 Volumetric Hazard Clusters | 📈 Dynamic Elevation Matrix |
+| :---: | :---: |
+| <img src="./docs/assets/screenshots/hazard_clusters_view.png" alt="Volumetric Hazard Clusters" width="100%" /> | <img src="./docs/assets/screenshots/elevation_matrix_view.png" alt="Dynamic Elevation Matrix" width="100%" /> |
+| *Real-time municipal telemetry with 15cm risk thresholds* | *Copernicus DEM ridgeline elevation analysis & bypass routes* |
+
+<br />
+
+| 📱 Native Mobile Navigation | 🛰️ 3D Perspective Orbital Tilt |
+| :---: | :---: |
+| <img src="./docs/assets/screenshots/mobile_routes_view.png" alt="Mobile Route Navigation" width="100%" /> | <img src="./docs/assets/screenshots/map_3d_terrain.png" alt="3D Perspective Orbital Tilt" width="100%" /> |
+| *Capacitor Android native app with turn-by-turn bypass* | *Orbital camera angle with live safe-haven corridor overlays* |
 
 ---
 
@@ -20,6 +44,11 @@ DOAB ingests ground-truth municipal datasets (6,000+ real civic incident reports
 ---
 
 ## ☁️ Complete Amazon Web Services (AWS) Architecture
+
+<div align="center">
+  <img src="./docs/assets/screenshots/aws_architecture_used.png" alt="DOAB Complete AWS Architecture Blueprint" width="100%" />
+  <p><em>Figure 2: Production-Grade AWS Disaster Management Architecture Blueprint</em></p>
+</div>
 
 DOAB is engineered on a resilient, high-availability AWS Cloud infrastructure designed for mission-critical disaster management:
 
@@ -66,7 +95,7 @@ DOAB is engineered on a resilient, high-availability AWS Cloud infrastructure de
   - Buffers and queues thousands of concurrent distress beacons during mass-casualty flash floods or dam releases so not a single SOS alert is ever dropped or lost.
 - **AWS Lambda (Serverless Emergency Compute)**:
   - Serverless micro-function triggered instantaneously upon distress beacon ingestion, executing coordinate extraction and nearest safe haven routing independently of primary server load.
-- **Amazon Cognito Identity Pools**: Unauthenticated and role-based IAM temporary credential vending for client-side Amazon Location Service access without exposing static API keys.
+- **Amazon Cognito Identity Pools**: Unauthenticated and role-based IAM temporary credential vending for client-side Amazon Location Service access without exposing static API keys (`ap-southeast-2:ff8ccdf5-4e7a-45c8-861d-51221d0ea28d`).
 - **AWS CloudWatch**: Real-time telemetry monitoring, health probe alarms, and latency tracking across the EC2 prediction containers.
 
 ---
@@ -86,14 +115,18 @@ DOAB is engineered on a resilient, high-availability AWS Cloud infrastructure de
    - **"Reached Destination" Workflow**: Field users confirm arrival and rate model safety accuracy (**Accurate**, **Slight Water**, **Flooded/Blocked**).
    - Generates local telemetry verification loops that improve model precision over time.
 
-4. **Multi-State National Expansion**:
-   - Deep research scraping and integration across 28 states and Union Territories via **AWDAX Synapical Research API**, ingesting civic drainage bulletins, disaster hazard zones, and underpass registries.
+4. **EXIF Hardware Metadata Inspector (Route Back-Check)**:
+   - Direct binary parsing of JPEG APP1/EXIF headers upon photo upload.
+   - Extracts hardware GPS coordinates, shutter timestamps, and camera make/model for cryptographic ground-truth verification with fallback to privacy-preserving mode.
 
-5. **Voice AI Operations Copilot**:
+5. **Live Remote Admin Telemetry & Cross-Device Sync**:
+   - Web Dev Admin Console (`/admin` on laptop) broadcasts live emergency beacons, triggering native haptic alarms, high-priority phone notifications, and full-screen SOS takeovers on field Android devices in < 200ms.
+
+6. **Voice AI Operations Copilot**:
    - Speech-synthesized civic operations assistant capable of querying nearby ward telemetry, reading route risks aloud, and guiding emergency evacuations.
 
-6. **Native Android Support**:
-   - Capacitor-powered native Android APK build with full offline fallback, native geofencing, and SOS danger broadcast capabilities.
+7. **Native Android APK (Capacitor + Google Play Services)**:
+   - Native debug APK with offline asset caching, background geolocation, native Google OAuth bottom-sheet login, and full SOS haptics.
 
 ---
 
@@ -106,8 +139,8 @@ DOAB is engineered on a resilient, high-availability AWS Cloud infrastructure de
 | **Geospatial & Mapping** | Leaflet, React-Leaflet, MapLibre GL, Amazon Location Service (Places & Routes) |
 | **AI & Prediction** | Python 3.12, FastAPI, XGBoost, Copernicus Digital Elevation Models (DEM), Open-Meteo ERA5 |
 | **External Intelligence** | AWDAX Synapical Research API (State Disaster Bulletin Automated Crawler) |
-| **Authentication & Auth** | Google Firebase Authentication, AWS Cognito IAM Credentials |
-| **Mobile Architecture** | Capacitor 7, Android SDK 34 (Debug APK) |
+| **Authentication & Auth** | Google Firebase Authentication, Capacitor Google Auth, AWS Cognito IAM Credentials |
+| **Mobile Architecture** | Capacitor 8, Android SDK 34 (Debug APK with Google Services) |
 
 ---
 
@@ -125,7 +158,7 @@ git clone https://github.com/AWDAX/DOAB-Platform.git
 cd DOAB-Platform/Codebase
 
 # Install dependencies
-npm install
+npm install --legacy-peer-deps
 
 # Start local development server
 npm run dev
@@ -153,13 +186,15 @@ python -m app.cli train
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Building Android APK
+### Building Android Native APK
 ```bash
 # Sync web build to native Android assets
-npm run apk:sync
+npm run build
+npx cap sync android
 
-# Build debug APK
-npm run apk:build
+# Build debug APK using Gradle
+cd android
+./gradlew assembleDebug
 ```
 
 ---
