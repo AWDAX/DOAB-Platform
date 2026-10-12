@@ -10,6 +10,13 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: true
+  },
+  plugins: {
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: '83391717697-3e4n8oi2ffmu030cnc7o851tn7lq286o.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true
+    }
   }
 };
 
