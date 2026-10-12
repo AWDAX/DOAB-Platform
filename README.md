@@ -1,13 +1,13 @@
 # DOAB (दोआब) — Dual-Climate Geospatial & Civic Safety Platform
 **Detect → Order → Alert → Back-check**
 
-[![AWS Production](https://img.shields.io/badge/AWS-CloudFront%20%7C%20S3%20%7C%20EC2%20%7C%20RDS%20%7C%20ALS-232F3E?logo=amazon-aws&logoColor=white)](https://d2o53556p8sz4l.cloudfront.net)
+[![AWS Production](https://img.shields.io/badge/AWS-CloudFront%20%7C%20S3%20%7C%20EC2%20%7C%20RDS%20%7C%20ALS-232F3E?logo=amazon-aws&logoColor=white)](https://doab.sahnirmaan.live)
 [![React 19](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20Tailwind-61DAFB?logo=react&logoColor=black)](https://vite.dev)
 [![Python 3.12](https://img.shields.io/badge/AI%20Service-FastAPI%20%7C%20XGBoost%20%7C%20PyTorch-3776AB?logo=python&logoColor=white)](https://fastapi.tiangolo.com)
 [![Android APK](https://img.shields.io/badge/Android-Native%20APK%20Ready-3DDC84?logo=android&logoColor=white)](https://github.com/AWDAX/DOAB-Platform)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-**Live Production URL:** [https://d2o53556p8sz4l.cloudfront.net](https://d2o53556p8sz4l.cloudfront.net)  
+**Live Production URL:** [https://doab.sahnirmaan.live](https://doab.sahnirmaan.live) *(Direct CloudFront Edge: [d2o53556p8sz4l.cloudfront.net](https://d2o53556p8sz4l.cloudfront.net))*  
 Developed by **Team Contrarians** for **WeMakeDevs Hackathon**.
 
 ---
