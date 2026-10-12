@@ -57,17 +57,22 @@ import { useForecast } from '../hooks/useForecast';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { Capacitor } from '@capacitor/core';
+import MapErrorBoundary from '../components/MapErrorBoundary';
 
 // Re-export TelemetryIncident type for backward-compatibility
 export type { TelemetryIncident };
 
 // Leaflet default icon asset fix to prevent missing asset 404s
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+try {
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  });
+} catch (e) {
+  console.warn('Failed to configure default Leaflet icon options:', e);
+}
 
 // Civic incidents export for global navbar search, alerts drawer & landing page
 export const CIVIC_INCIDENTS: TelemetryIncident[] = WATERLOGGING_DATASET_INCIDENTS.filter((inc) => {
@@ -2195,252 +2200,254 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
       {/* ── Dual-Engine Interactive Map View ── */}
       <div className="absolute inset-0 h-full w-full">
-        {mapEngine === 'maplibre' ? (
-          <MapLibreView
-            center={mapCenter}
-            zoom={mapZoom}
-            incidents={filteredIncidents}
-            selectedIncident={selectedIncident}
-            onSelectIncident={handleSelectIncident}
-            isDarkMode={isDarkMode}
-            envMode={envMode}
-            userLocation={hasRealLocation ? { lat: userCoords[0], lng: userCoords[1] } : null}
-            clusters={recurringClusters}
-            showHeatLayer={showHeatLayer}
-            selectedClusterKey={selectedClusterKey}
-            activeRouteGeometry={
-              hasRealLocation && selectedIncident 
-                ? [userCoords, [selectedIncident.lat, selectedIncident.lng]] 
-                : undefined
-            }
-          />
-        ) : (
-          <MapContainer
-            center={mapCenter}
-            zoom={mapZoom}
-            maxZoom={18}
-            zoomControl={false}
-            scrollWheelZoom={true}
-            dragging={true}
-            touchZoom={true}
-            doubleClickZoom={true}
-            boxZoom={true}
-            keyboard={true}
-            preferCanvas={true}
-            inertia={true}
-            inertiaDeceleration={3000}
-            inertiaMaxSpeed={2000}
-            easeLinearity={0.2}
-            className="h-full w-full z-0 cursor-default"
-            style={{ height: '100%', width: '100%', minHeight: '100%' }}
-          >
-            {/* High-Reliability Enterprise Basemap Layer (No API Key Required, Fast Global CDN) */}
-            <TileLayer
-              key={isDarkMode ? 'dark-canvas-tile' : 'light-canvas-tile'}
-              attribution='&copy; <a href="https://www.esri.com/">Esri</a> &copy; OpenStreetMap'
-              url={
-                isDarkMode
-                  ? 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-                  : 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+        <MapErrorBoundary>
+          {mapEngine === 'maplibre' ? (
+            <MapLibreView
+              center={mapCenter}
+              zoom={mapZoom}
+              incidents={filteredIncidents}
+              selectedIncident={selectedIncident}
+              onSelectIncident={handleSelectIncident}
+              isDarkMode={isDarkMode}
+              envMode={envMode}
+              userLocation={hasRealLocation ? { lat: userCoords[0], lng: userCoords[1] } : null}
+              clusters={recurringClusters}
+              showHeatLayer={showHeatLayer}
+              selectedClusterKey={selectedClusterKey}
+              activeRouteGeometry={
+                hasRealLocation && selectedIncident 
+                  ? [userCoords, [selectedIncident.lat, selectedIncident.lng]] 
+                  : undefined
               }
-              maxNativeZoom={16}
+            />
+          ) : (
+            <MapContainer
+              center={mapCenter}
+              zoom={mapZoom}
               maxZoom={18}
-            />
-
-            <MapViewController center={mapCenter} zoom={mapZoom} />
-
-            {boundaries && (
-              <GeoJSON
-                data={boundaries as never}
-                style={() => ({ color: '#64748b', weight: 1, fillOpacity: 0.04 })}
+              zoomControl={false}
+              scrollWheelZoom={true}
+              dragging={true}
+              touchZoom={true}
+              doubleClickZoom={true}
+              boxZoom={true}
+              keyboard={true}
+              preferCanvas={true}
+              inertia={true}
+              inertiaDeceleration={3000}
+              inertiaMaxSpeed={2000}
+              easeLinearity={0.2}
+              className="h-full w-full z-0 cursor-default"
+              style={{ height: '100%', width: '100%', minHeight: '100%' }}
+            >
+              {/* High-Reliability Enterprise Basemap Layer (No API Key Required, Fast Global CDN) */}
+              <TileLayer
+                key={isDarkMode ? 'dark-canvas-tile' : 'light-canvas-tile'}
+                attribution='&copy; <a href="https://www.esri.com/">Esri</a> &copy; OpenStreetMap'
+                url={
+                  isDarkMode
+                    ? 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+                    : 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+                }
+                maxNativeZoom={16}
+                maxZoom={18}
               />
-            )}
 
-            {envMode === 'flood' && forecast?.cells.map((cell) => (
-              cell.probability == null ? null : (
+              <MapViewController center={mapCenter} zoom={mapZoom} />
+
+              {boundaries && (
+                <GeoJSON
+                  data={boundaries as never}
+                  style={() => ({ color: '#64748b', weight: 1, fillOpacity: 0.04 })}
+                />
+              )}
+
+              {envMode === 'flood' && forecast?.cells.map((cell) => (
+                cell.probability == null ? null : (
+                  <Circle
+                    key={`${cell.lat}-${cell.lng}`}
+                    center={[cell.lat, cell.lng]}
+                    radius={1800}
+                    pathOptions={{
+                      color: cell.probability >= 0.5 ? '#d97706' : '#64748b',
+                      fillColor: cell.probability >= 0.5 ? '#d97706' : '#64748b',
+                      fillOpacity: 0.08 + Math.min(cell.probability, 1) * 0.2,
+                      weight: 1,
+                    }}
+                  />
+                )
+              ))}
+
+              {/* User Live GPS Marker: ONLY rendered when actual live coordinates have been fetched */}
+              {hasRealLocation && (
+                <Marker position={userCoords} icon={USER_LIVE_ICON}>
+                  <Popup className="neo-glass-popup">
+                    <div className="p-1 text-xs">
+                      <div className="font-bold text-neutral-900 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
+                        Your Real Live GPS Location
+                      </div>
+                      <div className="text-[10px] text-neutral-500 font-mono mt-1">
+                        {userCoords[0].toFixed(4)}° N, {userCoords[1].toFixed(4)}° E
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {/* Search Result Pin */}
+              {geocodedPin && (
+                <Marker position={geocodedPin} icon={ALS_GEOCODED_ICON}>
+                  <Popup className="neo-glass-popup">
+                    <div className="p-1 text-xs">
+                      <div className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                        <Globe2 className="h-3.5 w-3.5" />
+                        Geocoded Landmark
+                      </div>
+                      <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
+                        {destination}
+                      </div>
+                      <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
+                        {geocodedPin[0].toFixed(4)}° N, {geocodedPin[1].toFixed(4)}° E
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
+
+
+              {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
+              {showHeatLayer && recurringClusters.slice(0, Capacitor.isNativePlatform() ? 12 : 40).map((cluster, cIdx) => {
+                const clusterColor = cluster.highestSeverity === 'Critical' 
+                  ? '#E11D48' 
+                  : cluster.highestSeverity === 'High' 
+                    ? '#D97706' 
+                    : cluster.highestSeverity === 'Medium'
+                      ? '#0284C7'
+                      : '#64748B';
+                return (
+                  <Circle
+                    key={`cluster-halo-${cluster.ward}-${cIdx}`}
+                    center={[cluster.lat, cluster.lng]}
+                    radius={Math.max(cluster.clusterRadiusKm * 500, 1600)}
+                    pathOptions={{
+                      color: clusterColor,
+                      fillColor: clusterColor,
+                      fillOpacity: selectedClusterKey === cluster.ward ? 0.25 : 0.08,
+                      weight: selectedClusterKey === cluster.ward ? 3 : 1.8,
+                      dashArray: '6, 8',
+                    }}
+                  />
+                );
+              })}
+
+              {/* Focused Risk Halo: Rendered for the currently inspected incident */}
+              {showHeatLayer && selectedIncident && (
                 <Circle
-                  key={`${cell.lat}-${cell.lng}`}
-                  center={[cell.lat, cell.lng]}
-                  radius={1800}
+                  center={[selectedIncident.lat, selectedIncident.lng]}
+                  radius={selectedIncident.severity === 'Critical' ? 480 : selectedIncident.severity === 'High' ? 320 : 180}
                   pathOptions={{
-                    color: cell.probability >= 0.5 ? '#d97706' : '#64748b',
-                    fillColor: cell.probability >= 0.5 ? '#d97706' : '#64748b',
-                    fillOpacity: 0.08 + Math.min(cell.probability, 1) * 0.2,
-                    weight: 1,
+                    color: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
+                    fillColor: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
+                    fillOpacity: 0.16,
+                    weight: 2,
+                    dashArray: '4, 4',
                   }}
                 />
-              )
-            ))}
+              )}
 
-            {/* User Live GPS Marker: ONLY rendered when actual live coordinates have been fetched */}
-            {hasRealLocation && (
-              <Marker position={userCoords} icon={USER_LIVE_ICON}>
-                <Popup className="neo-glass-popup">
-                  <div className="p-1 text-xs">
-                    <div className="font-bold text-neutral-900 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
-                      Your Real Live GPS Location
-                    </div>
-                    <div className="text-[10px] text-neutral-500 font-mono mt-1">
-                      {userCoords[0].toFixed(4)}° N, {userCoords[1].toFixed(4)}° E
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            )}
-
-            {/* Search Result Pin */}
-            {geocodedPin && (
-              <Marker position={geocodedPin} icon={ALS_GEOCODED_ICON}>
-                <Popup className="neo-glass-popup">
-                  <div className="p-1 text-xs">
-                    <div className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                      <Globe2 className="h-3.5 w-3.5" />
-                      Geocoded Landmark
-                    </div>
-                    <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
-                      {destination}
-                    </div>
-                    <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
-                      {geocodedPin[0].toFixed(4)}° N, {geocodedPin[1].toFixed(4)}° E
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            )}
-
-
-            {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
-            {showHeatLayer && recurringClusters.slice(0, Capacitor.isNativePlatform() ? 12 : 40).map((cluster, cIdx) => {
-              const clusterColor = cluster.highestSeverity === 'Critical' 
-                ? '#E11D48' 
-                : cluster.highestSeverity === 'High' 
-                  ? '#D97706' 
-                  : cluster.highestSeverity === 'Medium'
-                    ? '#0284C7'
-                    : '#64748B';
-              return (
-                <Circle
-                  key={`cluster-halo-${cluster.ward}-${cIdx}`}
-                  center={[cluster.lat, cluster.lng]}
-                  radius={Math.max(cluster.clusterRadiusKm * 500, 1600)}
+              {/* SAHNIRMAAN Spatial Proximity Vector from User GPS to Inspected Incident */}
+              {hasRealLocation && selectedIncident && (
+                <Polyline
+                  positions={[
+                    userCoords,
+                    [selectedIncident.lat, selectedIncident.lng]
+                  ]}
                   pathOptions={{
-                    color: clusterColor,
-                    fillColor: clusterColor,
-                    fillOpacity: selectedClusterKey === cluster.ward ? 0.25 : 0.08,
-                    weight: selectedClusterKey === cluster.ward ? 3 : 1.8,
+                    color: selectedIncident.severity === 'Critical' ? '#E11D48' : '#D97706',
+                    weight: 2,
+                    dashArray: '5, 8',
+                    opacity: 0.75,
+                  }}
+                />
+              )}
+
+              {/* Interactive Safe Path Waypoint Picking Handler */}
+              <MapInteractiveClickHandler
+                enabled={isPathCreationMode}
+                onMapClick={handleMapClickForPath}
+              />
+
+              {/* Custom Safe Path Origin Pin */}
+              {pathOrigin && (
+                <Marker position={pathOrigin} icon={PATH_ORIGIN_ICON}>
+                  <Popup className="neo-glass-popup">
+                    <div className="p-1 text-xs">
+                      <div className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />
+                        Waypoint A: Safe Path Origin
+                      </div>
+                      <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
+                        {pathOriginAddress || 'Custom GPS Origin'}
+                      </div>
+                      <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
+                        {pathOrigin[0].toFixed(4)}° N, {pathOrigin[1].toFixed(4)}° E
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {/* Custom Safe Path Destination Pin */}
+              {pathDest && (
+                <Marker position={pathDest} icon={PATH_DEST_ICON}>
+                  <Popup className="neo-glass-popup">
+                    <div className="p-1 text-xs">
+                      <div className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />
+                        Waypoint B: Safe Haven Destination
+                      </div>
+                      <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
+                        {pathDestAddress || 'Custom Safe Haven Sector'}
+                      </div>
+                      <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
+                        {pathDest[0].toFixed(4)}° N, {pathDest[1].toFixed(4)}° E
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {/* Custom Safe Path Connecting Elevation Polyline */}
+              {pathOrigin && pathDest && (
+                <Polyline
+                  positions={[pathOrigin, pathDest]}
+                  pathOptions={{
+                    color: '#10B981',
+                    weight: 4,
                     dashArray: '6, 8',
+                    opacity: 0.9,
                   }}
                 />
-              );
-            })}
+              )}
 
-            {/* Focused Risk Halo: Rendered for the currently inspected incident */}
-            {showHeatLayer && selectedIncident && (
-              <Circle
-                center={[selectedIncident.lat, selectedIncident.lng]}
-                radius={selectedIncident.severity === 'Critical' ? 480 : selectedIncident.severity === 'High' ? 320 : 180}
-                pathOptions={{
-                  color: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
-                  fillColor: selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7',
-                  fillOpacity: 0.16,
-                  weight: 2,
-                  dashArray: '4, 4',
-                }}
-              />
-            )}
-
-            {/* SAHNIRMAAN Spatial Proximity Vector from User GPS to Inspected Incident */}
-            {hasRealLocation && selectedIncident && (
-              <Polyline
-                positions={[
-                  userCoords,
-                  [selectedIncident.lat, selectedIncident.lng]
-                ]}
-                pathOptions={{
-                  color: selectedIncident.severity === 'Critical' ? '#E11D48' : '#D97706',
-                  weight: 2,
-                  dashArray: '5, 8',
-                  opacity: 0.75,
-                }}
-              />
-            )}
-
-            {/* Interactive Safe Path Waypoint Picking Handler */}
-            <MapInteractiveClickHandler
-              enabled={isPathCreationMode}
-              onMapClick={handleMapClickForPath}
-            />
-
-            {/* Custom Safe Path Origin Pin */}
-            {pathOrigin && (
-              <Marker position={pathOrigin} icon={PATH_ORIGIN_ICON}>
-                <Popup className="neo-glass-popup">
-                  <div className="p-1 text-xs">
-                    <div className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5" />
-                      Waypoint A: Safe Path Origin
-                    </div>
-                    <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
-                      {pathOriginAddress || 'Custom GPS Origin'}
-                    </div>
-                    <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
-                      {pathOrigin[0].toFixed(4)}° N, {pathOrigin[1].toFixed(4)}° E
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            )}
-
-            {/* Custom Safe Path Destination Pin */}
-            {pathDest && (
-              <Marker position={pathDest} icon={PATH_DEST_ICON}>
-                <Popup className="neo-glass-popup">
-                  <div className="p-1 text-xs">
-                    <div className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5" />
-                      Waypoint B: Safe Haven Destination
-                    </div>
-                    <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
-                      {pathDestAddress || 'Custom Safe Haven Sector'}
-                    </div>
-                    <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
-                      {pathDest[0].toFixed(4)}° N, {pathDest[1].toFixed(4)}° E
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            )}
-
-            {/* Custom Safe Path Connecting Elevation Polyline */}
-            {pathOrigin && pathDest && (
-              <Polyline
-                positions={[pathOrigin, pathDest]}
-                pathOptions={{
-                  color: '#10B981',
-                  weight: 4,
-                  dashArray: '6, 8',
-                  opacity: 0.9,
-                }}
-              />
-            )}
-
-            {/* Telemetry Incident Minimalist Pins */}
-            {filteredIncidents.map((incident) => {
-              const isSelected = selectedIncident?.id === incident.id;
-              return (
-                <Marker
-                  key={incident.id}
-                  position={[incident.lat, incident.lng]}
-                  icon={createIncidentMarkerIcon(incident.severity, isSelected)}
-                  eventHandlers={{
-                    click: () => handleSelectIncident(incident),
-                  }}
-                />
-              );
-            })}
-          </MapContainer>
-        )}
+              {/* Telemetry Incident Minimalist Pins */}
+              {filteredIncidents.map((incident) => {
+                const isSelected = selectedIncident?.id === incident.id;
+                return (
+                  <Marker
+                    key={incident.id}
+                    position={[incident.lat, incident.lng]}
+                    icon={createIncidentMarkerIcon(incident.severity, isSelected)}
+                    eventHandlers={{
+                      click: () => handleSelectIncident(incident),
+                    }}
+                  />
+                );
+              })}
+            </MapContainer>
+          )}
+        </MapErrorBoundary>
       </div>
     </div>
   );
