@@ -2,16 +2,19 @@
 
 **Current Branch:** `frontend` (synced with `main` at `c86d41c`)  
 **Last Updated:** October 12, 2026  
-**Primary Next Plan Document:** [`docs/FUTURE_NATIONAL_GRID_IMD_PLAN.md`](./FUTURE_NATIONAL_GRID_IMD_PLAN.md)
+**Primary Next Plan Documents:** 
+1. 🎯 **Immediate Present Plan:** [`docs/BACKEND_SERVING_AND_LAMBDA_ARCHITECTURE.md`](./BACKEND_SERVING_AND_LAMBDA_ARCHITECTURE.md) (RDS PostgreSQL Seeder, FastAPI Viewport Endpoint, AWS Lambda IMD Ingestion)
+2. 🗺️ **National Grid & Weather Roadmap:** [`docs/FUTURE_NATIONAL_GRID_IMD_PLAN.md`](./FUTURE_NATIONAL_GRID_IMD_PLAN.md) (Uber H3, 1,405 IMD Stations, Temporal Decay Half-Life)
 
 ---
 
 ## 🚨 MANDATORY DIRECTIVE FOR NEXT AGENT SESSION
 
 The user has explicitly mandated that the **NEXT plan for any future agent session** MUST directly execute and build according to:
-👉 **[`docs/FUTURE_NATIONAL_GRID_IMD_PLAN.md`](./FUTURE_NATIONAL_GRID_IMD_PLAN.md)**
+👉 **[`docs/BACKEND_SERVING_AND_LAMBDA_ARCHITECTURE.md`](./BACKEND_SERVING_AND_LAMBDA_ARCHITECTURE.md)** (Immediate Present Execution)
+👉 **[`docs/FUTURE_NATIONAL_GRID_IMD_PLAN.md`](./FUTURE_NATIONAL_GRID_IMD_PLAN.md)** (National Grid & Model Roadmap)
 
-Do NOT invent alternative architectures or revert to unverified scrapers. Follow the exact technical roadmap specified in `docs/FUTURE_NATIONAL_GRID_IMD_PLAN.md`.
+Do NOT invent alternative architectures or revert to unverified scrapers. Follow the exact technical roadmaps specified in these two files.
 
 ---
 
