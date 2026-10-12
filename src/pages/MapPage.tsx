@@ -56,6 +56,7 @@ import { NATIONAL_MUNICIPAL_INCIDENTS } from '../data/nationalIncidents';
 import { useForecast } from '../hooks/useForecast';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { getPredictionCopy } from '../i18n/predictionCopy';
+import { Capacitor } from '@capacitor/core';
 
 // Re-export TelemetryIncident type for backward-compatibility
 export type { TelemetryIncident };
@@ -68,8 +69,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Civic incidents export for global navbar search & landing page
-export const CIVIC_INCIDENTS: TelemetryIncident[] = WATERLOGGING_DATASET_INCIDENTS;
+// Civic incidents export for global navbar search, alerts drawer & landing page
+export const CIVIC_INCIDENTS: TelemetryIncident[] = WATERLOGGING_DATASET_INCIDENTS.filter((inc) => {
+  const t = (inc.title || '').toLowerCase();
+  const d = (inc.description || '').toLowerCase();
+  return !t.includes('urinat') && !t.includes('shitting') && !d.includes('urinat') && !d.includes('shitting');
+});
 
 // Helper: Custom Clean Minimalist Marker Icons (Apple & Mapbox Civic Standard)
 function createIncidentMarkerIcon(severity: string, isSelected: boolean) {
@@ -381,7 +386,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     return statesOnly.filter((r) => r.label.toLowerCase().includes(q) || r.val.toLowerCase().includes(q));
   }, [stateSearchQuery]);
 
-  const [showHeatLayer, setShowHeatLayer] = useState(false);
+  const [showHeatLayer, setShowHeatLayer] = useState(true);
   const { mapEngine, updateMapEngine } = useUserSettings();
   const setMapEngine = updateMapEngine;
 
@@ -473,20 +478,54 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       return true;
     });
 
-    // When showing All India with no active filters, build a stratified sample
-    // to guarantee geographic diversity. Bengaluru (BBMP) dominates the pool
-    // since it comes first in the array — a naive slice(0,N) would show ONLY
-    // Bengaluru pins. We take national incidents first, then fill with Bengaluru.
+    // When showing All India with no active filters, build a balanced round-robin
+    // stratified sample across EVERY state. Previously, national.slice(0, 140) only
+    // reached the first 3 states (UP, WB, Assam) before getting cut off, making it
+    // look like only 4 states existed on the map.
     const isAllIndia = (!isMultiStateMode && selectedState === 'all') || (isMultiStateMode && selectedStates.length === 0);
     if (severityFilter === 'all' && !destination.trim() && isAllIndia) {
-      const isBengaluru = (i: TelemetryIncident) =>
-        (i.source || '').includes('BBMP') || (i.source || '').includes('OpenCity') || (i.source || '').includes('WaterLogging Dataset');
-      const bengaluru = matched.filter(isBengaluru);
-      const national = matched.filter((i) => !isBengaluru(i));
-      // Stratified representation: up to 140 national + up to 60 Bengaluru
-      return [...national.slice(0, 140), ...bengaluru.slice(0, 60)];
+      const stateMap = new Map<string, TelemetryIncident[]>();
+      matched.forEach((item) => {
+        let stKey = 'Other';
+        const txt = `${item.ward} ${item.source || ''} ${item.title}`.toLowerCase();
+        if (txt.includes('bihar')) stKey = 'Bihar';
+        else if (txt.includes('telangana') || txt.includes('hyderabad')) stKey = 'Telangana';
+        else if (txt.includes('karnataka') || txt.includes('bengaluru') || txt.includes('bbmp')) stKey = 'Karnataka';
+        else if (txt.includes('maharashtra') || txt.includes('mumbai') || txt.includes('pune')) stKey = 'Maharashtra';
+        else if (txt.includes('delhi')) stKey = 'Delhi';
+        else if (txt.includes('manipur')) stKey = 'Manipur';
+        else if (txt.includes('assam')) stKey = 'Assam';
+        else if (txt.includes('kerala')) stKey = 'Kerala';
+        else if (txt.includes('west bengal') || txt.includes('kolkata')) stKey = 'West Bengal';
+        else if (txt.includes('tamil nadu') || txt.includes('chennai')) stKey = 'Tamil Nadu';
+        else if (txt.includes('odisha')) stKey = 'Odisha';
+        else if (txt.includes('gujarat')) stKey = 'Gujarat';
+        else if (txt.includes('madhya pradesh')) stKey = 'Madhya Pradesh';
+        else if (txt.includes('andhra pradesh')) stKey = 'Andhra Pradesh';
+        else if (txt.includes('uttar pradesh')) stKey = 'Uttar Pradesh';
+        else if (txt.includes('uttarakhand')) stKey = 'Uttarakhand';
+        else if (txt.includes('rajasthan')) stKey = 'Rajasthan';
+        else if (txt.includes('jharkhand')) stKey = 'Jharkhand';
+        else if (txt.includes('punjab') || txt.includes('chandigarh')) stKey = 'Punjab';
+        else if (txt.includes('ladakh')) stKey = 'Ladakh';
+        else if (txt.includes('dadra')) stKey = 'Dadra';
+
+        if (!stateMap.has(stKey)) stateMap.set(stKey, []);
+        stateMap.get(stKey)!.push(item);
+      });
+
+      // In native Android WebView, cap quota per state to prevent memory exhaustion and UI thread freezing
+      const isNative = Capacitor.isNativePlatform();
+      const quotaPerState = isNative ? 4 : 25;
+      const stratifiedAllIndia: TelemetryIncident[] = [];
+      for (const items of stateMap.values()) {
+        stratifiedAllIndia.push(...items.slice(0, quotaPerState));
+      }
+      return isNative ? stratifiedAllIndia.slice(0, 80) : stratifiedAllIndia;
     }
-    return matched.slice(0, 350);
+    // When filtered by state (e.g. Bihar, Telangana, Maharashtra) or multi-state, return capped points for mobile
+    const isNative = Capacitor.isNativePlatform();
+    return matched.slice(0, isNative ? 60 : 600);
   }, [severityFilter, destination, incidentSource, selectedState, isMultiStateMode, selectedStates, envMode]);
 
   const [isLocating, setIsLocating] = useState(false);
@@ -1301,6 +1340,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   onClick={() => {
                     playClick();
                     setActiveLeftTab('clusters');
+                    setShowHeatLayer(true);
                   }}
                   className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
                     activeLeftTab === 'clusters'
@@ -1718,23 +1758,20 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     </button>
                   </div>
 
-                  <p className="text-[10px] text-[var(--text-muted)] leading-tight font-mono">
-                    Formed via SAHNIRMAAN Haversine clustering. Click any cluster row to center map halos on that sector.
-                  </p>
 
                   {/* Micro Table of Hotspot Clusters */}
                   <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto custom-scrollbar pr-0.5">
-                    {recurringClusters.slice(0, 10).map((cluster, cIdx) => {
-                      const clusterKey = `${cluster.ward}-${cIdx}`;
-                      const isSelected = selectedClusterKey === clusterKey;
+                    {recurringClusters.slice(0, 25).map((cluster, cIdx) => {
+                      const isSelected = selectedClusterKey === cluster.ward;
                       const isCrit = cluster.highestSeverity === 'Critical';
                       const isHigh = cluster.highestSeverity === 'High';
                       return (
                         <div
-                          key={`cluster-row-${cIdx}`}
+                          key={`cluster-row-${cluster.ward}-${cIdx}`}
                           onClick={() => {
                             playClick();
-                            setSelectedClusterKey(clusterKey);
+                            setShowHeatLayer(true);
+                            setSelectedClusterKey(cluster.ward);
                             setMapCenter([cluster.lat, cluster.lng]);
                             setMapZoom(13);
                           }}
@@ -1905,8 +1942,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           </button>
         </Tooltip>
 
-        {/* 2. Map Intelligence & AI Copilot Button (Direct launch of DOAB AI Assistant) */}
-        <Tooltip content="DOAB AI Copilot" position="left">
+        {/* 2. Map Intelligence & AI Assistant Button (Direct launch of DOAB AI Assistant) */}
+        <Tooltip content="DOAB AI ASSISTANT" position="left">
           <button
             type="button"
             onClick={() => {
@@ -2170,6 +2207,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             userLocation={hasRealLocation ? { lat: userCoords[0], lng: userCoords[1] } : null}
             clusters={recurringClusters}
             showHeatLayer={showHeatLayer}
+            selectedClusterKey={selectedClusterKey}
             activeRouteGeometry={
               hasRealLocation && selectedIncident 
                 ? [userCoords, [selectedIncident.lat, selectedIncident.lng]] 
@@ -2273,20 +2311,29 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
 
             {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
-            {showHeatLayer && recurringClusters.slice(0, 8).map((cluster, cIdx) => (
-              <Circle
-                key={`cluster-halo-${cIdx}`}
-                center={[cluster.lat, cluster.lng]}
-                radius={Math.max(cluster.clusterRadiusKm * 500, 1600)}
-                pathOptions={{
-                  color: cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706',
-                  fillColor: cluster.highestSeverity === 'Critical' ? '#E11D48' : '#D97706',
-                  fillOpacity: 0.07,
-                  weight: 1.8,
-                  dashArray: '6, 8',
-                }}
-              />
-            ))}
+            {showHeatLayer && recurringClusters.slice(0, Capacitor.isNativePlatform() ? 12 : 40).map((cluster, cIdx) => {
+              const clusterColor = cluster.highestSeverity === 'Critical' 
+                ? '#E11D48' 
+                : cluster.highestSeverity === 'High' 
+                  ? '#D97706' 
+                  : cluster.highestSeverity === 'Medium'
+                    ? '#0284C7'
+                    : '#64748B';
+              return (
+                <Circle
+                  key={`cluster-halo-${cluster.ward}-${cIdx}`}
+                  center={[cluster.lat, cluster.lng]}
+                  radius={Math.max(cluster.clusterRadiusKm * 500, 1600)}
+                  pathOptions={{
+                    color: clusterColor,
+                    fillColor: clusterColor,
+                    fillOpacity: selectedClusterKey === cluster.ward ? 0.25 : 0.08,
+                    weight: selectedClusterKey === cluster.ward ? 3 : 1.8,
+                    dashArray: '6, 8',
+                  }}
+                />
+              );
+            })}
 
             {/* Focused Risk Halo: Rendered for the currently inspected incident */}
             {showHeatLayer && selectedIncident && (

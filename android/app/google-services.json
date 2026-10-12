@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "83391717697-9svlhqvk9qsl5nlbc1otmeoh7jqcm58q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.doab.sentinel",
+            "certificate_hash": "3dd70916bf249700f9e87e3bfb48211e0dab4148"
+          }
+        },
+        {
           "client_id": "83391717697-3e4n8oi2ffmu030cnc7o851tn7lq286o.apps.googleusercontent.com",
           "client_type": 3
         }

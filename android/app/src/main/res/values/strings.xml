@@ -4,4 +4,5 @@
     <string name="title_activity_main">DOAB</string>
     <string name="package_name">org.doab.sentinel</string>
     <string name="custom_url_scheme">org.doab.sentinel</string>
+    <string name="server_client_id">83391717697-3e4n8oi2ffmu030cnc7o851tn7lq286o.apps.googleusercontent.com</string>
 </resources>

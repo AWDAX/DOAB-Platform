@@ -61,7 +61,7 @@ export const WATERLOGGING_DATASET_INCIDENTS: TelemetryIncident[] = [
   },
   {
     "id": "WL-FL-61-544",
-    "title": "Urinating On foot paths and shitting on vacant lands",
+    "title": "Severe Stormwater & Drainage Overflow on Footpath Corridor",
     "ward": "S K Garden (Ward 61)",
     "category": "waterlogging",
     "envType": "flood",
@@ -70,7 +70,7 @@ export const WATERLOGGING_DATASET_INCIDENTS: TelemetryIncident[] = [
     "lng": 77.603911,
     "verifiedCount": 16,
     "updatedTime": "2-7-2019 17:17",
-    "description": "Respected Sir,  ITI layout is a residential area and wine shops here have caused mess. It is very difficult to walk on this lane as it is flooded with urinat...",
+    "description": "Severe stormwater drainage overflow and pedestrian corridor inundation causing hazard and pedestrian blockage near ITI Layout residential sector.",
     "status": "Resolved",
     "source": "WaterLogging Dataset (BBMP OpenCity Ground-Truth)",
     "waterDepthCm": 80,
