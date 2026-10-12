@@ -10,6 +10,7 @@ import {
   X
 } from 'lucide-react';
 import { playClick } from '../utils/soundFx';
+import { NativeService } from '../utils/nativeService';
 
 interface PermissionsModalProps {
   isOpen: boolean;
@@ -24,60 +25,36 @@ export default function PermissionsModal({ isOpen, onClose, onTestDangerBroadcas
     geofence: boolean;
     dndBroadcast: boolean;
   }>({
-    location: 'granted',
-    notifications: 'granted',
+    location: 'prompt',
+    notifications: 'prompt',
     geofence: true,
     dndBroadcast: true
   });
 
   useEffect(() => {
-    // Check browser notification permission if available
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'granted') {
-        setPermissions((prev) => ({ ...prev, notifications: 'granted' }));
-      } else if (Notification.permission === 'denied') {
-        setPermissions((prev) => ({ ...prev, notifications: 'denied' }));
-      }
-    }
+    const update = async () => {
+      const res = await NativeService.checkPermissions();
+      setPermissions((prev) => ({
+        ...prev,
+        location: res.location,
+        notifications: res.notifications
+      }));
+    };
+    update();
+  }, [isOpen]);
 
-    // Check geolocation permission if available
-    if (typeof navigator !== 'undefined' && navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((result) => {
-        if (result.state === 'granted') {
-          setPermissions((prev) => ({ ...prev, location: 'granted' }));
-        }
-      }).catch(() => {});
-    }
-  }, []);
-
-  const requestLocation = () => {
+  const requestLocation = async () => {
     playClick();
-    if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        () => {
-          setPermissions((prev) => ({ ...prev, location: 'granted' }));
-        },
-        () => {
-          setPermissions((prev) => ({ ...prev, location: 'granted' })); // Mock granted for evaluation
-        }
-      );
-    } else {
-      setPermissions((prev) => ({ ...prev, location: 'granted' }));
-    }
+    const granted = await NativeService.requestLocationPermission();
+    setPermissions((prev) => ({ ...prev, location: granted ? 'granted' : 'denied' }));
+    window.dispatchEvent(new CustomEvent('doab:permissions-updated'));
   };
 
   const requestNotifications = async () => {
     playClick();
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      try {
-        const res = await Notification.requestPermission();
-        setPermissions((prev) => ({ ...prev, notifications: res === 'granted' ? 'granted' : 'granted' }));
-      } catch {
-        setPermissions((prev) => ({ ...prev, notifications: 'granted' }));
-      }
-    } else {
-      setPermissions((prev) => ({ ...prev, notifications: 'granted' }));
-    }
+    const granted = await NativeService.requestNotificationPermission();
+    setPermissions((prev) => ({ ...prev, notifications: granted ? 'granted' : 'denied' }));
+    window.dispatchEvent(new CustomEvent('doab:permissions-updated'));
   };
 
   if (!isOpen) return null;

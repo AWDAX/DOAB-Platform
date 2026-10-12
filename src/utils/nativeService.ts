@@ -94,5 +94,85 @@ export const NativeService = {
       console.warn('Native geolocation failed:', e);
     }
     return null;
+  },
+
+  // Check actual runtime hardware permissions status
+  checkPermissions: async () => {
+    let locationStatus: 'granted' | 'prompt' | 'denied' = 'prompt';
+    let notificationStatus: 'granted' | 'prompt' | 'denied' = 'prompt';
+
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const geo = await Geolocation.checkPermissions();
+        if (geo.location === 'granted' || geo.coarseLocation === 'granted') {
+          locationStatus = 'granted';
+        } else if (geo.location === 'denied') {
+          locationStatus = 'denied';
+        } else {
+          locationStatus = 'prompt';
+        }
+
+        const notif = await LocalNotifications.checkPermissions();
+        if (notif.display === 'granted') {
+          notificationStatus = 'granted';
+        } else if (notif.display === 'denied') {
+          notificationStatus = 'denied';
+        } else {
+          notificationStatus = 'prompt';
+        }
+      } else {
+        if ('Notification' in window) {
+          notificationStatus = Notification.permission as any;
+        }
+        if (navigator.permissions) {
+          const res = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+          locationStatus = res.state as any;
+        }
+      }
+    } catch (e) {
+      console.warn('Check permissions status error:', e);
+    }
+
+    return {
+      location: locationStatus,
+      notifications: notificationStatus
+    };
+  },
+
+  // Request actual Android system dialog for location
+  requestLocationPermission: async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const res = await Geolocation.requestPermissions();
+        return res.location === 'granted' || res.coarseLocation === 'granted';
+      } else if (navigator.geolocation) {
+        return new Promise<boolean>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            () => resolve(true),
+            () => resolve(false),
+            { timeout: 8000 }
+          );
+        });
+      }
+    } catch (e) {
+      console.warn('Request location permission error:', e);
+    }
+    return false;
+  },
+
+  // Request actual Android system dialog for notifications
+  requestNotificationPermission: async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const res = await LocalNotifications.requestPermissions();
+        return res.display === 'granted';
+      } else if ('Notification' in window) {
+        const res = await Notification.requestPermission();
+        return res === 'granted';
+      }
+    } catch (e) {
+      console.warn('Request notification permission error:', e);
+    }
+    return false;
   }
 };

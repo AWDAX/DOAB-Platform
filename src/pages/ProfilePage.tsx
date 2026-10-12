@@ -26,9 +26,46 @@ function formatLastLogin(dateString?: string | null) {
   }
 }
 
+import { NativeService } from '../utils/nativeService';
+
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { profile, updateProfile } = useUserSettings();
+
+  const [livePerms, setLivePerms] = useState<{
+    location: 'granted' | 'prompt' | 'denied';
+    notifications: 'granted' | 'prompt' | 'denied';
+  }>({
+    location: 'prompt',
+    notifications: 'prompt'
+  });
+
+  const refreshPerms = async () => {
+    const res = await NativeService.checkPermissions();
+    setLivePerms(res);
+  };
+
+  useEffect(() => {
+    refreshPerms();
+    window.addEventListener('focus', refreshPerms);
+    window.addEventListener('doab:permissions-updated', refreshPerms);
+    return () => {
+      window.removeEventListener('focus', refreshPerms);
+      window.removeEventListener('doab:permissions-updated', refreshPerms);
+    };
+  }, []);
+
+  const handlePromptLocation = async () => {
+    playClick();
+    await NativeService.requestLocationPermission();
+    refreshPerms();
+  };
+
+  const handlePromptNotifications = async () => {
+    playClick();
+    await NativeService.requestNotificationPermission();
+    refreshPerms();
+  };
   const role = profile.role;
   const vendorId = profile.vendorId;
   const setRole = (r: 'citizen' | 'delivery') => {
@@ -335,42 +372,69 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <button 
               type="button" 
-              onClick={() => window.dispatchEvent(new CustomEvent('doab:open-permissions'))}
-              className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
+              onClick={handlePromptLocation}
+              className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left group"
             >
-              <span className="text-xs font-bold text-[var(--text-main)]">GPS Location</span>
-              <span className="mono-badge text-[10px] px-2 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/80 dark:bg-white/10 text-neutral-900 dark:text-neutral-100">
-                Granted
+              <div>
+                <span className="text-xs font-bold text-[var(--text-main)] block">GPS Location</span>
+                <span className="text-[10px] text-[var(--text-muted)]">Real-time flood elevation</span>
+              </div>
+              <span className={`mono-badge text-[10px] px-2.5 py-0.5 rounded-full border font-bold ${
+                livePerms.location === 'granted'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : livePerms.location === 'denied'
+                  ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                  : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/20'
+              }`}>
+                {livePerms.location === 'granted' ? '✓ Granted' : livePerms.location === 'denied' ? '✗ Denied' : 'Tap to Grant'}
               </span>
             </button>
+
+            <button 
+              type="button" 
+              onClick={handlePromptNotifications}
+              className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left group"
+            >
+              <div>
+                <span className="text-xs font-bold text-[var(--text-main)] block">Civic Notifications</span>
+                <span className="text-[10px] text-[var(--text-muted)]">Flash flood beacons</span>
+              </div>
+              <span className={`mono-badge text-[10px] px-2.5 py-0.5 rounded-full border font-bold ${
+                livePerms.notifications === 'granted'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : livePerms.notifications === 'denied'
+                  ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                  : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/20'
+              }`}>
+                {livePerms.notifications === 'granted' ? '✓ Enabled' : livePerms.notifications === 'denied' ? '✗ Blocked' : 'Tap to Enable'}
+              </span>
+            </button>
+
             <button 
               type="button" 
               onClick={() => window.dispatchEvent(new CustomEvent('doab:open-permissions'))}
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
-              <span className="text-xs font-bold text-[var(--text-main)]">Civic Notifications</span>
-              <span className="mono-badge text-[10px] px-2 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/80 dark:bg-white/10 text-neutral-900 dark:text-neutral-100">
-                Enabled
+              <div>
+                <span className="text-xs font-bold text-[var(--text-main)] block">Commuter Geofencing</span>
+                <span className="text-[10px] text-[var(--text-muted)]">Underpass proximity</span>
+              </div>
+              <span className="mono-badge text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                ✓ Active
               </span>
             </button>
+
             <button 
               type="button" 
               onClick={() => window.dispatchEvent(new CustomEvent('doab:open-permissions'))}
               className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
             >
-              <span className="text-xs font-bold text-[var(--text-main)]">Commuter Geofencing</span>
-              <span className="mono-badge text-[10px] px-2 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/80 dark:bg-white/10 text-neutral-900 dark:text-neutral-100">
-                Enabled
-              </span>
-            </button>
-            <button 
-              type="button" 
-              onClick={() => window.dispatchEvent(new CustomEvent('doab:open-permissions'))}
-              className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
-            >
-              <span className="text-xs font-bold text-[var(--text-main)]">DND / SOS Broadcast</span>
-              <span className="mono-badge text-[10px] px-2 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/80 dark:bg-white/10 text-neutral-900 dark:text-neutral-100">
-                Enabled
+              <div>
+                <span className="text-xs font-bold text-[var(--text-main)] block">DND / SOS Broadcast</span>
+                <span className="text-[10px] text-[var(--text-muted)]">Full-screen takeover</span>
+              </div>
+              <span className="mono-badge text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                ✓ Active
               </span>
             </button>
           </div>
