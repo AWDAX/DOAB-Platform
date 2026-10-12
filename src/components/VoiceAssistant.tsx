@@ -40,8 +40,15 @@ export default function VoiceAssistant() {
     deleteSession,
     clearAllSessions,
     sendMessage,
-    isThinking
+    isThinking,
+    draft,
+    setDraft
   } = useDOABChat();
+
+  // Sync inputVal with persistent draft for active session
+  useEffect(() => {
+    setInputVal(draft || '');
+  }, [draft, activeSessionId]);
 
   // Rotate single fading suggestion every 3.5 seconds (automatically paused when typing)
   useEffect(() => {
@@ -224,8 +231,10 @@ export default function VoiceAssistant() {
   const handleSend = () => {
     if (!inputVal.trim()) return;
     playClick();
-    sendMessage(inputVal);
+    const textToSend = inputVal;
     setInputVal('');
+    setDraft('');
+    sendMessage(textToSend);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -770,7 +779,10 @@ export default function VoiceAssistant() {
                   ref={inputRef}
                   type="text" 
                   value={inputVal}
-                  onChange={(e) => setInputVal(e.target.value)}
+                  onChange={(e) => {
+                    setInputVal(e.target.value);
+                    setDraft(e.target.value);
+                  }}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask DOAB Assistant (or tap Mic)..." 
                   className="w-full pl-4 pr-24 h-12 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] focus:border-[var(--text-main)] text-sm text-[var(--text-main)] shadow-inner transition-shadow placeholder:text-[var(--text-muted)] font-normal"

@@ -1003,8 +1003,13 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       </AnimatePresence>
 
       {/* ── Unified Left Floating Map Command Dock (Tabbed, Elegant, Non-Intrusive) ── */}
-      <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 w-[calc(100%-3.75rem)] sm:w-92 pointer-events-none">
-        <div id="tour-map-search" className="neo-glass-card rounded-2xl pointer-events-auto shadow-xl backdrop-blur-xl border border-[var(--border-color)] overflow-hidden transition-all duration-200">
+      <div className={`absolute top-2.5 left-2.5 sm:top-4 sm:left-4 ${isStateDropdownOpen || alsSuggestions.length > 0 ? 'z-50' : 'z-20'} w-[calc(100%-3.75rem)] sm:w-92 pointer-events-none`}>
+        <div 
+          id="tour-map-search" 
+          className={`neo-glass-card rounded-2xl pointer-events-auto shadow-xl backdrop-blur-xl border border-[var(--border-color)] transition-all duration-200 ${
+            isStateDropdownOpen || alsSuggestions.length > 0 ? 'overflow-visible' : 'overflow-hidden'
+          }`}
+        >
           
           {/* Header Bar with Mode Pill & Minimize Toggle */}
           <div 
@@ -1014,7 +1019,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               playClick();
               setIsMobileCollapsed(!isMobileCollapsed);
             }}
-            className="flex items-center justify-between gap-2 bg-[var(--bg-main)]/90 border-b border-[var(--border-color)] px-3 py-2 cursor-pointer select-none transition-colors hover:bg-[var(--bg-main)]"
+            className={`flex items-center justify-between gap-2 bg-[var(--bg-main)]/90 px-3 py-2 cursor-pointer select-none transition-colors hover:bg-[var(--bg-main)] ${
+              isMobileCollapsed ? 'rounded-2xl' : 'rounded-t-2xl border-b border-[var(--border-color)]'
+            }`}
             title={isMobileCollapsed ? "Click to expand Search & Risk Monitor" : "Click to collapse"}
           >
             <div className="flex items-center gap-2 truncate">
@@ -1242,159 +1249,161 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                         <Globe2 className="h-3 w-3 text-[var(--color-brand-accent)]" />
                         Region Focus
                       </span>
-                      <span className="text-[9px] opacity-75 font-semibold text-[var(--color-brand-accent)]">
-                        {selectedState === 'all' ? 'All-India Active' : 'Filter: ' + (selectedRegionObj?.label.split(' ')[0] || selectedState)}
+                      <span className="text-[9px] font-bold text-black dark:text-white">
+                        {selectedState === 'all' ? 'All-India Active' : `Filter: ${selectedRegionObj?.label.split('(')[0]?.trim() || selectedState}`}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 pt-0.5 pb-1 relative" ref={stateComboboxRef}>
-                      {/* Master All India Reset Button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playClick();
-                          setSelectedState('all');
-                          setMapCenter([20.5937, 78.9629]);
-                          setMapZoom(5);
-                          setIsStateDropdownOpen(false);
-                          setStateSearchQuery('');
-                        }}
-                        className={`px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-medium whitespace-nowrap transition-all cursor-pointer border shrink-0 flex items-center gap-1 ${
-                          selectedState === 'all'
-                            ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] font-bold shadow-2xs'
-                            : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/40 border-[var(--border-color)]'
-                        }`}
-                        title="Reset to All-India National Overview"
-                      >
-                        <span>🇮🇳 All India</span>
-                      </button>
-
-                      {/* Searchable State Combobox Input */}
-                      <div className="relative flex-1 min-w-0">
-                        <div 
+                    <div className="relative pt-0.5 pb-1" ref={stateComboboxRef}>
+                      <div className="flex items-center gap-1.5">
+                        {/* Master All India Reset Button */}
+                        <button
+                          type="button"
                           onClick={() => {
-                            if (!isStateDropdownOpen) {
-                              setIsStateDropdownOpen(true);
-                              setStateSearchQuery('');
-                            }
+                            playClick();
+                            setSelectedState('all');
+                            setMapCenter([20.5937, 78.9629]);
+                            setMapZoom(5);
+                            setIsStateDropdownOpen(false);
+                            setStateSearchQuery('');
                           }}
-                          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-mono bg-[var(--bg-main)] transition-all cursor-text ${
-                            isStateDropdownOpen 
-                              ? 'border-[var(--color-brand-accent)] ring-1 ring-[var(--color-brand-accent)]/20' 
-                              : selectedState !== 'all'
-                                ? 'border-[var(--text-main)] text-[var(--text-main)] font-semibold'
-                                : 'border-[var(--border-color)] text-[var(--text-muted)]'
+                          className={`px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-medium whitespace-nowrap transition-all cursor-pointer border shrink-0 flex items-center gap-1 ${
+                            selectedState === 'all'
+                              ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] font-bold shadow-2xs'
+                              : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/40 border-[var(--border-color)]'
                           }`}
+                          title="Reset to All-India National Overview"
                         >
-                          <Search className="h-3 w-3 text-[var(--color-brand-accent)] shrink-0" />
-                          <input
-                            type="text"
-                            value={isStateDropdownOpen ? stateSearchQuery : (selectedRegionObj && selectedRegionObj.val !== 'all' ? selectedRegionObj.label : '')}
-                            onChange={(e) => {
-                              setStateSearchQuery(e.target.value);
-                              if (!isStateDropdownOpen) setIsStateDropdownOpen(true);
+                          <span>🇮🇳 All India</span>
+                        </button>
+
+                        {/* Searchable State Combobox Input */}
+                        <div className="relative flex-1 min-w-0">
+                          <div 
+                            onClick={() => {
+                              if (!isStateDropdownOpen) {
+                                setIsStateDropdownOpen(true);
+                                setStateSearchQuery('');
+                              }
                             }}
-                            onFocus={() => {
-                              setIsStateDropdownOpen(true);
-                              setStateSearchQuery('');
-                            }}
-                            placeholder={selectedState !== 'all' ? selectedRegionObj?.label : "Search state or pick ▾"}
-                            className="w-full bg-transparent border-none outline-hidden text-[10px] font-mono text-[var(--text-main)] placeholder:text-[var(--text-muted)] placeholder:font-normal truncate cursor-text"
-                          />
-                          {selectedState !== 'all' && !isStateDropdownOpen ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                playClick();
-                                setSelectedState('all');
-                                setMapCenter([20.5937, 78.9629]);
-                                setMapZoom(5);
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-mono bg-[var(--bg-main)] transition-all cursor-text ${
+                              isStateDropdownOpen 
+                                ? 'border-[var(--color-brand-accent)] ring-1 ring-[var(--color-brand-accent)]/20' 
+                                : selectedState !== 'all'
+                                  ? 'border-[var(--text-main)] text-[var(--text-main)] font-semibold'
+                                  : 'border-[var(--border-color)] text-[var(--text-muted)]'
+                            }`}
+                          >
+                            <Search className="h-3 w-3 text-[var(--color-brand-accent)] shrink-0" />
+                            <input
+                              type="text"
+                              value={isStateDropdownOpen ? stateSearchQuery : (selectedRegionObj && selectedRegionObj.val !== 'all' ? selectedRegionObj.label : '')}
+                              onChange={(e) => {
+                                setStateSearchQuery(e.target.value);
+                                if (!isStateDropdownOpen) setIsStateDropdownOpen(true);
+                              }}
+                              onFocus={() => {
+                                setIsStateDropdownOpen(true);
                                 setStateSearchQuery('');
                               }}
-                              className="p-0.5 hover:bg-[var(--border-color)] rounded-xs text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer shrink-0"
-                              title="Clear state filter"
-                            >
-                              <X className="h-2.5 w-2.5" />
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsStateDropdownOpen((prev) => !prev);
-                              }}
-                              className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer shrink-0"
-                            >
-                              <ChevronDown className={`h-2.5 w-2.5 transition-transform duration-200 ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                          )}
+                              placeholder={selectedState !== 'all' ? selectedRegionObj?.label : "Search state or pick ▾"}
+                              className="w-full bg-transparent border-none outline-hidden text-[10px] font-mono text-[var(--text-main)] placeholder:text-[var(--text-muted)] placeholder:font-normal truncate cursor-text"
+                            />
+                            {selectedState !== 'all' && !isStateDropdownOpen ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  playClick();
+                                  setSelectedState('all');
+                                  setMapCenter([20.5937, 78.9629]);
+                                  setMapZoom(5);
+                                  setStateSearchQuery('');
+                                }}
+                                className="p-0.5 hover:bg-[var(--border-color)] rounded-xs text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer shrink-0"
+                                title="Clear state filter"
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsStateDropdownOpen((prev) => !prev);
+                                }}
+                                className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer shrink-0"
+                              >
+                                <ChevronDown className={`h-2.5 w-2.5 transition-transform duration-200 ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
+                              </button>
+                            )}
+                          </div>
                         </div>
-
-                        {/* Dropdown Menu */}
-                        <AnimatePresence>
-                          {isStateDropdownOpen && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -4, scale: 0.98 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: -4, scale: 0.98 }}
-                              transition={{ duration: 0.15 }}
-                              className="absolute right-0 top-full mt-1.5 w-60 max-h-60 overflow-y-auto z-50 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xl p-1.5 flex flex-col gap-0.5 custom-scrollbar backdrop-blur-md"
-                            >
-                              <div className="px-2 py-1 text-[9px] font-mono font-semibold text-[var(--text-muted)] border-b border-[var(--border-color)]/60 mb-0.5 flex justify-between items-center">
-                                <span>{stateSearchQuery.trim() ? `Matching (${filteredRegions.length})` : 'All States (24)'}</span>
-                                <span className="text-[var(--color-brand-accent)] text-[8px]">Click to Zoom</span>
-                              </div>
-
-                              {filteredRegions.length === 0 ? (
-                                <div className="px-3 py-3 text-center text-[10px] font-mono text-[var(--text-muted)]">
-                                  No state found for "{stateSearchQuery}"
-                                </div>
-                              ) : (
-                                filteredRegions.map((reg) => {
-                                  const active = selectedState === reg.val;
-                                  return (
-                                    <button
-                                      key={reg.val}
-                                      type="button"
-                                      onClick={() => {
-                                        playClick();
-                                        setSelectedState(reg.val);
-                                        setMapCenter(reg.center);
-                                        setMapZoom(reg.zoom);
-                                        setIsStateDropdownOpen(false);
-                                        setStateSearchQuery('');
-                                      }}
-                                      className={`w-full px-2 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between text-left transition-colors cursor-pointer ${
-                                        active
-                                          ? 'bg-[var(--text-main)] text-[var(--bg-card)] font-bold'
-                                          : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-1.5 min-w-0">
-                                        <MapPin className={`h-2.5 w-2.5 shrink-0 ${active ? 'text-[var(--bg-card)]' : 'text-[var(--color-brand-accent)]'}`} />
-                                        <span className="truncate">{reg.label}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1 shrink-0 ml-1">
-                                        {reg.badge && (
-                                          <span className={`text-[8px] px-1 py-0.2 rounded font-sans uppercase tracking-wider ${
-                                            active
-                                              ? 'bg-[var(--bg-card)] text-[var(--text-main)]'
-                                              : 'bg-[var(--border-color)]/50 text-[var(--text-muted)]'
-                                          }`}>
-                                            {reg.badge}
-                                          </span>
-                                        )}
-                                        {active && <CheckCircle2 className="h-3 w-3 text-[var(--bg-card)] shrink-0" />}
-                                      </div>
-                                    </button>
-                                  );
-                                })
-                              )}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
                       </div>
+
+                      {/* Dropdown Menu (Full Width of Block, Escapes Card via overflow-visible & z-[100]) */}
+                      <AnimatePresence>
+                        {isStateDropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute left-0 right-0 top-full mt-1.5 max-h-64 overflow-y-auto z-[100] rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl p-1.5 flex flex-col gap-0.5 custom-scrollbar backdrop-blur-xl"
+                          >
+                            <div className="px-2 py-1 text-[9px] font-mono font-semibold text-[var(--text-muted)] border-b border-[var(--border-color)]/60 mb-0.5 flex justify-between items-center">
+                              <span>{stateSearchQuery.trim() ? `Matching (${filteredRegions.length})` : 'All States (24)'}</span>
+                              <span className="text-[var(--color-brand-accent)] text-[8px]">Click to Zoom</span>
+                            </div>
+
+                            {filteredRegions.length === 0 ? (
+                              <div className="px-3 py-3 text-center text-[10px] font-mono text-[var(--text-muted)]">
+                                No state found for "{stateSearchQuery}"
+                              </div>
+                            ) : (
+                              filteredRegions.map((reg) => {
+                                const active = selectedState === reg.val;
+                                return (
+                                  <button
+                                    key={reg.val}
+                                    type="button"
+                                    onClick={() => {
+                                      playClick();
+                                      setSelectedState(reg.val);
+                                      setMapCenter(reg.center);
+                                      setMapZoom(reg.zoom);
+                                      setIsStateDropdownOpen(false);
+                                      setStateSearchQuery('');
+                                    }}
+                                    className={`w-full px-2.5 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between text-left transition-colors cursor-pointer ${
+                                      active
+                                        ? 'bg-[var(--text-main)] text-[var(--bg-card)] font-bold'
+                                        : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <MapPin className={`h-2.5 w-2.5 shrink-0 ${active ? 'text-[var(--bg-card)]' : 'text-[var(--color-brand-accent)]'}`} />
+                                      <span className="truncate">{reg.label}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0 ml-1">
+                                      {reg.badge && (
+                                        <span className={`text-[8px] px-1 py-0.2 rounded font-sans uppercase tracking-wider ${
+                                          active
+                                            ? 'bg-[var(--bg-card)] text-[var(--text-main)]'
+                                            : 'bg-[var(--border-color)]/50 text-[var(--text-muted)]'
+                                        }`}>
+                                          {reg.badge}
+                                        </span>
+                                      )}
+                                      {active && <CheckCircle2 className="h-3 w-3 text-[var(--bg-card)] shrink-0" />}
+                                    </div>
+                                  </button>
+                                );
+                              })
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                   

@@ -39,8 +39,15 @@ export default function AssistantPage() {
     deleteSession,
     clearAllSessions,
     sendMessage,
-    isThinking
+    isThinking,
+    draft,
+    setDraft
   } = useDOABChat();
+
+  // Sync inputVal with persistent draft for active session
+  useEffect(() => {
+    setInputVal(draft || '');
+  }, [draft, activeSessionId]);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -191,8 +198,10 @@ export default function AssistantPage() {
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputVal.trim() || isThinking) return;
-    sendMessage(inputVal);
+    const textToSend = inputVal;
     setInputVal('');
+    setDraft('');
+    sendMessage(textToSend);
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
@@ -562,7 +571,10 @@ export default function AssistantPage() {
               ref={inputRef}
               type="text"
               value={inputVal}
-              onChange={(e) => setInputVal(e.target.value)}
+              onChange={(e) => {
+                setInputVal(e.target.value);
+                setDraft(e.target.value);
+              }}
               placeholder={isListening ? 'Listening… Speak your operational request' : 'Ask about safe elevation routes, waterlogged roads, or active tanker dispatches...'}
               disabled={isThinking}
               className="w-full bg-transparent text-xs sm:text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)] outline-none border-none focus:ring-0 leading-relaxed"

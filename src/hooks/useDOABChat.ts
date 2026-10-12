@@ -17,7 +17,8 @@ export interface ChatSession {
   updatedAt: number;
 }
 
-const STORAGE_KEY = 'doab_ai_sessions_v1';
+const SESSIONS_STORAGE_KEY = 'doab_ai_sessions_v1';
+const DRAFTS_STORAGE_KEY = 'doab_ai_drafts_v1';
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 
 // Fallback AWDAX Deep Research Endpoint & Live Token
@@ -136,82 +137,211 @@ async function queryAwdaxFallback(query: string, locationStr: string): Promise<s
   return '';
 }
 
+export function getStoredDrafts(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(DRAFTS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveStoredDraft(sessionId: string, text: string) {
+  try {
+    const drafts = getStoredDrafts();
+    if (!text || !text.trim()) {
+      delete drafts[sessionId];
+      if (sessionId === 'new_chat' || sessionId.startsWith('mission-')) {
+        delete drafts['new_chat'];
+      }
+    } else {
+      drafts[sessionId] = text;
+      if (sessionId === 'new_chat' || sessionId.startsWith('mission-')) {
+        drafts['new_chat'] = text;
+      }
+    }
+    localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+  } catch {}
+}
+
+export function clearStoredDraft(sessionId: string) {
+  try {
+    const drafts = getStoredDrafts();
+    delete drafts[sessionId];
+    delete drafts['new_chat'];
+    localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+  } catch {}
+}
+
+export function getSessionDraft(sessionId: string): string {
+  const drafts = getStoredDrafts();
+  return drafts[sessionId] || (sessionId.startsWith('mission-') ? drafts['new_chat'] : '') || '';
+}
+
+export function createFreshMissionSession(customId?: string): ChatSession {
+  return {
+    id: customId || `mission-${Date.now()}`,
+    title: 'New Mission',
+    messages: [{
+      id: `msg-${Date.now()}`,
+      role: 'assistant',
+      content: 'Namaste! Main aapka DOAB Civic Copilot hoon. Live GPS aur municipal waterlogging sensor telemetry active hai. Aap kisi bhi raaste ka haal, underpass waterlogging, ya safest bypass route pooch sakte hain.',
+      timestamp: Date.now()
+    }],
+    updatedAt: Date.now()
+  };
+}
+
+export function loadStoredHistorySessions(): ChatSession[] {
+  try {
+    const stored = localStorage.getItem(SESSIONS_STORAGE_KEY);
+    if (stored) {
+      const parsed: ChatSession[] = JSON.parse(stored);
+      // ONLY keep past sessions that actually had user interactions in history!
+      return parsed.filter(s => Array.isArray(s.messages) && s.messages.some(m => m.role === 'user'));
+    }
+  } catch (e) {}
+  return [];
+}
+
 export function useDOABChat() {
+  // Always create a fresh new session on app load / refresh / tab reopen!
+  const [initialFreshSession] = useState<ChatSession>(() => createFreshMissionSession());
+
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return JSON.parse(stored);
-    } catch (e) {}
-    return [{
-      id: 'default',
-      title: 'Current Mission',
-      messages: [{
-        id: 'msg-welcome',
-        role: 'assistant',
-        content: 'Namaste! Main aapka DOAB Civic Copilot hoon. Live GPS aur municipal waterlogging sensor telemetry active hai. Aap kisi bhi raaste ka haal, underpass waterlogging, ya safest bypass route pooch sakte hain.',
-        timestamp: Date.now()
-      }],
-      updatedAt: Date.now()
-    }];
+    const history = loadStoredHistorySessions();
+    return [initialFreshSession, ...history];
   });
 
-  const [activeSessionId, setActiveSessionId] = useState<string>('default');
+  const [activeSessionId, setActiveSessionIdState] = useState<string>(initialFreshSession.id);
   const [isThinking, setIsThinking] = useState(false);
-  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
 
+  // Active Draft state initialized from localStorage
+  const [draft, setDraftState] = useState<string>(() => {
+    return getSessionDraft(initialFreshSession.id);
+  });
+
+  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0] || initialFreshSession;
+
+  // Persist only real sessions that have at least one user message
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      const realSessions = sessions.filter(s => Array.isArray(s.messages) && s.messages.some(m => m.role === 'user'));
+      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(realSessions));
     } catch (e) {}
   }, [sessions]);
 
+  // Set draft helper with localStorage sync
+  const setDraft = useCallback((text: string) => {
+    setDraftState(text);
+    saveStoredDraft(activeSessionId, text);
+    try {
+      window.dispatchEvent(new CustomEvent('doab:chat-draft-changed', {
+        detail: { sessionId: activeSessionId, text }
+      }));
+    } catch {}
+  }, [activeSessionId]);
+
+  // Session switching with draft preservation
+  const setActiveSessionId = useCallback((newId: string) => {
+    setActiveSessionIdState((prevId) => {
+      if (prevId !== newId) {
+        saveStoredDraft(prevId, draft);
+      }
+      return newId;
+    });
+
+    const targetDraft = getSessionDraft(newId);
+    setDraftState(targetDraft);
+
+    try {
+      window.dispatchEvent(new CustomEvent('doab:chat-session-changed', {
+        detail: { activeSessionId: newId }
+      }));
+    } catch {}
+  }, [draft]);
+
+  // Start a new chat, reusing unstarted empty session if one already exists
   const newChat = useCallback(() => {
-    const newId = `session-${Date.now()}`;
-    const newSession: ChatSession = {
-      id: newId,
-      title: 'New Mission',
-      messages: [{
-        id: `msg-${Date.now()}`,
-        role: 'assistant',
-        content: 'New mission session initiated. Telemetry layer ready.',
-        timestamp: Date.now()
-      }],
-      updatedAt: Date.now()
-    };
-    setSessions(prev => [newSession, ...prev]);
-    setActiveSessionId(newId);
-  }, []);
+    const current = sessions.find(s => s.id === activeSessionId);
+    if (current && !current.messages.some(m => m.role === 'user')) {
+      const savedDraft = getStoredDrafts()['new_chat'] || '';
+      setDraftState(savedDraft);
+      return;
+    }
+
+    const existingEmpty = sessions.find(s => !s.messages.some(m => m.role === 'user'));
+    if (existingEmpty) {
+      setActiveSessionIdState(existingEmpty.id);
+      const savedDraft = getSessionDraft(existingEmpty.id);
+      setDraftState(savedDraft);
+      return;
+    }
+
+    const fresh = createFreshMissionSession();
+    setSessions(prev => [fresh, ...prev]);
+    setActiveSessionIdState(fresh.id);
+    const savedDraft = getStoredDrafts()['new_chat'] || '';
+    setDraftState(savedDraft);
+  }, [sessions, activeSessionId]);
 
   const deleteSession = useCallback((id: string) => {
     setSessions(prev => {
       const filtered = prev.filter(s => s.id !== id);
       if (filtered.length === 0) {
-        return [{
-          id: 'default',
-          title: 'Current Mission',
-          messages: [{
-            id: `msg-${Date.now()}`,
-            role: 'assistant',
-            content: 'Telemetry initialized.',
-            timestamp: Date.now()
-          }],
-          updatedAt: Date.now()
-        }];
+        return [createFreshMissionSession()];
       }
       return filtered;
     });
+    clearStoredDraft(id);
     if (activeSessionId === id) {
-      setActiveSessionId('default');
+      newChat();
     }
-  }, [activeSessionId]);
+  }, [activeSessionId, newChat]);
 
   const clearAllSessions = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    newChat();
-  }, [newChat]);
+    localStorage.removeItem(SESSIONS_STORAGE_KEY);
+    localStorage.removeItem(DRAFTS_STORAGE_KEY);
+    const fresh = createFreshMissionSession();
+    setSessions([fresh]);
+    setActiveSessionIdState(fresh.id);
+    setDraftState('');
+  }, []);
+
+  // Sync draft and session across multiple hook instances (AI Orb vs Assistant Page)
+  useEffect(() => {
+    const handleDraftSync = (e: any) => {
+      if (e.detail && e.detail.sessionId === activeSessionId) {
+        setDraftState(e.detail.text);
+      }
+    };
+    const handleSessionSync = (e: any) => {
+      if (e.detail && e.detail.activeSessionId && e.detail.activeSessionId !== activeSessionId) {
+        setActiveSessionIdState(e.detail.activeSessionId);
+        setDraftState(getSessionDraft(e.detail.activeSessionId));
+      }
+    };
+    const handleAuthChanged = () => {
+      // On sign-out / auth change, always reset to a clean new chat!
+      newChat();
+    };
+
+    window.addEventListener('doab:chat-draft-changed', handleDraftSync);
+    window.addEventListener('doab:chat-session-changed', handleSessionSync);
+    window.addEventListener('doab_auth_changed', handleAuthChanged);
+    return () => {
+      window.removeEventListener('doab:chat-draft-changed', handleDraftSync);
+      window.removeEventListener('doab:chat-session-changed', handleSessionSync);
+      window.removeEventListener('doab_auth_changed', handleAuthChanged);
+    };
+  }, [activeSessionId, newChat]);
 
   const sendMessage = async (userText: string) => {
     if (!userText.trim() || isThinking) return;
+
+    // Immediately clear stored draft for this session
+    clearStoredDraft(activeSessionId);
+    setDraftState('');
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -425,6 +555,8 @@ Operational Directives:
     clearAllSessions,
     sendMessage,
     isThinking,
+    draft,
+    setDraft,
     hasApiKey: Boolean(GROQ_API_KEY || AWDAX_API_TOKEN)
   };
 }
