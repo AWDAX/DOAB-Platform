@@ -225,7 +225,8 @@ export default function DevAdminDashboard() {
                 type="text"
                 value={usernameInput}
                 onChange={(e) => setUsernameInput(e.target.value)}
-                placeholder="krish"
+                placeholder="Enter username or email"
+                autoComplete="off"
                 required
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] placeholder:text-[var(--text-muted)]"
               />
