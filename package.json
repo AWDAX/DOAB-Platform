@@ -11,7 +11,8 @@
     "cap:sync": "npx cap sync android",
     "apk:sync": "npm run build && npx cap sync android",
     "apk:open": "npx cap open android",
-    "apk:build": "npm run build && npx cap sync android && cd android && .\\gradlew.bat assembleDebug && cd .."
+    "apk:build": "npm run build && npx cap sync android && cd android && .\\gradlew.bat assembleDebug && cd ..",
+    "deploy": "npm run build && aws s3 sync dist/ s3://doab-frontend-970909364340 --delete --region ap-southeast-2 && aws cloudfront create-invalidation --distribution-id E20R65BKZ9U404 --paths \"/*\""
   },
   "dependencies": {
     "@aws-sdk/client-location": "^3.1149.0",
