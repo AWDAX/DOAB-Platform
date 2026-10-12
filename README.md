@@ -28,10 +28,10 @@ Developed by **Team Contrarians** for **WeMakeDevs Hackathon**.
 
 <br />
 
-| 📱 Native Mobile Navigation | 🛰️ 3D Perspective Orbital Tilt |
+| 🗺️ 2D Low-Bandwidth Municipal Map | 🛰️ 3D Perspective Orbital Tilt |
 | :---: | :---: |
-| <img src="./docs/assets/screenshots/mobile_routes_view.png" alt="Mobile Route Navigation" width="100%" /> | <img src="./docs/assets/screenshots/map_3d_terrain.png" alt="3D Perspective Orbital Tilt" width="100%" /> |
-| *Capacitor Android native app with turn-by-turn bypass* | *Orbital camera angle with live safe-haven corridor overlays* |
+| <img src="./docs/assets/screenshots/map_3d_lite.png" alt="2D Low-Bandwidth Municipal Map" width="100%" /> | <img src="./docs/assets/screenshots/map_3d_terrain.png" alt="3D Perspective Orbital Tilt" width="100%" /> |
+| *Ultra-low latency raster engine for field responders* | *Orbital camera angle with live digital elevation terrain* |
 
 ---
 
