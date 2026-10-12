@@ -94,10 +94,13 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
     } catch {}
   };
 
+  const isNavigatingRef = React.useRef(false);
+
   useEffect(() => {
     const unsubscribe = onDOABAuthStateChanged((currentUser) => {
       setUser(currentUser);
-      if (currentUser) {
+      if (currentUser && !isNavigatingRef.current) {
+        isNavigatingRef.current = true;
         setAccountProfile({
           role: selectedRole,
           vendorId: selectedRole === 'delivery' ? vendorId.trim() : ''
@@ -158,7 +161,10 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
           localStorage.setItem('doab_vendor_id', vendorId.trim());
         }
       } catch {}
-      navigate('/', { replace: true });
+      if (!isNavigatingRef.current) {
+        isNavigatingRef.current = true;
+        navigate('/', { replace: true });
+      }
     }
     setGoogleLoading(false);
   };

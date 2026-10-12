@@ -56,6 +56,7 @@ import { NATIONAL_MUNICIPAL_INCIDENTS } from '../data/nationalIncidents';
 import { useForecast } from '../hooks/useForecast';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { getPredictionCopy } from '../i18n/predictionCopy';
+import { Capacitor } from '@capacitor/core';
 
 // Re-export TelemetryIncident type for backward-compatibility
 export type { TelemetryIncident };
@@ -513,16 +514,18 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         stateMap.get(stKey)!.push(item);
       });
 
-      // Take up to 25 incidents from each state bucket (~450 total nationwide pins)
+      // In native Android WebView, cap quota per state to prevent memory exhaustion and UI thread freezing
+      const isNative = Capacitor.isNativePlatform();
+      const quotaPerState = isNative ? 4 : 25;
       const stratifiedAllIndia: TelemetryIncident[] = [];
-      const quotaPerState = 25;
       for (const items of stateMap.values()) {
         stratifiedAllIndia.push(...items.slice(0, quotaPerState));
       }
-      return stratifiedAllIndia;
+      return isNative ? stratifiedAllIndia.slice(0, 80) : stratifiedAllIndia;
     }
-    // When filtered by state (e.g. Bihar, Telangana, Maharashtra) or multi-state, return up to 600 points
-    return matched.slice(0, 600);
+    // When filtered by state (e.g. Bihar, Telangana, Maharashtra) or multi-state, return capped points for mobile
+    const isNative = Capacitor.isNativePlatform();
+    return matched.slice(0, isNative ? 60 : 600);
   }, [severityFilter, destination, incidentSource, selectedState, isMultiStateMode, selectedStates, envMode]);
 
   const [isLocating, setIsLocating] = useState(false);
@@ -2308,7 +2311,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
 
             {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
-            {showHeatLayer && recurringClusters.slice(0, 40).map((cluster, cIdx) => {
+            {showHeatLayer && recurringClusters.slice(0, Capacitor.isNativePlatform() ? 12 : 40).map((cluster, cIdx) => {
               const clusterColor = cluster.highestSeverity === 'Critical' 
                 ? '#E11D48' 
                 : cluster.highestSeverity === 'High' 
