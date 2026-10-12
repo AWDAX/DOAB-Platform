@@ -68,8 +68,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Civic incidents export for global navbar search & landing page
-export const CIVIC_INCIDENTS: TelemetryIncident[] = WATERLOGGING_DATASET_INCIDENTS;
+// Civic incidents export for global navbar search, alerts drawer & landing page
+export const CIVIC_INCIDENTS: TelemetryIncident[] = WATERLOGGING_DATASET_INCIDENTS.filter((inc) => {
+  const t = (inc.title || '').toLowerCase();
+  const d = (inc.description || '').toLowerCase();
+  return !t.includes('urinat') && !t.includes('shitting') && !d.includes('urinat') && !d.includes('shitting');
+});
 
 // Helper: Custom Clean Minimalist Marker Icons (Apple & Mapbox Civic Standard)
 function createIncidentMarkerIcon(severity: string, isSelected: boolean) {

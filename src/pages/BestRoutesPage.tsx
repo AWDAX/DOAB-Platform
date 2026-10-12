@@ -345,9 +345,18 @@ export default function BestRoutesPage() {
     setStatus('loading');
     fetchRoutes(ORIGIN, destination, controller.signal)
       .then((next) => {
-        setBody(next);
-        setActive(0);
-        setUsingFallback(false);
+        // If the server returns unscored because no external proprietary key is set,
+        // seamlessly engage the local SRTM Digital Elevation Model corridor solver.
+        if (!next.scored || !next.routes || next.routes.length === 0 || next.routes[0].rank === 'unscored') {
+          const fallback = generateFallbackRoutes(ORIGIN, destination);
+          setBody(fallback);
+          setActive(0);
+          setUsingFallback(true);
+        } else {
+          setBody(next);
+          setActive(0);
+          setUsingFallback(false);
+        }
         setStatus('ready');
       })
       .catch((error: unknown) => {
