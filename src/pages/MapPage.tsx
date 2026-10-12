@@ -263,7 +263,7 @@ export interface RegionOption {
   badge?: string;
 }
 
-const ALL_REGIONS: RegionOption[] = [
+export const ALL_REGIONS: RegionOption[] = [
   { label: 'All India', val: 'all', center: [20.5937, 78.9629], zoom: 5, badge: 'National' },
   { label: 'Bengaluru (Karnataka)', val: 'karnataka', center: [12.9716, 77.5946], zoom: 12, badge: 'Live Sensor' },
   { label: 'Maharashtra (Mumbai/Pune)', val: 'maharashtra', center: [19.0760, 72.8777], zoom: 9, badge: 'Metropolitan' },
@@ -620,11 +620,92 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     window.addEventListener('doab:ai-new-message', onNewAiMessage);
     window.addEventListener('doab:ai-read', onAiRead);
 
+    const onFocusIncident = (e: any) => {
+      const inc = e.detail?.incident;
+      if (inc) {
+        setSelectedIncident(inc);
+        setMapCenter([inc.lat, inc.lng]);
+        setMapZoom(16);
+        setIsMobileCollapsed(false);
+        setActiveLeftTab('incident');
+      }
+    };
+
+    const onFocusRegion = (e: any) => {
+      const reg = e.detail?.region;
+      if (reg) {
+        setSelectedState(reg.val);
+        setMapCenter(reg.center);
+        setMapZoom(reg.zoom);
+      }
+    };
+
+    const onLocateMe = () => {
+      if (navigator.geolocation) {
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const real: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+            setUserCoords(real);
+            setHasRealLocation(true);
+            setMapCenter(real);
+            setMapZoom(15);
+            setIsLocating(false);
+            setIsViewingMyLocation(true);
+          },
+          () => {
+            setIsLocating(false);
+          },
+          { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+        );
+      }
+    };
+
+    window.addEventListener('doab:focus-incident', onFocusIncident);
+    window.addEventListener('doab:focus-region', onFocusRegion);
+    window.addEventListener('doab:locate-me', onLocateMe);
+
     return () => {
       window.removeEventListener('doab:ai-new-message', onNewAiMessage);
       window.removeEventListener('doab:ai-read', onAiRead);
+      window.removeEventListener('doab:focus-incident', onFocusIncident);
+      window.removeEventListener('doab:focus-region', onFocusRegion);
+      window.removeEventListener('doab:locate-me', onLocateMe);
     };
   }, []);
+
+  // Handle URL query parameters for direct telemetry focus (e.g. from global navbar search)
+  useEffect(() => {
+    const incidentId = searchParams.get('incident');
+    const stateParam = searchParams.get('state');
+    const latParam = searchParams.get('lat');
+    const lngParam = searchParams.get('lng');
+
+    if (incidentId) {
+      const match = incidentSource.find(i => i.id === incidentId);
+      if (match) {
+        setSelectedIncident(match);
+        setMapCenter([match.lat, match.lng]);
+        setMapZoom(16);
+        setIsMobileCollapsed(false);
+        setActiveLeftTab('incident');
+      }
+    } else if (stateParam) {
+      setSelectedState(stateParam);
+      const regionMatch = ALL_REGIONS.find(r => r.val.toLowerCase() === stateParam.toLowerCase());
+      if (regionMatch) {
+        setMapCenter(regionMatch.center);
+        setMapZoom(regionMatch.zoom);
+      }
+    } else if (latParam && lngParam) {
+      const lat = parseFloat(latParam);
+      const lng = parseFloat(lngParam);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setMapCenter([lat, lng]);
+        setMapZoom(14);
+      }
+    }
+  }, [searchParams, incidentSource]);
 
   // Real-time Spatial & Proximity Intelligence Metrics
   const proximityIntelligence = useMemo(() => {
@@ -1349,7 +1430,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           <span>🇮🇳 All India</span>
                         </button>
 
-                        {/* Specific State Filter Toggle Button */}
+                        {/* State Filter Toggle Button */}
                         <button
                           type="button"
                           onClick={handleToggleMultiStateMode}
@@ -1358,10 +1439,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                               ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] font-bold shadow-2xs'
                               : 'bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/40 border-[var(--border-color)]'
                           }`}
-                          title={isMultiStateMode ? "Specific State: Filter Active (Click to Toggle Off)" : "Click to Toggle Specific State Multi-Filter"}
+                          title={isMultiStateMode ? "State Filter Active (Click to Toggle Off)" : "Click to Toggle State Filter"}
                         >
                           <SlidersHorizontal className="h-2.5 w-2.5 shrink-0" />
-                          <span>Specific State: Filter</span>
+                          <span>State Filter</span>
                           {isMultiStateMode && selectedStates.length > 0 && (
                             <span className="ml-0.5 px-1 py-0.2 rounded-full text-[8px] bg-[var(--color-brand-accent)] text-white font-bold shrink-0">
                               {selectedStates.length}
@@ -1404,11 +1485,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                                 setIsStateDropdownOpen(true);
                                 setStateSearchQuery('');
                               }}
-                              placeholder={
-                                isMultiStateMode
-                                  ? (selectedStates.length > 0 ? `${selectedStates.length} selected ▾` : "Search & pick multiple ▾")
-                                  : (selectedState !== 'all' ? selectedRegionObj?.label : "Search state or pick ▾")
-                              }
+                              placeholder="Search State"
                               className="w-full bg-transparent border-none outline-hidden text-[10px] font-mono text-[var(--text-main)] placeholder:text-[var(--text-muted)] placeholder:font-normal truncate cursor-text"
                             />
                             {((!isMultiStateMode && selectedState !== 'all') || (isMultiStateMode && selectedStates.length > 0)) && !isStateDropdownOpen ? (

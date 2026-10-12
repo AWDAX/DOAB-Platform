@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Search, Compass, Settings, X, MapPin, Route as RouteIcon, Bell, User, Sun, Droplets, ShieldAlert, ArrowRight } from 'lucide-react';
+import { 
+  Menu, Search, Compass, Settings, X, MapPin, Route as RouteIcon, Bell, User, 
+  Droplets, ShieldAlert, ArrowRight, Bot, Navigation2, SlidersHorizontal, Sparkles
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Tooltip from './Tooltip';
 import BrandLogo from './BrandLogo';
 import ThemeToggle from './ThemeToggle';
 import { playClick } from '../utils/soundFx';
-import { CIVIC_INCIDENTS } from '../pages/MapPage';
+import { CIVIC_INCIDENTS, ALL_REGIONS } from '../pages/MapPage';
 
 interface NavbarProps {
   isDarkMode: boolean;
@@ -42,50 +45,108 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Compute filtered search results
+  // Compute filtered search results: Command, Telemetry & Region Focus instead of static page duplicates
   const results = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    
-    // Base static navigation options
-    const staticOptions = [
-      { id: 'map', title: 'Live Command Map', subtitle: 'View IoT sensor telemetry & risk corridors', path: '/', icon: MapPin, type: 'Page' },
-      { id: 'routes', title: 'Safe Route Optimizer', subtitle: 'Multi-modal bypass routes & flood avoidance', path: '/routes/best', icon: RouteIcon, type: 'Page' },
-      { id: 'history', title: 'Route Audit History', subtitle: 'Verified sensor receipts & trip logs', path: '/routes/old', icon: RouteIcon, type: 'Page' },
-      { id: 'alerts', title: 'All Alerts', subtitle: 'Ward-level danger alerts & tanker orders', path: '/notifications', icon: Bell, type: 'Page' },
-      { id: 'profile', title: 'Stakeholder Profile', subtitle: 'Manage operator roles & credentials', path: '/profile', icon: User, type: 'Page' },
-      { id: 'action-permissions', title: 'Life-Safety & Permissions Suite', subtitle: 'Manage GPS, Civic Notifications, Geofencing, & SOS', action: () => window.dispatchEvent(new CustomEvent('doab:open-permissions')), icon: ShieldAlert, type: 'Action' },
-      { id: 'action-tour', title: 'Start Guided Platform Tour', subtitle: 'Interactive walkthrough of active workspace', action: () => onOpenTour?.(), icon: Compass, type: 'Action' },
-      { id: 'action-env', title: `Switch to ${envMode === 'flood' ? 'Drought' : 'Flood'} Mode`, subtitle: 'Toggle dual-climate operational engine', action: toggleEnvMode, icon: Droplets, type: 'Action' },
-      { id: 'action-theme', title: `Switch to ${isDarkMode ? 'Light' : 'Dark'} Mode`, subtitle: 'Toggle theme display appearance', action: toggleTheme, icon: Sun, type: 'Action' },
-    ];
 
+    // Default quick-utility command actions when search is empty
     if (!q) {
-      return staticOptions.slice(0, 5);
+      // 3 Live Critical Hotspots
+      const topCriticalHotspots = CIVIC_INCIDENTS.slice(0, 3).map(inc => ({
+        id: `hotspot-${inc.id}`,
+        title: `${inc.ward} — ${inc.title}`,
+        subtitle: `Live Hazard • ${inc.severity} Severity • ${inc.category.replace('_', ' ')}`,
+        incident: inc,
+        path: `/?incident=${inc.id}`,
+        icon: MapPin,
+        type: 'Live Hotspot',
+      }));
+
+      const quickUtilities = [
+        {
+          id: 'action-locate',
+          title: 'Locate My Real GPS Coordinates',
+          subtitle: 'Center map on current position & assess nearest hazard buffer',
+          action: () => {
+            navigate('/');
+            setTimeout(() => window.dispatchEvent(new CustomEvent('doab:locate-me')), 120);
+          },
+          icon: Navigation2,
+          type: 'GPS Action',
+        },
+        {
+          id: 'action-ask-assistant',
+          title: 'Ask DOAB AI Dispatch Assistant',
+          subtitle: 'Ask about safe corridors, water levels, rainfall, or SOS steps',
+          path: '/assistant',
+          icon: Bot,
+          type: 'AI Copilot',
+        },
+        {
+          id: 'action-env',
+          title: `Switch to ${envMode === 'flood' ? 'Drought' : 'Flood'} Climate Engine`,
+          subtitle: `Currently viewing ${envMode.toUpperCase()} hazard telemetry`,
+          action: toggleEnvMode,
+          icon: Droplets,
+          type: 'Toggle Mode',
+        },
+        {
+          id: 'action-permissions',
+          title: 'Life-Safety & Permissions Suite',
+          subtitle: 'Manage GPS, Civic Notifications, Geofencing, & SOS',
+          action: () => window.dispatchEvent(new CustomEvent('doab:open-permissions')),
+          icon: ShieldAlert,
+          type: 'Safety Suite',
+        },
+      ];
+
+      return [...topCriticalHotspots, ...quickUtilities];
     }
 
-    // Filter dynamic incidents & wards
+    // 1. Direct AI Query Option
+    const aiItem = {
+      id: 'ai-prompt-query',
+      title: `Ask Assistant: "${query}"`,
+      subtitle: 'Query DOAB Neural Copilot for routing advice & hazard telemetry',
+      path: `/assistant?q=${encodeURIComponent(query)}`,
+      icon: Sparkles,
+      type: 'AI Copilot',
+    };
+
+    // 2. Incident & Ward telemetry matches
     const incidentMatches = CIVIC_INCIDENTS.filter(inc => 
       inc.title.toLowerCase().includes(q) ||
       inc.ward.toLowerCase().includes(q) ||
       inc.category.toLowerCase().includes(q) ||
       inc.description.toLowerCase().includes(q)
-    ).map(inc => ({
+    ).slice(0, 4).map(inc => ({
       id: inc.id,
       title: `${inc.ward} — ${inc.title}`,
-      subtitle: `${inc.severity} ${inc.category.replace('_', ' ')} • ${inc.description.slice(0, 50)}...`,
+      subtitle: `${inc.severity} ${inc.category.replace('_', ' ')} • ${inc.description.slice(0, 52)}...`,
+      incident: inc,
       path: `/?incident=${inc.id}`,
       icon: MapPin,
-      type: 'Telemetry'
+      type: 'Telemetry',
     }));
 
-    // Filter static options
-    const navMatches = staticOptions.filter(opt => 
-      opt.title.toLowerCase().includes(q) ||
-      opt.subtitle.toLowerCase().includes(q)
-    );
+    // 3. State & Metropolitan City Focus matches
+    const regionMatches = ALL_REGIONS.filter(reg => 
+      reg.val !== 'all' && (
+        reg.label.toLowerCase().includes(q) ||
+        reg.val.toLowerCase().includes(q)
+      )
+    ).slice(0, 3).map(reg => ({
+      id: `region-${reg.val}`,
+      title: reg.label,
+      subtitle: `Fly and zoom map to ${reg.badge || 'Regional'} view`,
+      region: reg,
+      path: `/?state=${encodeURIComponent(reg.val)}`,
+      icon: SlidersHorizontal,
+      type: 'State Focus',
+    }));
 
-    return [...incidentMatches, ...navMatches].slice(0, 8);
-  }, [query, envMode, isDarkMode, toggleEnvMode, toggleTheme, onOpenTour]);
+    return [aiItem, ...incidentMatches, ...regionMatches];
+  }, [query, envMode, toggleEnvMode, navigate]);
 
   // Reset selected index when results change
   useEffect(() => {
@@ -96,6 +157,16 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
     playClick();
     if (item.action) {
       item.action();
+    } else if (item.incident) {
+      navigate(item.path);
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('doab:focus-incident', { detail: { incident: item.incident } }));
+      }, 100);
+    } else if (item.region) {
+      navigate(item.path);
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('doab:focus-region', { detail: { region: item.region } }));
+      }, 100);
     } else if (item.path) {
       navigate(item.path);
     }
@@ -158,7 +229,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                   onChange={(e) => setQuery(e.target.value)}
                   onFocus={() => setIsFocused(true)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Search ward risk telemetry, routes, alerts..."
+                  placeholder="Search hazards, cities, live telemetry, or ask AI..."
                   className="bg-transparent border-none outline-none text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] font-mono w-full truncate"
                 />
               </div>
@@ -458,10 +529,50 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search wards or alerts..."
+                    placeholder="Search hazards, cities, telemetry, AI..."
                     className="w-full pl-8.5 pr-3 py-2 text-xs rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] placeholder:text-[var(--text-muted)] outline-none"
                   />
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={() => setQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-main)] p-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
+
+                {/* Mobile Search Results when typing */}
+                {query.trim() && (
+                  <div className="flex flex-col gap-1 max-h-48 overflow-y-auto p-1 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)]">
+                    {results.map((item: any) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            handleSelect(item);
+                          }}
+                          className="w-full text-left p-2 rounded-lg hover:bg-[var(--bg-card)] flex items-center justify-between gap-2 text-xs cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Icon className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0" />
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-bold text-[11px] truncate text-[var(--text-main)]">{item.title}</span>
+                              <span className="text-[9px] text-[var(--text-muted)] truncate">{item.subtitle}</span>
+                            </div>
+                          </div>
+                          <span className="text-[8px] font-mono uppercase px-1 py-0.5 rounded border border-[var(--border-color)] text-[var(--text-muted)] shrink-0">
+                            {item.type}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Navigation Links */}
                 <div className="flex flex-col gap-1 text-xs font-semibold">

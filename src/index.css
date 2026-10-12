@@ -378,7 +378,7 @@ h1, h2, h3, h4, h5, h6, canvas,
 
 a, button, [role="button"],
 input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], input[type="file"],
-select, label, [tabindex]:not([tabindex="-1"]), [onclick], .cursor-pointer {
+select, label, [tabindex]:not([tabindex="-1"]):not(.leaflet-container):not(.leaflet-container *):not(.maplibregl-map):not(.maplibregl-map *), [onclick], .cursor-pointer {
   cursor: url('/cursors/hand-pointer.svg') 10 2, pointer !important;
 }
 
@@ -732,23 +732,31 @@ body.dark .cursor-grab:active {
   touch-action: pan-x pan-y pinch-zoom;
 }
 
-/* Dark Mode Default Map Cursor */
+/* All Map Containers, Panes, Tiles & Canvases default to standard default_cursor */
+.leaflet-container,
+.leaflet-container *,
+.leaflet-pane,
+.leaflet-pane *,
+.leaflet-map-pane,
+.leaflet-tile-pane,
+.leaflet-tile-container,
+.leaflet-tile,
+.leaflet-layer,
+.leaflet-grab,
+.leaflet-grab *,
+.maplibregl-map,
+.maplibregl-map *,
+.maplibregl-canvas-container,
+.maplibregl-canvas,
+.maplibregl-canvas.maplibregl-interactive,
 .dark .leaflet-container,
+.dark .leaflet-container *,
+.dark .leaflet-grab,
+.dark .leaflet-grab *,
 .dark .maplibregl-map,
+.dark .maplibregl-map *,
 .dark .maplibregl-canvas-container,
 .dark .maplibregl-canvas,
-html.dark .leaflet-container,
-html.dark .maplibregl-map {
-  cursor: url('/cursors/default_cursor.svg') 6 3, default !important;
-}
-
-/* Default state when hovering over map background */
-.leaflet-grab,
-.maplibregl-canvas.maplibregl-interactive {
-  cursor: url('/cursors/default_cursor.svg') 6 3, default !important;
-}
-
-.dark .leaflet-grab,
 .dark .maplibregl-canvas.maplibregl-interactive {
   cursor: url('/cursors/default_cursor.svg') 6 3, default !important;
 }

@@ -10,6 +10,7 @@ import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import { useDOABChat } from '../hooks/useDOABChat';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { useSearchParams } from 'react-router-dom';
 
 const ROTATING_SUGGESTIONS = [
   { label: 'Safe Bypass to MG Road', query: 'MG Road underpass avoid karne ke liye safest bypass corridor kaunsa hai?' },
@@ -43,6 +44,21 @@ export default function AssistantPage() {
     draft,
     setDraft
   } = useDOABChat();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle ?q= query parameter from global search bar
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q && q.trim()) {
+      setDraft(q.trim());
+      setInputVal(q.trim());
+      setSearchParams((prev) => {
+        prev.delete('q');
+        return prev;
+      }, { replace: true });
+    }
+  }, [searchParams, setDraft, setSearchParams]);
 
   // Sync inputVal with persistent draft for active session
   useEffect(() => {

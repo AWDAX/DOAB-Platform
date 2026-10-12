@@ -413,7 +413,7 @@ export const PROFILE_TOUR_STEPS: TourStep[] = [
   {
     id: 'profile_roles',
     targetSelector: '#tour-profile-roles',
-    title: 'Stakeholder Role Switcher',
+    title: 'Your Role Switcher',
     badge: 'Step 02/03',
     floodDescription: 'Toggle between Citizen Commuter mode and Delivery Partner mode (Swiggy, Zomato, Zepto, Dunzo).',
     droughtDescription: 'Unlock municipal tanker dispatch contracts and commercial plumbing pipelines.',

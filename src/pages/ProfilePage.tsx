@@ -31,8 +31,18 @@ export default function ProfilePage() {
   const { profile, updateProfile } = useUserSettings();
   const role = profile.role;
   const vendorId = profile.vendorId;
-  const setRole = (r: 'citizen' | 'delivery') => updateProfile({ role: r });
-  const setVendorId = (v: string) => updateProfile({ vendorId: v });
+  const setRole = (r: 'citizen' | 'delivery') => {
+    updateProfile({ role: r });
+    try {
+      localStorage.setItem('doab_user_role', r);
+    } catch {}
+  };
+  const setVendorId = (v: string) => {
+    updateProfile({ vendorId: v });
+    try {
+      localStorage.setItem('doab_vendor_id', v);
+    } catch {}
+  };
 
   const [clearanceLimit, setClearanceLimit] = useState<'15' | '20' | '25'>(() => {
     try {
@@ -106,7 +116,7 @@ export default function ProfilePage() {
             <User className="h-6 w-6 text-[var(--color-brand-accent)]" />
             Entity Profile & Credentials
           </h1>
-          <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">Manage stakeholder roles, dispatch partner verification, and telemetry parameters.</p>
+          <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">Manage your role, dispatch partner verification, and telemetry parameters.</p>
         </div>
         
         <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
@@ -190,10 +200,10 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Stakeholder Role Card */}
+      {/* Your Role Card */}
       <div id="tour-profile-roles" className="neo-glass-card p-6 sm:p-7 rounded-2xl w-full max-w-3xl mx-auto border border-[var(--border-color)] shadow-sm">
         <h2 className="text-xs font-mono uppercase tracking-wider font-bold text-[var(--text-muted)] mb-4 text-left">
-          Stakeholder Role
+          Your Role
         </h2>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 w-full">
@@ -226,13 +236,22 @@ export default function ProfilePage() {
 
         {/* Vendor Verification for Delivery Partners */}
         {role === 'delivery' && (
-          <div className="mb-6 p-4.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-color)] w-full">
-            <h3 className="font-bold mb-1 text-xs text-[var(--text-main)]">Vendor Identification Link</h3>
+          <div className="mb-6 p-4 sm:p-4.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-color)] w-full">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <h3 className="font-bold text-xs text-[var(--text-main)]">Vendor Identification Link</h3>
+              <button
+                type="button"
+                onClick={() => setVendorId('SWIGGY-BLR-9021')}
+                className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-neutral-200/90 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/15 text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-white/10 transition-colors cursor-pointer"
+              >
+                Demo Partner ID
+              </button>
+            </div>
             <p className="text-[11px] text-[var(--text-muted)] mb-3">Input your platform partner ID to unlock verified commercial dispatch routing.</p>
             <input 
               type="text" 
-              placeholder="e.g. SWIGGY-RIDER-8821 or ZEPTO-OPS-109" 
-              className="w-full p-2.5 text-xs font-mono border border-[var(--border-color)] rounded-xl focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] bg-[var(--bg-card)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]" 
+              placeholder="e.g. SWIGGY-BLR-8821 or ZEPTO-OPS-109" 
+              className="w-full h-9 px-3 text-xs font-mono border border-[var(--border-color)] rounded-xl focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] bg-[var(--bg-card)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]" 
               disabled={!user}
               value={vendorId}
               onChange={(e) => setVendorId(e.target.value)}
