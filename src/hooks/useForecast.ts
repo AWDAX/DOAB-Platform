@@ -21,20 +21,30 @@ export function useForecast() {
   const reload = useCallback(async (signal?: AbortSignal) => {
     setStatus('loading');
     try {
-      const [nextForecast, nextIncidents, nextBoundaries] = await Promise.all([
+      const [forecastRes, incidentsRes, boundariesRes] = await Promise.allSettled([
         fetchForecast(signal),
         fetchIncidents(signal),
         fetchBoundaries(signal),
       ]);
       if (signal?.aborted) return;
+
+      const nextForecast = forecastRes.status === 'fulfilled' ? forecastRes.value : null;
+      const nextIncidents = incidentsRes.status === 'fulfilled' ? incidentsRes.value.incidents : [];
+      const nextBoundaries = boundariesRes.status === 'fulfilled' ? boundariesRes.value : null;
+
       setForecast(nextForecast);
-      setIncidents(nextIncidents.incidents);
+      setIncidents(nextIncidents);
       setBoundaries(nextBoundaries);
-      setUsingDemo(false);
-      if (nextForecast.data_quality === 'insufficient_data' || nextForecast.cells.length === 0) {
+
+      if (nextForecast && nextForecast.cells && nextForecast.cells.length > 0) {
+        setUsingDemo(false);
+        setStatus(nextForecast.data_quality === 'insufficient_data' ? 'insufficient' : 'ready');
+      } else if (nextBoundaries || nextIncidents.length > 0) {
+        setUsingDemo(true);
         setStatus('insufficient');
       } else {
-        setStatus('ready');
+        setUsingDemo(true);
+        setStatus('error');
       }
     } catch {
       if (signal?.aborted) return;
