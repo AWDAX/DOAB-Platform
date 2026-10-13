@@ -17,6 +17,16 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c * 10) / 10;
 }
+
+// Format duration into hours and minutes
+export function formatRouteDuration(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds)) return '—';
+  const totalMins = Math.max(1, Math.round(seconds / 60));
+  if (totalMins < 60) return `~${totalMins} min`;
+  const hrs = Math.floor(totalMins / 60);
+  const rem = totalMins % 60;
+  return rem > 0 ? `~${hrs}h ${rem}m` : `~${hrs}h`;
+}
 import { 
   AlertTriangle, 
   Route as RouteIcon, 
@@ -46,9 +56,10 @@ import {
   ChevronLeft,
   ChevronRight,
   LocateFixed,
-  Truck
+  Truck,
+  Share2
 } from 'lucide-react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
 import AnimatedCrosshair from '../components/AnimatedCrosshair';
 import Tooltip from '../components/Tooltip';
@@ -208,18 +219,34 @@ const PATH_DEST_ICON = L.divIcon({
   iconAnchor: [16, 16],
 });
 
-// Map Click Listener to pick Origin and Destination points when in Path Creation Mode
+// Idle map click pin icon for selecting arbitrary destination or origin
+const DEST_CLICK_ICON = L.divIcon({
+  className: 'dest-click-pin',
+  html: `
+    <div style="position:relative; width:28px; height:28px; display:flex; align-items:center; justify-content:center;">
+      <span style="position:absolute; width:100%; height:100%; border-radius:50%; background:rgba(225,29,72,0.3); animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></span>
+      <div style="width:14px; height:14px; border-radius:50%; background:#e11d48; border:2px solid #ffffff; box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>
+    </div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
+
+// Map Click Listener to pick Origin and Destination points when in Path Creation Mode or idle browsing
 function MapInteractiveClickHandler({
   enabled,
-  onMapClick
+  onMapClick,
+  onIdleMapClick,
 }: {
   enabled: boolean;
   onMapClick: (lat: number, lng: number) => void;
+  onIdleMapClick?: (lat: number, lng: number) => void;
 }) {
   useMapEvents({
     click(e) {
       if (enabled) {
         onMapClick(e.latlng.lat, e.latlng.lng);
+      } else if (onIdleMapClick) {
+        onIdleMapClick(e.latlng.lat, e.latlng.lng);
       }
     },
   });
@@ -389,7 +416,6 @@ const mapSessionState: {
 
 export default function MapPage({ envMode = 'flood', isDarkMode = false }: { envMode?: 'flood' | 'drought'; isDarkMode?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const copy = getPredictionCopy();
   const { forecast, incidents: apiIncidents, boundaries, imdTelemetry, status, usingDemo, reload } = useForecast();
   const [destination, setDestination] = useState('');
@@ -511,6 +537,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [pathPickingTarget, setPathPickingTarget] = useState<'origin' | 'destination'>('origin');
   const [pathSummaryName, setPathSummaryName] = useState<string>('');
   const [selectedCandidateIdx, setSelectedCandidateIdx] = useState<number>(0);
+  const [idleClickedPoint, setIdleClickedPoint] = useState<[number, number] | null>(null);
+  const [shareToast, setShareToast] = useState<string | null>(null);
+  const [saveSuccessToast, setSaveSuccessToast] = useState<string | null>(null);
 
   // Amazon Location Service + Local Landmark Autocomplete for Origin (A) & Destination (B)
   const [originSuggestions, setOriginSuggestions] = useState<import('../lib/amazonLocation').GeocodedPlace[]>([]);
@@ -1043,7 +1072,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     }
   }, [pathPickingTarget]);
 
-  // Safe Path Creation: Save to localStorage and redirect to /routes/best
+  // Safe Path Creation: Save to localStorage and notify user with undo/view option
   const handleSaveCustomPath = useCallback(() => {
     if (!pathOrigin && !pathDest && !pathOriginAddress && !pathDestAddress) return;
     playClick();
@@ -1079,10 +1108,55 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       console.warn('Could not save custom route', e);
     }
 
-    // Reset path creation mode and navigate to Best Routes page
-    setIsPathCreationMode(false);
-    navigate('/routes/best');
-  }, [pathOrigin, pathDest, pathOriginAddress, pathDestAddress, pathSummaryName, candidateSafePaths, selectedCandidateIdx, navigate]);
+    setSaveSuccessToast(`Saved "${summary}" to your safe routes!`);
+    setTimeout(() => setSaveSuccessToast(null), 4000);
+  }, [pathOrigin, pathDest, pathOriginAddress, pathDestAddress, pathSummaryName, candidateSafePaths, selectedCandidateIdx]);
+
+  // Share Safe Path Corridor with Family or Drivers via Web Share or Google Maps
+  const handleShareCustomPath = useCallback(async () => {
+    playClick();
+    const chosen = candidateSafePaths[selectedCandidateIdx] || candidateSafePaths[0];
+    const originName = pathOriginAddress.trim() || (pathOrigin ? `${pathOrigin[0].toFixed(3)}°N, ${pathOrigin[1].toFixed(3)}°E` : 'Selected Origin');
+    const destName = pathDestAddress.trim() || (pathDest ? `${pathDest[0].toFixed(3)}°N, ${pathDest[1].toFixed(3)}°E` : 'Safe Haven Sector');
+    const summary = pathSummaryName.trim() || chosen.summary;
+
+    const originQuery = pathOrigin ? `${pathOrigin[0]},${pathOrigin[1]}` : encodeURIComponent(originName);
+    const destQuery = pathDest ? `${pathDest[0]},${pathDest[1]}` : encodeURIComponent(destName);
+    const waypointParam = pathOrigin && pathDest
+      ? `&waypoints=${chosen.midpoint[0].toFixed(4)},${chosen.midpoint[1].toFixed(4)}`
+      : '';
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originQuery}&destination=${destQuery}${waypointParam}&travelmode=driving`;
+
+    const shareTitle = `DOAB Safe Route: ${summary}`;
+    const shareText = `🚨 Flood-Safe Bypass Corridor (${(chosen.distance_meters / 1000).toFixed(1)} km, ${(chosen.mean_risk * 100).toFixed(1)}% flood risk). Follow this elevated high-ground bypass route avoiding flood hotspots:`;
+
+    const shareData = {
+      title: shareTitle,
+      text: shareText,
+      url: mapsUrl,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.warn('Native share failed, falling back to clipboard', err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${mapsUrl}`);
+      setShareToast('Safe bypass route link copied to clipboard!');
+      setTimeout(() => setShareToast(null), 3500);
+    } catch {
+      window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+    }
+  }, [candidateSafePaths, selectedCandidateIdx, pathOrigin, pathDest, pathOriginAddress, pathDestAddress, pathSummaryName]);
 
   // Cancel Safe Path Creation
   const handleCancelCustomPath = useCallback(() => {
@@ -1828,7 +1902,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   <div className="flex items-center gap-2.5 mt-1 text-[10px] font-mono text-[var(--text-muted)] flex-wrap">
                     <span>{(activeCandidateRoute.distance_meters / 1000).toFixed(1)} km</span>
                     <span>•</span>
-                    <span>~{Math.max(2, Math.round(activeCandidateRoute.duration_seconds / 60))} min</span>
+                    <span>{formatRouteDuration(activeCandidateRoute.duration_seconds)}</span>
                     <span>•</span>
                     <span className="font-bold text-[var(--text-main)]">
                       {(activeCandidateRoute.mean_risk * 100).toFixed(1)}% Flood Risk
@@ -1873,37 +1947,56 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </div>
               </div>
 
-              {/* Path Name & Risk Tier Options */}
+              {/* Path Name & Dynamic Risk Tier Options */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-[var(--border-color)]">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-[10px] font-mono text-[var(--text-muted)]">Corridor Profile:</span>
-                  {(['low', 'moderate', 'high'] as const).map((tier, idx) => (
-                    <button
-                      key={tier}
-                      type="button"
-                      onClick={() => {
-                        playClick();
-                        setSelectedCandidateIdx(idx);
-                      }}
-                      className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold capitalize transition-all cursor-pointer border ${
-                        selectedCandidateIdx === idx
-                          ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-950 dark:border-white shadow-2xs'
-                          : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)]'
-                      }`}
-                    >
-                      {tier === 'low' ? 'Safest (Low)' : tier === 'moderate' ? 'Balanced' : 'Direct'}
-                    </button>
-                  ))}
+                  {(['low', 'moderate', 'high'] as const).map((tier, idx) => {
+                    const candidate = candidateSafePaths[idx];
+                    const riskPct = candidate ? (candidate.mean_risk * 100).toFixed(1) : (idx === 0 ? '3.8' : idx === 1 ? '12.5' : '29.5');
+                    const label = tier === 'low' 
+                      ? `Safest (${riskPct}%)` 
+                      : tier === 'moderate' 
+                        ? `Balanced (${riskPct}%)` 
+                        : `Direct (${riskPct}%)`;
+                    return (
+                      <button
+                        key={tier}
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          setSelectedCandidateIdx(idx);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold capitalize transition-all cursor-pointer border ${
+                          selectedCandidateIdx === idx
+                            ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-950 dark:border-white shadow-2xs'
+                            : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 justify-end">
+                {/* Action Buttons: Cancel, Share, Save */}
+                <div className="flex items-center gap-2 justify-end flex-wrap">
                   <button
                     type="button"
                     onClick={handleCancelCustomPath}
-                    className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShareCustomPath}
+                    disabled={(!pathOrigin && !pathOriginAddress.trim()) || (!pathDest && !pathDestAddress.trim())}
+                    className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card)] text-[var(--text-main)] disabled:opacity-40 text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                    title="Share safe flood-bypass corridor with family or drivers via Web Share or Google Maps"
+                  >
+                    <Share2 className="h-3.5 w-3.5 text-sky-500" />
+                    <span>Share Route</span>
                   </button>
                   <button
                     type="button"
@@ -1916,6 +2009,22 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   </button>
                 </div>
               </div>
+
+              {/* Toast Feedback for Route Sharing & Saving */}
+              {(shareToast || saveSuccessToast) && (
+                <div className="p-2.5 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 text-xs font-mono font-semibold flex items-center justify-between gap-3 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150">
+                  <span className="truncate">{shareToast || saveSuccessToast}</span>
+                  {saveSuccessToast && (
+                    <Link
+                      to="/routes/best"
+                      onClick={() => playClick()}
+                      className="underline font-bold text-[11px] shrink-0 hover:opacity-80"
+                    >
+                      View Saved Routes →
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -2447,14 +2556,37 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     </div>
                   </div>
                   
-                  <Link 
-                    to="/routes/best" 
-                    onClick={() => playClick()}
-                    className="w-full py-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-xs shadow-xs"
-                  >
-                    <RouteIcon className="h-3.5 w-3.5" />
-                    <span>Compute Safe Elevation Path</span>
-                  </Link>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        if (hasRealLocation && !pathOrigin) {
+                          setPathOrigin(userCoords);
+                          setPathOriginAddress('My Current Location (GPS)');
+                        }
+                        setPathPickingTarget('destination');
+                        setIsPathCreationMode(true);
+                        setSearchParams(params => {
+                          params.set('mode', 'create_path');
+                          return params;
+                        });
+                      }}
+                      className="py-2 px-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity text-xs shadow-xs cursor-pointer"
+                      title="Compute safe elevated bypass corridors avoiding flood hotspots"
+                    >
+                      <RouteIcon className="h-3.5 w-3.5" />
+                      <span>Compute Safe Path</span>
+                    </button>
+                    <Link 
+                      to="/routes/best" 
+                      onClick={() => playClick()}
+                      className="py-2 px-2 bg-[var(--bg-main)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all text-xs shadow-2xs"
+                      title="View all saved and recommended routes"
+                    >
+                      <span>Saved Routes</span>
+                    </Link>
+                  </div>
                 </div>
               )}
 
@@ -3225,7 +3357,74 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               <MapInteractiveClickHandler
                 enabled={isPathCreationMode}
                 onMapClick={handleMapClickForPath}
+                onIdleMapClick={(lat, lng) => setIdleClickedPoint([lat, lng])}
               />
+
+              {/* Contextual Pin when user clicks on an empty spot on the map */}
+              {!isPathCreationMode && idleClickedPoint && (
+                <Marker position={idleClickedPoint} icon={DEST_CLICK_ICON}>
+                  <Popup
+                    position={idleClickedPoint}
+                    eventHandlers={{
+                      remove: () => setIdleClickedPoint(null),
+                    }}
+                    className="neo-glass-popup"
+                  >
+                    <div className="p-1.5 flex flex-col gap-1.5 min-w-[210px] text-xs">
+                      <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[var(--text-muted)] border-b border-[var(--border-color)] pb-1">
+                        <span>Selected Map Point</span>
+                        <span>{idleClickedPoint[0].toFixed(3)}°, {idleClickedPoint[1].toFixed(3)}°</span>
+                      </div>
+                      <div className="text-[11px] font-semibold text-[var(--text-main)]">
+                        Plan a flood-safe elevation route:
+                      </div>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClick();
+                            const origin: [number, number] = hasRealLocation ? userCoords : [12.9716, 77.5946];
+                            setPathOrigin(origin);
+                            setPathOriginAddress(hasRealLocation ? 'My Current Location (GPS)' : 'City Center');
+                            setPathDest(idleClickedPoint);
+                            setPathDestAddress(`Destination (${idleClickedPoint[0].toFixed(3)}°, ${idleClickedPoint[1].toFixed(3)}°)`);
+                            setPathSummaryName('Custom Safe Corridor');
+                            setIsPathCreationMode(true);
+                            setIdleClickedPoint(null);
+                            setSearchParams(params => {
+                              params.set('mode', 'create_path');
+                              return params;
+                            });
+                          }}
+                          className="w-full py-1.5 px-2 bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 shadow-2xs hover:opacity-90 cursor-pointer"
+                        >
+                          <MapPin className="h-3 w-3 text-rose-500" />
+                          <span>🎯 Set as Safe Destination (B)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClick();
+                            setPathOrigin(idleClickedPoint);
+                            setPathOriginAddress(`Origin (${idleClickedPoint[0].toFixed(3)}°, ${idleClickedPoint[1].toFixed(3)}°)`);
+                            setPathPickingTarget('destination');
+                            setIsPathCreationMode(true);
+                            setIdleClickedPoint(null);
+                            setSearchParams(params => {
+                              params.set('mode', 'create_path');
+                              return params;
+                            });
+                          }}
+                          className="w-full py-1.5 px-2 bg-[var(--bg-main)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] font-semibold rounded-lg text-[10px] flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Navigation2 className="h-3 w-3 text-sky-500" />
+                          <span>📍 Set as Start Origin (A)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
 
               {/* Custom Safe Path Origin Pin */}
               {pathOrigin && (

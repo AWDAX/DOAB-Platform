@@ -42,7 +42,11 @@ function formatKm(meters: number | null): string {
 
 function formatMinutes(seconds: number | null): string {
   if (seconds == null) return '—';
-  return `${Math.max(1, Math.round(seconds / 60))} min`;
+  const totalMins = Math.max(1, Math.round(seconds / 60));
+  if (totalMins < 60) return `${totalMins} min`;
+  const hrs = Math.floor(totalMins / 60);
+  const rem = totalMins % 60;
+  return rem > 0 ? `${hrs}h ${rem}m` : `${hrs}h`;
 }
 
 function riskLabel(route: RouteOption, copy: ReturnType<typeof getPredictionCopy>): string {

@@ -50,7 +50,6 @@ export default function DevAdminDashboard() {
   // Custom Danger Broadcast Form State
   const [sosTitle, setSosTitle] = useState('Severe Flash Flood Surge');
   const [sosWard, setSosWard] = useState('MG Road Underpass');
-  const [sosDepth, setSosDepth] = useState(85);
   const [sosDesc, setSosDesc] = useState('Water level rapidly rising. Immediate bypass engaged. All low clearance vehicles halted.');
 
   // Admin Delegation State
@@ -90,24 +89,6 @@ export default function DevAdminDashboard() {
   const showToast = (text: string, type: 'success' | 'info' | 'error' = 'success') => {
     setStatusMsg({ text, type });
     setTimeout(() => setStatusMsg(null), 4000);
-  };
-
-  // 1. Trigger Full-Screen SOS Alarm Broadcast (Local + Remote Mobile Devices)
-  const triggerSosDanger = () => {
-    playClick();
-    playAlertAlarm();
-    NativeService.triggerSosHaptics();
-
-    const payload = {
-      title: sosTitle,
-      ward: sosWard,
-      waterDepthCm: Number(sosDepth),
-      description: sosDesc,
-      distanceAhead: '250 meters'
-    };
-
-    RemoteAdminChannel.broadcast('sos_danger', payload);
-    showToast(`Dispatched Full-Screen SOS Alarm to active screen & remote devices: "${sosTitle}"`);
   };
 
   // 2. Trigger Destination Reached Feedback Panel (Local + Remote Mobile Devices)
@@ -369,64 +350,28 @@ export default function DevAdminDashboard() {
               </button>
             </div>
 
-            {/* Section 2: Direct OS Push Notification Dispatcher */}
-            <div className="p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20">
-                  <Radio className="h-4 w-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Direct Push Notification Dispatcher</h3>
-                  <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
-                    [SYSTEM TRAY] Broadcast OS-Level Banner & Chime to All Phones
-                  </p>
-                </div>
-              </div>
-
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                Broadcasts an instant system tray push notification with alert sound and haptics to connected mobile units without requiring app-switching.
-              </p>
-
-              <button
-                type="button"
-                onClick={() => {
-                  playClick();
-                  RemoteAdminChannel.broadcast('push_notification' as any, {
-                    title: '🚨 DOAB Civic Alert: Flash Waterlogging',
-                    body: 'Immediate bypass recommended around 80ft Road corridor.',
-                    isCritical: true
-                  });
-                  showToast('Dispatched OS Push Notification to all active phones.');
-                }}
-                className="w-full py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Send className="h-3.5 w-3.5" />
-                <span>Dispatch Instant Push Notification</span>
-              </button>
-            </div>
-
-            {/* Section 3: Full-Screen SOS Alarm Configuration & Fire Trigger */}
-            <div className="md:col-span-2 p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/15 shadow-md space-y-4">
+            {/* Section 2: Direct Emergency SOS Push Notification Dispatcher */}
+            <div className="md:col-span-2 p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-red-500/30 dark:border-red-500/30 shadow-md space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950">
-                    <AlertTriangle className="h-4 w-4" />
+                  <div className="p-2 rounded-xl bg-red-600 text-white shadow-sm">
+                    <Radio className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Full-Screen SOS Danger Override</h3>
+                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Emergency SOS Alert Broadcast</h3>
                     <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
-                      [CRITICAL OVERRIDE] Siren, aggressive haptics & immediate takeover
+                      [CRITICAL SIREN & HAPTICS] Dispatches emergency push notification overriding silent/vibrate mode
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20 font-bold uppercase tracking-wider">
-                  [DND BYPASS]
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/25 font-bold uppercase tracking-wider">
+                  HIGH PRIORITY SOS
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Broadcast Title</label>
+                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Alert Title</label>
                   <input
                     type="text"
                     value={sosTitle}
@@ -434,7 +379,6 @@ export default function DevAdminDashboard() {
                     className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                   />
                 </div>
-
                 <div>
                   <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Ward / Location</label>
                   <input
@@ -444,38 +388,35 @@ export default function DevAdminDashboard() {
                     className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                   />
                 </div>
-
-                <div>
-                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Reported Depth (cm)</label>
+                <div className="sm:col-span-2">
+                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Advisory Description</label>
                   <input
-                    type="number"
-                    value={sosDepth}
-                    onChange={(e) => setSosDepth(Number(e.target.value))}
+                    type="text"
+                    value={sosDesc}
+                    onChange={(e) => setSosDesc(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                   />
                 </div>
-
-                <div className="sm:col-span-2 lg:col-span-3">
-                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Warning Description</label>
-                  <textarea
-                    rows={2}
-                    value={sosDesc}
-                    onChange={(e) => setSosDesc(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono resize-none"
-                  />
-                </div>
               </div>
 
-              <div className="flex justify-end pt-1">
-                <button
-                  type="button"
-                  onClick={triggerSosDanger}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>Fire Full-Screen SOS Alarm Now</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  playClick();
+                  playAlertAlarm();
+                  NativeService.triggerSosHaptics();
+                  RemoteAdminChannel.broadcast('push_notification' as any, {
+                    title: `🚨 ${sosTitle || 'DOAB EMERGENCY SOS ALERT'}`,
+                    body: `${sosWard ? `[${sosWard}] ` : ''}${sosDesc || 'Severe flash waterlogging reported. Immediate high-ground bypass advised.'}`,
+                    isCritical: true
+                  });
+                  showToast('Dispatched Emergency SOS Push Notification to all active phones.');
+                }}
+                className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Send className="h-4 w-4" />
+                <span>🚨 Dispatch Emergency SOS Push Alert</span>
+              </button>
             </div>
 
             {/* Action 4: Inject Live Alert Stream Item */}
