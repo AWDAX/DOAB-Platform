@@ -6,7 +6,7 @@ Guidance for AI coding agents (Claude Code, Cursor, Copilot, Antigravity, openco
 
 ## 🚀 Current phase — Production Engineering & Hackathon Readiness (read first)
 
-DOAB is an advanced Disaster Operations & Advisory Board platform engineering project:
+DOAB (Detect → Order → Alert → Back-check) is an advanced dual-climate civic safety & disaster resilience platform engineering project:
 - Treat every change as **production software for real users** — not an incomplete demo. Clean architecture, high availability, zero-jerk UI transitions, and solid test coverage.
 - **Industry standards everywhere**: clean architecture, real security, automated tests, observability, and documented operations on every feature/change.
 - **Priority is hardening first, features second.** Follow the live state in `docs/DEV_SESSION_STATE.md`.
@@ -184,7 +184,7 @@ Every major tool, module, and view within DOAB (e.g., `MapPage`, `BestRoutesPage
 
 ## Repo overview
 
-**DOAB (Z-Sentinel)** — Disaster Operations & Advisory Board Nationwide Dual-Climate Flood & Drought Resilience Platform.
+**DOAB (Z-Sentinel)** — Detect → Order → Alert → Back-check (Nationwide Dual-Climate Geospatial & Civic Safety Platform).
 
 Architecture overview:
 ```
