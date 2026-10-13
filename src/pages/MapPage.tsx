@@ -919,6 +919,54 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       return [start, p1, p2, p3, end];
     };
 
+    // --- Dynamic Flood Risk Modeling for Corridor Geometries ---
+    // 1. Live meteorological rain multiplier from IMD & Forecast telemetry
+    const rainMm24h = imdTelemetry?.rainfall_24h_mm ?? 0;
+    const hasRainWarning = Boolean(
+      imdTelemetry?.warning?.text &&
+      !imdTelemetry.warning.text.toLowerCase().includes('no warning')
+    );
+    const rainMultiplier = 1.0 + Math.min(rainMm24h / 40.0, 1.4) + (hasRainWarning ? 0.25 : 0.0);
+
+    // 2. Incident Proximity & Chronic Underpass Hazard Exposure along each geometry
+    const assessCorridorHazard = (geometry: [number, number][], reliefBaseline: number) => {
+      let hazardSum = 0;
+      let samples = 0;
+      const incidentsList = apiIncidents && apiIncidents.length > 0 ? apiIncidents : [];
+
+      for (let i = 0; i < geometry.length - 1; i++) {
+        const pA = geometry[i];
+        const pB = geometry[i + 1];
+        for (const t of [0.0, 0.5]) {
+          const sLat = pA[0] + (pB[0] - pA[0]) * t;
+          const sLng = pA[1] + (pB[1] - pA[1]) * t;
+          samples++;
+
+          for (const inc of incidentsList) {
+            const d = haversineKm(sLat, sLng, inc.lat, inc.lng);
+            if (d < 3.0) {
+              const isUnderpass = String(inc.category || '').toLowerCase().includes('underpass');
+              const weight = isUnderpass ? 2.8 : 1.5;
+              hazardSum += (weight / Math.max(d * d + 0.25, 0.35)) * 0.02;
+            }
+          }
+        }
+      }
+
+      const meanHazard = samples > 0 ? hazardSum / samples : 0.04;
+      // Synthesize relief index + hazard proximity scaled by real rain
+      const rawRisk = (reliefBaseline + meanHazard) * rainMultiplier;
+      return Math.round(Math.min(0.96, Math.max(0.025, rawRisk)) * 1000) / 1000;
+    };
+
+    const geomSafest = buildCurvedGeometry(0.24);
+    const geomBalanced = buildCurvedGeometry(-0.18);
+    const geomDirect = buildCurvedGeometry(0.02);
+
+    const riskSafest = assessCorridorHazard(geomSafest, 0.038);
+    const riskBalanced = assessCorridorHazard(geomBalanced, 0.125);
+    const riskDirect = assessCorridorHazard(geomDirect, 0.295);
+
     const originLabel = pathOriginAddress.trim() || (pathOrigin ? `${pathOrigin[0].toFixed(3)}°N, ${pathOrigin[1].toFixed(3)}°E` : 'Origin Sector');
     const destLabel = pathDestAddress.trim() || (pathDest ? `${pathDest[0].toFixed(3)}°N, ${pathDest[1].toFixed(3)}°E` : 'Safe Haven');
 
@@ -929,10 +977,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         summary: `Elevated Ridge Corridor (${originLabel} → ${destLabel})`,
         tier: 'low' as const,
         rank: 'safest' as const,
-        mean_risk: 0.054,
+        mean_risk: riskSafest,
         distance_meters: Math.round(baseKm * 1.18 * 1000),
         duration_seconds: Math.round(baseKm * 1.18 * 155),
-        geometry: buildCurvedGeometry(0.24),
+        geometry: geomSafest,
         midpoint: [
           start[0] + dLat * 0.5 + normLat * 0.24,
           start[1] + dLng * 0.5 + normLng * 0.24,
@@ -945,10 +993,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         summary: `Balanced Arterial Corridor (${originLabel} → ${destLabel})`,
         tier: 'moderate' as const,
         rank: 'alternative' as const,
-        mean_risk: 0.168,
+        mean_risk: riskBalanced,
         distance_meters: Math.round(baseKm * 1.08 * 1000),
         duration_seconds: Math.round(baseKm * 1.08 * 145),
-        geometry: buildCurvedGeometry(-0.18),
+        geometry: geomBalanced,
         midpoint: [
           start[0] + dLat * 0.5 + normLat * -0.18,
           start[1] + dLng * 0.5 + normLng * -0.18,
@@ -961,10 +1009,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         summary: `Direct Lowland Route (${originLabel} → ${destLabel})`,
         tier: 'high' as const,
         rank: 'alternative' as const,
-        mean_risk: 0.365,
+        mean_risk: riskDirect,
         distance_meters: Math.round(baseKm * 1.0 * 1000),
         duration_seconds: Math.round(baseKm * 1.0 * 135),
-        geometry: buildCurvedGeometry(0.02),
+        geometry: geomDirect,
         midpoint: [
           start[0] + dLat * 0.5 + normLat * 0.02,
           start[1] + dLng * 0.5 + normLng * 0.02,
@@ -972,7 +1020,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         badge: 'Shortest Distance • Basin Exposure',
       },
     ];
-  }, [pathOrigin, pathDest, pathOriginAddress, pathDestAddress, hasRealLocation, userCoords]);
+  }, [pathOrigin, pathDest, pathOriginAddress, pathDestAddress, hasRealLocation, userCoords, apiIncidents, imdTelemetry]);
 
   const activeCandidateRoute = candidateSafePaths[selectedCandidateIdx] || candidateSafePaths[0];
 
@@ -1052,6 +1100,37 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       return params;
     });
   }, [setSearchParams]);
+
+  // Reroute Around Incident: Stay on Map and activate 3 Safe Elevation Paths avoiding the hazard
+  const handleRerouteAroundIncident = useCallback((incident: TelemetryIncident) => {
+    playClick();
+    const origin: [number, number] = hasRealLocation ? userCoords : [12.9716, 77.5946];
+    setPathOrigin(origin);
+    setPathOriginAddress(hasRealLocation ? 'My Current Location (GPS)' : 'Bengaluru Metro Center');
+
+    // Project safe destination beyond the hazard along the corridor trajectory
+    const dLat = incident.lat - origin[0];
+    const dLng = incident.lng - origin[1];
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng) || 0.02;
+    const overshoot = (dist + 0.038) / dist;
+    const destLat = Math.round((origin[0] + dLat * overshoot) * 10000) / 10000;
+    const destLng = Math.round((origin[1] + dLng * overshoot) * 10000) / 10000;
+
+    setPathDest([destLat, destLng]);
+    setPathDestAddress(`Safe Sector Beyond ${incident.ward || incident.category}`);
+    setPathSummaryName(`Elevated Bypass around ${incident.category}`);
+
+    setIsPathCreationMode(true);
+    setSelectedIncident(null);
+    setPathPickingTarget('destination');
+    setSearchParams(params => {
+      params.set('mode', 'create_path');
+      return params;
+    });
+
+    setMapCenter([(origin[0] + destLat) / 2, (origin[1] + destLng) / 2]);
+    setMapZoom(13);
+  }, [hasRealLocation, userCoords, setSearchParams]);
 
   const [showInfo, setShowInfo] = useState(false);
 
@@ -2612,14 +2691,14 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                       </p>
 
                       <div className="flex items-center gap-1.5 pt-1">
-                        <Link
-                          to={`/routes/best?lat=${selectedIncident.lat}&lng=${selectedIncident.lng}`}
-                          onClick={() => playClick()}
-                          className="flex-1 py-1.5 px-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-lg font-semibold text-[10px] flex items-center justify-center gap-1 hover:opacity-90 transition-opacity shadow-2xs whitespace-nowrap"
+                        <button
+                          type="button"
+                          onClick={() => handleRerouteAroundIncident(selectedIncident)}
+                          className="flex-1 py-1.5 px-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-lg font-semibold text-[10px] flex items-center justify-center gap-1 hover:opacity-90 transition-opacity shadow-2xs whitespace-nowrap cursor-pointer"
                         >
                           <RouteIcon className="h-3 w-3 shrink-0" />
                           <span className="whitespace-nowrap">Reroute Around</span>
-                        </Link>
+                        </button>
                         
                         <a
                           href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
