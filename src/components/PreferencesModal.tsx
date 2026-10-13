@@ -15,7 +15,7 @@ import {
   MousePointer,
   Check,
   ChevronDown,
-  ShieldCheck
+  SlidersHorizontal
 } from 'lucide-react';
 import AIOrbIcon from './AIOrbIcon';
 import { playClick, isSoundEnabled } from '../utils/soundFx';
@@ -190,7 +190,7 @@ export default function PreferencesModal({
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-[var(--border-color)] flex-shrink-0">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] border border-[var(--color-brand-accent)]/20 flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-10 h-10 rounded-2xl bg-neutral-500/10 text-[var(--text-main)] dark:text-neutral-200 border border-[var(--border-color)] dark:border-white/15 flex items-center justify-center shrink-0 shadow-2xs">
                   <Settings className="h-5 w-5 animate-[spin_12s_linear_infinite]" />
                 </div>
                 <div className="min-w-0">
@@ -224,7 +224,7 @@ export default function PreferencesModal({
               {/* SECTION 1: Dual-Climate Dynamics (SWATVA Visual Cards) */}
               <div className="space-y-2.5">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
-                  <AIOrbIcon size={13} className="text-[var(--color-brand-accent)]" />
+                  <AIOrbIcon size={13} className="text-[var(--text-main)] dark:text-neutral-200" />
                   Dual-Climate Environmental Engine
                 </span>
 
@@ -245,12 +245,12 @@ export default function PreferencesModal({
                     }`}
                   >
                     {envMode === 'flood' && (
-                      <div className="absolute top-2.5 right-2.5 w-4.5 h-4.5 rounded-full bg-sky-500 text-white flex items-center justify-center shadow-xs">
+                      <div className="absolute top-2.5 right-2.5 w-4.5 h-4.5 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shadow-xs">
                         <Check size={11} strokeWidth={3.5} />
                       </div>
                     )}
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-xl bg-neutral-500/10 text-[var(--text-main)] dark:text-neutral-200 border border-[var(--border-color)] flex items-center justify-center">
                         <CloudRain size={16} />
                       </div>
                       <div>
@@ -279,12 +279,12 @@ export default function PreferencesModal({
                     }`}
                   >
                     {envMode === 'drought' && (
-                      <div className="absolute top-2.5 right-2.5 w-4.5 h-4.5 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                      <div className="absolute top-2.5 right-2.5 w-4.5 h-4.5 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shadow-xs">
                         <Check size={11} strokeWidth={3.5} />
                       </div>
                     )}
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-xl bg-neutral-500/10 text-[var(--text-main)] dark:text-neutral-200 border border-[var(--border-color)] flex items-center justify-center">
                         <SunMedium size={16} />
                       </div>
                       <div>
@@ -302,7 +302,7 @@ export default function PreferencesModal({
               {/* SECTION 2: Visual Theme (Light vs Dark) - Preserved for Mobile, Hidden on Desktop */}
               <div className="space-y-2.5 pt-1 md:hidden">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
-                  {isDarkMode ? <Moon size={12} className="text-sky-400" /> : <Sun size={12} className="text-amber-500" />}
+                  {isDarkMode ? <Moon size={12} className="text-[var(--text-main)] dark:text-neutral-200" /> : <Sun size={12} className="text-[var(--text-main)] dark:text-neutral-200" />}
                   Theme & Contrast Canvas
                 </span>
 
@@ -323,7 +323,7 @@ export default function PreferencesModal({
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <Sun size={15} className={!isDarkMode ? 'text-amber-300' : 'text-[var(--text-muted)]'} />
+                      <Sun size={15} className={!isDarkMode ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)]'} />
                       <div>
                         <div className={`text-xs font-bold leading-tight ${!isDarkMode ? 'text-[var(--bg-card)]' : 'text-[var(--text-main)]'}`}>
                           Light Theme
@@ -352,7 +352,7 @@ export default function PreferencesModal({
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <Moon size={15} className={isDarkMode ? 'text-sky-400' : 'text-[var(--text-muted)]'} />
+                      <Moon size={15} className={isDarkMode ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)]'} />
                       <div>
                         <div className={`text-xs font-bold leading-tight ${isDarkMode ? 'text-[var(--bg-card)]' : 'text-[var(--text-main)]'}`}>
                           Dark Theme
@@ -432,13 +432,13 @@ export default function PreferencesModal({
               <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <ShieldCheck size={16} className="text-[var(--color-brand-accent)] shrink-0" />
+                    <SlidersHorizontal size={16} className="text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
                     <div>
                       <div className="text-xs font-bold text-[var(--text-main)]">Two-Wheeler Flood Clearance Limit</div>
                       <div className="text-[10px] text-[var(--text-muted)]">Reroutes riders when standing water exceeds limit</div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--color-brand-accent)] shrink-0">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] text-[var(--text-main)] dark:text-neutral-200 shrink-0 shadow-2xs">
                     {clearanceLimit} cm max
                   </span>
                 </div>
@@ -481,19 +481,24 @@ export default function PreferencesModal({
               {/* SECTION 5: Logged In Account & Profile */}
               <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
-                  <User size={12} className="text-[var(--color-brand-accent)]" />
+                  <User size={12} className="text-[var(--text-main)] dark:text-neutral-200" />
                   Your Logged In Account
                 </span>
 
                 {user ? (
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
                     <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`}
-                        alt="Avatar"
-                        referrerPolicy="no-referrer"
-                        className="w-9 h-9 rounded-full border border-[var(--border-color)] object-cover shrink-0"
-                      />
+                      <div className="relative shrink-0">
+                        <img
+                          src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`}
+                          alt="Avatar"
+                          referrerPolicy="no-referrer"
+                          className="w-10 h-10 rounded-full border border-slate-200/80 dark:border-white/20 object-cover ring-2 ring-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.55)] transition-all"
+                        />
+                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-amber-400 border-2 border-[var(--bg-card)] flex items-center justify-center shadow-xs" title="Verified Account">
+                          <span className="w-1 h-1 rounded-full bg-slate-950" />
+                        </span>
+                      </div>
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-[var(--text-main)] truncate">{user.displayName || 'Civic Operator'}</div>
                         <div className="text-[10px] font-mono text-[var(--text-muted)] truncate">{user.email}</div>

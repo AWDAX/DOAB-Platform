@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { History, Route, Camera, CheckCircle, Download, FileSpreadsheet, Sparkles, ChevronDown, ChevronUp, MapPin, Smartphone, Clock, ShieldCheck } from 'lucide-react';
+import { History, Route, Camera, CheckCircle, Download, FileSpreadsheet, Sparkles, ChevronDown, ChevronUp, MapPin, Smartphone, Clock } from 'lucide-react';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import { parsePhotoMetadata, type ExifTelemetry } from '../utils/exifInspector';
@@ -233,7 +233,7 @@ export default function OldRoutesPage() {
       <div id="tour-history-header" className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
-            <History className="h-6 w-6 text-[var(--color-brand-accent)]" />
+            <History className="h-6 w-6 text-[var(--text-main)] dark:text-neutral-200" />
             Route Traversal History & Back-Check
           </h1>
           <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">
@@ -252,7 +252,7 @@ export default function OldRoutesPage() {
             className="px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-bold transition-all duration-200 shadow-2xs flex items-center gap-2 cursor-pointer group active:scale-95"
             title="Export traversed paths and risk history to CSV"
           >
-            <FileSpreadsheet className="h-4 w-4 text-[var(--color-brand-accent)] group-hover:text-current transition-colors" />
+            <FileSpreadsheet className="h-4 w-4 text-[var(--text-muted)] group-hover:text-current transition-colors" />
             <span>{isExporting ? 'Generating CSV...' : 'Export History (CSV)'}</span>
             <Download className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors" />
           </button>
@@ -270,12 +270,12 @@ export default function OldRoutesPage() {
 
       {/* Success Notification Banner / Toast */}
       {verifiedSuccessToast && (
-        <div className="mb-5 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between gap-3 animate-fade-in shadow-2xs">
+        <div className="mb-5 p-3.5 rounded-xl border border-[var(--border-color)] bg-neutral-500/10 text-[var(--text-main)] text-xs font-semibold flex items-center justify-between gap-3 animate-fade-in shadow-2xs">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-emerald-500 shrink-0" />
+            <Sparkles className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
             <span>{verifiedSuccessToast}</span>
           </div>
-          <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500 text-white shrink-0">
+          <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shrink-0">
             SYNCED
           </span>
         </div>
@@ -286,7 +286,7 @@ export default function OldRoutesPage() {
           <div 
             key={item.id} 
             id={index === 0 ? 'tour-history-card-1' : index === 1 ? 'tour-history-card-2' : undefined} 
-            className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] shadow-sm flex flex-col justify-between transition-all hover:border-[var(--color-brand-accent)]/40"
+            className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] shadow-sm flex flex-col justify-between transition-all hover:border-[var(--text-main)]/35"
           >
             <div>
               <div className="flex justify-between items-start mb-3 gap-2">
@@ -294,12 +294,12 @@ export default function OldRoutesPage() {
                   <span className="font-bold text-xs text-[var(--text-main)] block truncate">{item.route}</span>
                   <span className="text-[10px] font-mono text-[var(--text-muted)]">{item.timestamp}</span>
                 </div>
-                <span className={`font-mono text-[9px] font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] shrink-0 ${
+                <span className={`font-mono text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
                   item.status === 'Accurate' || item.status === 'Verified'
-                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                    ? 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 border-teal-600/25 dark:border-teal-400/25'
                     : item.status === 'Waterlogged'
-                    ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30'
-                    : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                    ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
+                    : 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
                 }`}>
                   {item.status}
                 </span>
@@ -310,7 +310,7 @@ export default function OldRoutesPage() {
                 <div className="mb-3 rounded-xl overflow-hidden border border-[var(--border-color)] max-h-36 relative group shadow-inner">
                   <img src={item.photoUrl} alt="Ground-truth back-check" className="w-full h-32 object-cover" />
                   <div className="absolute bottom-1.5 right-1.5 bg-neutral-950/85 backdrop-blur-md text-white text-[9px] font-mono font-medium px-2 py-0.5 rounded-md flex items-center gap-1.5 border border-white/10 shadow-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                     <span>Visual Ground Truth</span>
                   </div>
                 </div>
@@ -337,9 +337,9 @@ export default function OldRoutesPage() {
             <div className="pt-2 flex flex-col gap-2">
               {item.photoUrl ? (
                 <>
-                  <div id="tour-history-verified" className="flex items-center justify-between px-3 py-2 bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12] border border-emerald-500/25 rounded-xl text-xs">
+                  <div id="tour-history-verified" className="flex items-center justify-between px-3 py-2 bg-neutral-500/[0.06] dark:bg-white/[0.06] border border-[var(--border-color)] rounded-xl text-xs">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <CheckCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <CheckCircle className="h-3.5 w-3.5 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
                       <span className="font-medium text-[11px] text-[var(--text-main)] truncate">
                         Ground Verification Active
                       </span>
@@ -347,7 +347,7 @@ export default function OldRoutesPage() {
                         {item.verifiedByPhotos || 1} report{(item.verifiedByPhotos || 1) > 1 ? 's' : ''}
                       </span>
                     </div>
-                    <span className="font-mono font-bold text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0 ml-1.5">
+                    <span className="font-mono font-bold text-[10px] px-2 py-0.5 rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 border border-neutral-900 dark:border-white shrink-0 ml-1.5">
                       +{item.riderVerificationScore} Trust Score
                     </span>
                   </div>
@@ -360,10 +360,10 @@ export default function OldRoutesPage() {
                       className="w-full px-3 py-1.5 flex items-center justify-between text-[10px] font-mono font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer select-none"
                     >
                       <div className="flex items-center gap-1.5">
-                        <ShieldCheck className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+                        <CheckCircle className="h-3.5 w-3.5 text-[var(--text-main)] dark:text-neutral-200" />
                         <span>View Verification Telemetry</span>
                         {item.exifTelemetry?.hasGps && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" title="GPS Coordinates Embedded" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" title="GPS Coordinates Embedded" />
                         )}
                       </div>
                       {expandedTelemetryIds[item.id] ? (
@@ -378,7 +378,7 @@ export default function OldRoutesPage() {
                       <div className="px-3 pb-2.5 pt-1 border-t border-[var(--border-color)]/60 text-[10px] font-mono space-y-1.5 animate-fade-in">
                         <div className="flex items-center justify-between text-[var(--text-main)]">
                           <span className="text-[var(--text-muted)] flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-[var(--color-brand-accent)]" /> GPS Coordinates:
+                            <MapPin className="h-3 w-3 text-[var(--text-muted)]" /> GPS Coordinates:
                           </span>
                           <span className="font-bold">
                             {item.exifTelemetry?.hasGps 
@@ -389,7 +389,7 @@ export default function OldRoutesPage() {
 
                         <div className="flex items-center justify-between text-[var(--text-main)]">
                           <span className="text-[var(--text-muted)] flex items-center gap-1">
-                            <Smartphone className="h-3 w-3 text-[var(--color-brand-accent)]" /> Camera / Device:
+                            <Smartphone className="h-3 w-3 text-[var(--text-muted)]" /> Camera / Device:
                           </span>
                           <span className="truncate max-w-[170px]" title={item.exifTelemetry?.cameraModel || item.exifTelemetry?.cameraMake || 'Mobile Hardware Sensor'}>
                             {item.exifTelemetry?.cameraModel || item.exifTelemetry?.cameraMake || 'Mobile Camera Sensor'}
@@ -398,7 +398,7 @@ export default function OldRoutesPage() {
 
                         <div className="flex items-center justify-between text-[var(--text-main)]">
                           <span className="text-[var(--text-muted)] flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-[var(--color-brand-accent)]" /> Shutter Timestamp:
+                            <Clock className="h-3 w-3 text-[var(--text-muted)]" /> Shutter Timestamp:
                           </span>
                           <span>
                             {item.exifTelemetry?.dateTime || item.timestamp}
@@ -407,7 +407,7 @@ export default function OldRoutesPage() {
 
                         <div className="flex items-center justify-between pt-1 border-t border-[var(--border-color)]/40 text-[9px]">
                           <span className="text-[var(--text-muted)]">Source Certification:</span>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                          <span className="text-[var(--text-main)] dark:text-neutral-200 font-semibold">
                             {item.exifTelemetry?.deviceSource || 'EXIF Hardware Verified'}
                           </span>
                         </div>
@@ -422,7 +422,7 @@ export default function OldRoutesPage() {
                   onClick={() => handleOpenPhotoUpload(item.id)}
                   className="w-full py-2.5 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs group"
                 >
-                  <Camera className="h-3.5 w-3.5 text-[var(--color-brand-accent)] group-hover:text-current transition-colors" />
+                  <Camera className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors" />
                   <span>Submit Photo Back-Check</span>
                 </button>
               )}

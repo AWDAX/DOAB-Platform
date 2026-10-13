@@ -5,6 +5,7 @@
  */
 
 import { NativeService } from '../utils/nativeService';
+import { playEmergencyBuzzingAlarm, playCivicNotificationChime, playArrivalSuccessChime } from '../utils/soundFx';
 
 export interface RemoteAdminBeacon {
   id: string;
@@ -61,24 +62,53 @@ export const RemoteAdminChannel = {
       localStorage.setItem(LAST_BEACON_KEY, beacon.id);
 
       if (beacon.type === 'sos_danger') {
-        NativeService.triggerSosHaptics();
-        NativeService.sendEmergencyNotification(
-          '🚨 CRITICAL INUNDATION ALERT',
-          beacon.payload?.title || 'Severe Flash Flood Alert Dispatched.'
-        );
+        // High-urgency aggressive buzzing alarm & haptics
+        playEmergencyBuzzingAlarm(3500);
+        try {
+          NativeService.triggerSosHaptics();
+          NativeService.sendEmergencyNotification(
+            '🚨 CRITICAL INUNDATION ALERT',
+            beacon.payload?.title || 'Severe Flash Flood Alert Dispatched.'
+          );
+        } catch {}
+        // Dispatch UI display immediately so full-screen alarm appears
         window.dispatchEvent(new CustomEvent('doab:trigger-danger-broadcast', {
           detail: beacon.payload
         }));
       } else if (beacon.type === 'destination_arrival') {
+        playArrivalSuccessChime();
         window.dispatchEvent(new CustomEvent('doab:trigger-destination-arrival', {
           detail: beacon.payload
         }));
       } else if (beacon.type === 'custom_alert') {
+        playCivicNotificationChime();
         try {
           const existing = JSON.parse(localStorage.getItem('doab_admin_custom_alerts') || '[]');
           localStorage.setItem('doab_admin_custom_alerts', JSON.stringify([beacon.payload, ...existing]));
           localStorage.setItem('doab_notifications_read', 'false');
           window.dispatchEvent(new CustomEvent('doab:admin-alerts-updated'));
+          
+          // Trigger system push notification for the injected municipal alert
+          NativeService.sendEmergencyNotification(
+            `⚠️ ${beacon.payload?.severity || 'Civic'} Alert: ${beacon.payload?.ward || 'Flood Zone'}`,
+            beacon.payload?.title || 'New municipal alert reported.',
+            'civic_chime.wav'
+          );
+        } catch {}
+      } else if (beacon.type === 'push_notification' as any) {
+        const isCrit = Boolean(beacon.payload?.isCritical);
+        if (isCrit) {
+          playEmergencyBuzzingAlarm(2800);
+          NativeService.triggerSosHaptics();
+        } else {
+          playCivicNotificationChime();
+        }
+        try {
+          NativeService.sendEmergencyNotification(
+            beacon.payload?.title || 'DOAB Civic Advisory',
+            beacon.payload?.body || 'Important advisory broadcast from command center.',
+            isCrit ? 'sos_buzzer.wav' : 'civic_chime.wav'
+          );
         } catch {}
       }
     } catch (e) {

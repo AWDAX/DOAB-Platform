@@ -1,15 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Map, Route as RouteIcon, History, Bell, User, LogOut, PanelLeftClose, PanelLeftOpen, Users2, Compass } from 'lucide-react';
+import { motion } from 'framer-motion';
 import AIOrbIcon from './AIOrbIcon';
 import { playClick } from '../utils/soundFx';
-import { firebaseSignOut } from '../lib/firebase';
+import { firebaseSignOut, onDOABAuthStateChanged } from '../lib/firebase';
 import Tooltip from './Tooltip';
 
 export default function GlobalSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [user, setUser] = useState<any>(() => {
+    try {
+      const raw = localStorage.getItem('doab_demo_user_v1');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const unsub = onDOABAuthStateChanged((u) => setUser(u));
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, []);
 
   // Dynamic unread telemetry state:
   const [hasUnreadAi, setHasUnreadAi] = useState<boolean>(() => {
@@ -134,19 +150,37 @@ export default function GlobalSidebar() {
         id={`tour-nav-${item.id}`}
         to={item.path}
         onClick={() => playClick()}
-        className={`group relative flex items-center h-10 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
+        className={`group relative flex items-center h-10 rounded-xl text-xs font-semibold transition-colors duration-150 cursor-pointer ${
           !isExpanded 
             ? 'w-10 h-10 justify-center mx-auto p-0' 
             : 'w-full justify-between px-3 py-2'
         } ${
           isActive
-            ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
+            ? 'text-[var(--bg-card)]'
             : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5'
         }`}
       >
-        <div className={`flex items-center gap-3 min-w-0 ${!isExpanded ? 'justify-center w-full' : ''}`}>
-          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
-            <Icon className={`h-4.5 w-4.5 transition-colors ${isActive ? 'text-current' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`} />
+        {isActive && (
+          <motion.div
+            layoutId="desktopSidebarVerticalPill"
+            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            className="absolute inset-0 rounded-xl bg-[var(--text-main)] shadow-xs z-0 pointer-events-none"
+          />
+        )}
+        <div className={`relative z-10 flex items-center gap-3 min-w-0 ${!isExpanded ? 'justify-center w-full' : ''}`}>
+          <div className={`${item.id === 'profile' && user ? 'w-6.5 h-6.5' : 'w-5 h-5'} flex items-center justify-center shrink-0 relative`}>
+            {item.id === 'profile' && user ? (
+              <div className="w-6.5 h-6.5 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/80 shadow-[0_0_8px_rgba(245,158,11,0.55)] border border-white/20">
+                <img
+                  src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`}
+                  alt="avatar"
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : (
+              <Icon className={`h-4.5 w-4.5 transition-colors ${isActive ? 'text-current' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`} />
+            )}
             
             {/* Minimalist, subtle unread indicator dot directly anchored to icon (Thin professional hairline ring) */}
             {showIndicator && (
@@ -162,7 +196,7 @@ export default function GlobalSidebar() {
         {/* Subtle Pill Counter for Expanded Mode (Only shown if unread and not active) */}
         {isExpanded && showIndicator && (
           <span 
-            className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded-full border border-[var(--color-brand-accent)]/20 bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all shadow-2xs shrink-0"
+            className="relative z-10 text-[9px] font-mono font-medium px-1.5 py-0.2 rounded-full border border-[var(--color-brand-accent)]/20 bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all shadow-2xs shrink-0"
           >
             New
           </span>
@@ -180,6 +214,32 @@ export default function GlobalSidebar() {
 
     return linkContent;
   };
+
+  // Keyboard shortcuts: Ctrl + [ to collapse sidebar, Ctrl + ] to expand sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      if (isInput) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key === '[') {
+        e.preventDefault();
+        setIsExpanded((prev) => {
+          if (prev) playClick();
+          return false;
+        });
+      } else if ((e.ctrlKey || e.metaKey) && e.key === ']') {
+        e.preventDefault();
+        setIsExpanded((prev) => {
+          if (!prev) playClick();
+          return true;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <aside 
@@ -209,14 +269,16 @@ export default function GlobalSidebar() {
                   <Compass className="h-4.5 w-4.5 text-current transition-transform duration-500 hover:rotate-45" />
                 </button>
               </Tooltip>
-              <button
-                type="button"
-                onClick={() => { playClick(); setIsExpanded(false); }}
-                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
-                aria-label="Collapse Sidebar"
-              >
-                <PanelLeftClose className="h-4.5 w-4.5" />
-              </button>
+              <Tooltip content="Collapse Sidebar" shortcut="Ctrl+[" position="bottom">
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setIsExpanded(false); }}
+                  className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
+                  aria-label="Collapse Sidebar"
+                >
+                  <PanelLeftClose className="h-4.5 w-4.5" />
+                </button>
+              </Tooltip>
             </div>
           </>
         ) : (
@@ -235,7 +297,7 @@ export default function GlobalSidebar() {
                 <Compass className="h-4.5 w-4.5 text-current" />
               </button>
             </Tooltip>
-            <Tooltip content="Expand Sidebar" shortcut="[" position="right" className="w-full flex justify-center">
+            <Tooltip content="Expand Sidebar" shortcut="Ctrl+]" position="right" className="w-full flex justify-center">
               <button
                 type="button"
                 onClick={() => { playClick(); setIsExpanded(true); }}

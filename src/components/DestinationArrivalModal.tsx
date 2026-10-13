@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, X, Check, ThumbsUp, Star, ThumbsDown, Bookmark } from 'lucide-react';
-import { playClick } from '../utils/soundFx';
+import { playClick, playArrivalSuccessChime } from '../utils/soundFx';
 
 export interface RouteOptionLike {
   summary: string;
@@ -27,6 +27,11 @@ export default function DestinationArrivalModal({
   route,
   riskDisplay = 'Low Inundation Risk'
 }: DestinationArrivalModalProps) {
+  useEffect(() => {
+    if (isOpen) {
+      playArrivalSuccessChime();
+    }
+  }, [isOpen]);
   const [feedbackRating, setFeedbackRating] = useState<'accurate' | 'moderate' | 'inaccurate' | null>(null);
   const [feedbackNotes, setFeedbackNotes] = useState('');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
@@ -62,7 +67,7 @@ export default function DestinationArrivalModal({
       console.warn('Could not save route feedback', e);
     }
 
-    // 2. Bookmark path
+    // 2. Bookmark path to both Offline Routes and Safe Routes page
     if (shouldSave) {
       try {
         const existing = JSON.parse(localStorage.getItem(OFFLINE_ROUTES_KEY) || '[]');
@@ -77,6 +82,21 @@ export default function DestinationArrivalModal({
         };
         const filtered = existing.filter((r: any) => r.summary !== route.summary);
         localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify([newEntry, ...filtered].slice(0, 20)));
+
+        const existingCustom = JSON.parse(localStorage.getItem('doab_custom_created_routes') || '[]');
+        if (!existingCustom.some((r: any) => r.summary === route.summary)) {
+          const customRouteObj = {
+            summary: route.summary,
+            distance_meters: route.distance_meters || 7500,
+            duration_seconds: Math.round(((route.distance_meters || 7500) / 1000) * 160),
+            mean_risk: route.mean_risk ?? 0.08,
+            data_quality: 'ok',
+            scored: true,
+            maps_url: route.maps_url || 'https://www.google.com/maps',
+            rank: (route.mean_risk ?? 0.08) <= 0.12 ? 'safest' : 'alternative',
+          };
+          localStorage.setItem('doab_custom_created_routes', JSON.stringify([customRouteObj, ...existingCustom]));
+        }
         setSavedAsFavorite(true);
       } catch (e) {
         console.warn('Could not bookmark route', e);
@@ -97,13 +117,13 @@ export default function DestinationArrivalModal({
         {/* Modal Header */}
         <div className="flex items-start justify-between border-b border-[var(--border-color)] pb-3.5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-neutral-500/10 border border-[var(--border-color)] dark:border-white/15 text-[var(--text-main)] dark:text-neutral-200 flex items-center justify-center shrink-0">
               <MapPin className="h-5 w-5" />
             </div>
             <div>
               <h3 className="font-bold text-base text-[var(--text-main)] flex items-center gap-2">
                 <span>Destination Reached</span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-500/10 text-[var(--text-main)] dark:text-neutral-200 border border-[var(--border-color)] dark:border-white/15">
                   Safe Arrival
                 </span>
               </h3>
@@ -123,7 +143,7 @@ export default function DestinationArrivalModal({
 
         {feedbackSubmitted ? (
           <div className="py-8 text-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-500 mx-auto flex items-center justify-center animate-bounce">
+            <div className="w-12 h-12 rounded-full bg-neutral-500/15 text-[var(--text-main)] dark:text-neutral-200 border border-[var(--border-color)] mx-auto flex items-center justify-center animate-bounce">
               <Check className="h-6 w-6 stroke-[3]" />
             </div>
             <h4 className="text-sm font-bold text-[var(--text-main)]">Thank You for Your Feedback!</h4>
@@ -156,11 +176,11 @@ export default function DestinationArrivalModal({
                   onClick={() => { playClick(); setFeedbackRating('accurate'); }}
                   className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                     feedbackRating === 'accurate'
-                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold shadow-xs'
-                      : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-emerald-500/40 hover:text-[var(--text-main)]'
+                      ? 'border-teal-600/40 dark:border-teal-400/40 bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 font-bold shadow-xs'
+                      : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-teal-600/30 hover:text-[var(--text-main)]'
                   }`}
                 >
-                  <ThumbsUp className="h-4 w-4 text-emerald-500" />
+                  <ThumbsUp className="h-4 w-4 text-teal-700 dark:text-teal-300" />
                   <span className="text-[11px] leading-tight">Accurate & Clear</span>
                   <span className="text-[9px] opacity-75">No waterlogging</span>
                 </button>
@@ -170,11 +190,11 @@ export default function DestinationArrivalModal({
                   onClick={() => { playClick(); setFeedbackRating('moderate'); }}
                   className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                     feedbackRating === 'moderate'
-                      ? 'border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold shadow-xs'
-                      : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-amber-500/40 hover:text-[var(--text-main)]'
+                      ? 'border-amber-600/40 dark:border-amber-400/40 bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 font-bold shadow-xs'
+                      : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-amber-600/30 hover:text-[var(--text-main)]'
                   }`}
                 >
-                  <Star className="h-4 w-4 text-amber-500" />
+                  <Star className="h-4 w-4 text-amber-700 dark:text-amber-300" />
                   <span className="text-[11px] leading-tight">Slight Water</span>
                   <span className="text-[9px] opacity-75">Passable ponding</span>
                 </button>
@@ -184,11 +204,11 @@ export default function DestinationArrivalModal({
                   onClick={() => { playClick(); setFeedbackRating('inaccurate'); }}
                   className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                     feedbackRating === 'inaccurate'
-                      ? 'border-rose-500 bg-rose-500/15 text-rose-700 dark:text-rose-400 font-bold shadow-xs'
-                      : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-rose-500/40 hover:text-[var(--text-main)]'
+                      ? 'border-rose-600/40 dark:border-rose-400/40 bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 font-bold shadow-xs'
+                      : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-rose-600/30 hover:text-[var(--text-main)]'
                   }`}
                 >
-                  <ThumbsDown className="h-4 w-4 text-rose-500" />
+                  <ThumbsDown className="h-4 w-4 text-rose-700 dark:text-rose-300" />
                   <span className="text-[11px] leading-tight">Flooded / Blocked</span>
                   <span className="text-[9px] opacity-75">Risk was higher</span>
                 </button>
@@ -212,7 +232,7 @@ export default function DestinationArrivalModal({
             {/* Save as Safe Path Bookmark Option */}
             <div className="p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Bookmark className="h-4 w-4 text-[var(--color-brand-accent)] shrink-0" />
+                <Bookmark className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
                 <div>
                   <span className="font-semibold text-[var(--text-main)] block text-xs">Save as Safe Path for Future Trips</span>
                   <span className="text-[10px] text-[var(--text-muted)] block">Bookmark this tested elevation corridor for offline quick access</span>
@@ -223,8 +243,8 @@ export default function DestinationArrivalModal({
                 onClick={() => { playClick(); setSavedAsFavorite(!savedAsFavorite); }}
                 className={`px-3 py-1.5 rounded-xl border font-bold text-[10px] shrink-0 cursor-pointer transition-all ${
                   savedAsFavorite
-                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs'
-                    : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--color-brand-accent)]'
+                    ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-950 dark:border-white shadow-2xs'
+                    : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--text-main)]'
                 }`}
               >
                 {savedAsFavorite ? 'Bookmarked ✓' : 'Save Path'}

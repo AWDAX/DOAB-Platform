@@ -24,7 +24,7 @@ export default function ThemeToggle({ darkMode, toggleTheme, className = '' }: T
     <button
       type="button"
       onClick={handleClick}
-      className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all shadow-2xs backdrop-blur-md focus:outline-none focus:ring-0 active:outline-none group shrink-0 ${className}`}
+      className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border border-[var(--border-color)] bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200 hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors shadow-2xs backdrop-blur-md focus:outline-none focus:ring-0 active:outline-none group shrink-0 ${className}`}
       title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
       aria-label="Toggle dark/light theme"
     >
@@ -36,33 +36,33 @@ export default function ThemeToggle({ darkMode, toggleTheme, className = '' }: T
         className="flex items-center justify-center"
       >
         {darkMode ? (
-          /* Minimalist Outline Sun Icon */
+          /* Crisp Outline Sun Icon */
           <svg 
-            width="16" 
-            height="16" 
+            width="17" 
+            height="17" 
             viewBox="0 0 24 24" 
             fill="none" 
             stroke="currentColor" 
-            strokeWidth="2" 
+            strokeWidth="2.2" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
-            className="text-[var(--color-brand-accent)]"
+            className="h-[17px] w-[17px] text-neutral-700 dark:text-neutral-200 group-hover:text-[var(--text-main)] transition-colors"
           >
             <circle cx="12" cy="12" r="4" />
             <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
           </svg>
         ) : (
-          /* Minimalist Outline Moon Icon */
+          /* Crisp Outline Moon Icon */
           <svg 
-            width="16" 
-            height="16" 
+            width="17" 
+            height="17" 
             viewBox="0 0 24 24" 
             fill="none" 
             stroke="currentColor" 
-            strokeWidth="2" 
+            strokeWidth="2.2" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
-            className="text-[var(--color-brand-accent)]"
+            className="h-[17px] w-[17px] text-neutral-700 dark:text-neutral-200 group-hover:text-[var(--text-main)] transition-colors"
           >
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
           </svg>

@@ -22,6 +22,8 @@ const SHORTCUT_GROUPS = [
   {
     title: 'Operational Controls',
     items: [
+      { keys: ['Ctrl', '['], description: 'Collapse Desktop Sidebar' },
+      { keys: ['Ctrl', ']'], description: 'Expand Desktop Sidebar' },
       { keys: ['Ctrl', 'K'], description: 'Focus Destination Search' },
       { keys: ['Ctrl', 'J'], description: 'Toggle DOAB Assistant Window' },
       { keys: ['Shift', 'E'], description: 'Toggle Mode (Flood / Drought)' },
@@ -71,7 +73,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--border-color)]">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)]">
-                  <Keyboard className="h-5 w-5 text-[var(--color-brand-accent)]" />
+                  <Keyboard className="h-5 w-5 text-[var(--text-main)] dark:text-neutral-200" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold tracking-tight">Keyboard Accessibility & Hotkeys</h2>

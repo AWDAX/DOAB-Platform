@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Truck, Shield, ShieldCheck, LogOut, Clock, Settings, Users2, Award } from 'lucide-react';
+import { User, Truck, LogOut, Clock, Settings, Users2, Award, Sliders, ChevronRight } from 'lucide-react';
 import { signInWithGoogle, firebaseSignOut, onDOABAuthStateChanged } from '../lib/firebase';
 import { ToggleSwitch } from '../components/PreferencesModal';
 import { PageTourButton } from '../components/GuidedTour';
@@ -26,46 +26,9 @@ function formatLastLogin(dateString?: string | null) {
   }
 }
 
-import { NativeService } from '../utils/nativeService';
-
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { profile, updateProfile } = useUserSettings();
-
-  const [livePerms, setLivePerms] = useState<{
-    location: 'granted' | 'prompt' | 'denied';
-    notifications: 'granted' | 'prompt' | 'denied';
-  }>({
-    location: 'prompt',
-    notifications: 'prompt'
-  });
-
-  const refreshPerms = async () => {
-    const res = await NativeService.checkPermissions();
-    setLivePerms(res);
-  };
-
-  useEffect(() => {
-    refreshPerms();
-    window.addEventListener('focus', refreshPerms);
-    window.addEventListener('doab:permissions-updated', refreshPerms);
-    return () => {
-      window.removeEventListener('focus', refreshPerms);
-      window.removeEventListener('doab:permissions-updated', refreshPerms);
-    };
-  }, []);
-
-  const handlePromptLocation = async () => {
-    playClick();
-    await NativeService.requestLocationPermission();
-    refreshPerms();
-  };
-
-  const handlePromptNotifications = async () => {
-    playClick();
-    await NativeService.requestNotificationPermission();
-    refreshPerms();
-  };
   const role = profile.role;
   const vendorId = profile.vendorId;
   const setRole = (r: 'citizen' | 'delivery') => {
@@ -117,6 +80,7 @@ export default function ProfilePage() {
 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Listen to auth state (supports real Firebase + local demo session)
   useEffect(() => {
@@ -131,9 +95,10 @@ export default function ProfilePage() {
 
   const handleLogin = async () => {
     setLoading(true);
+    setAuthError(null);
     const { error } = await signInWithGoogle();
     if (error) {
-      alert(error);
+      setAuthError(error);
     }
     setLoading(false);
   };
@@ -148,12 +113,14 @@ export default function ProfilePage() {
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto custom-scrollbar flex flex-col items-center">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full max-w-3xl mx-auto">
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
-            <User className="h-6 w-6 text-[var(--color-brand-accent)]" />
-            Entity Profile & Credentials
+            <User className="h-6 w-6 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
+            <span className="truncate">Entity Profile & Credentials</span>
           </h1>
-          <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">Manage your role, dispatch partner verification, and telemetry parameters.</p>
+          <p className="text-[var(--text-muted)] text-xs mt-1 sm:whitespace-nowrap">
+            Manage your role, dispatch partner verification, and telemetry parameters.
+          </p>
         </div>
         
         <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
@@ -176,6 +143,19 @@ export default function ProfilePage() {
         <h2 className="text-xs font-mono uppercase tracking-wider font-bold text-[var(--text-muted)] mb-4 text-left">
           Authentication Status
         </h2>
+
+        {authError && (
+          <div className="mb-4 p-3.5 rounded-xl border border-rose-600/25 dark:border-rose-400/25 bg-rose-950/[0.06] dark:bg-rose-500/[0.12] flex items-center justify-between gap-3 text-xs text-rose-700 dark:text-rose-300">
+            <span>{authError}</span>
+            <button
+              type="button"
+              onClick={() => setAuthError(null)}
+              className="px-2.5 py-1 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] font-semibold text-[11px] hover:opacity-90 cursor-pointer shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         
         {loading ? (
           <div className="flex items-center justify-center gap-3.5 p-5 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] w-full">
@@ -186,26 +166,31 @@ export default function ProfilePage() {
           <div className="p-4 sm:p-5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl w-full flex flex-col gap-3.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
               <div className="flex items-center gap-3.5 min-w-0">
-                <img 
-                  src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`} 
-                  alt="Avatar" 
-                  referrerPolicy="no-referrer"
-                  className="h-11 w-11 rounded-full border border-[var(--border-color)] shadow-xs object-cover shrink-0" 
-                />
+                <div className="relative shrink-0">
+                  <img 
+                    src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`} 
+                    alt="Avatar" 
+                    referrerPolicy="no-referrer"
+                    className="h-12 w-12 rounded-full border border-slate-200/80 dark:border-white/20 shadow-xs object-cover ring-2 ring-amber-400/80 shadow-[0_0_14px_rgba(245,158,11,0.55)] transition-all" 
+                  />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[var(--bg-main)] flex items-center justify-center shadow-xs" title="Verified Account">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />
+                  </span>
+                </div>
                 <div className="min-w-0">
                   <div className="font-bold text-xs sm:text-sm text-[var(--text-main)] truncate">{user.displayName || 'Civic Operator'}</div>
                   <div className="text-[11px] font-mono text-[var(--text-muted)] truncate">{user.email}</div>
                 </div>
               </div>
-              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-full border border-[var(--border-color)] bg-[var(--text-main)]/10 text-[var(--text-main)] self-start sm:self-auto shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-full border border-[var(--border-color)] bg-[var(--text-main)]/5 dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200 self-start sm:self-auto shrink-0 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-main)] dark:bg-white animate-pulse" />
                 <span>Verified Session</span>
               </span>
             </div>
 
             <div className="pt-3 border-t border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[var(--text-muted)]">
               <div className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+                <Clock className="h-3.5 w-3.5 text-[var(--text-main)] dark:text-neutral-300" />
                 <span>Last Logged In:</span>
                 <span className="font-semibold text-[var(--text-main)]">
                   {formatLastLogin(user.lastLogin || localStorage.getItem('doab_last_login') || user.metadata?.lastSignInTime)}
@@ -306,13 +291,13 @@ export default function ProfilePage() {
         <div className="mb-6 p-4 sm:p-4.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-color)] w-full">
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-2">
-              <ShieldCheck size={16} className="text-[var(--color-brand-accent)] shrink-0" />
+              <Sliders size={16} className="text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
               <div>
                 <div className="text-xs font-bold text-[var(--text-main)]">Two-Wheeler Flood Clearance Limit</div>
                 <div className="text-[10px] text-[var(--text-muted)]">Reroutes riders when standing water exceeds limit</div>
               </div>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--color-brand-accent)] shrink-0">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] text-[var(--text-main)] dark:text-neutral-200 shrink-0 shadow-2xs">
               {clearanceLimit} cm max
             </span>
           </div>
@@ -352,103 +337,42 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Telemetry & Permissions Setting */}
+        {/* Life-Safety & Permissions Setting */}
         <div id="tour-profile-permissions" className="border-t border-[var(--border-color)] pt-5 w-full">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-mono uppercase tracking-wider font-bold text-[var(--text-muted)] text-left">
-              Life-Safety & Permissions Suite
+              Life-Safety & Permissions
             </h2>
+          </div>
+
+          <div className="p-4 sm:p-5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-color)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-xl bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)] dark:border-white/10 flex items-center justify-center shrink-0">
+                <Settings className="h-5 w-5 text-[var(--text-main)] dark:text-neutral-200" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-bold text-xs sm:text-sm text-[var(--text-main)] truncate">
+                  Life-Safety & System Permissions
+                </div>
+                <div className="text-[11px] text-[var(--text-muted)] mt-0.5 leading-relaxed">
+                  Manage GPS location, civic flash flood alerts, commuter geofencing, and SOS alarm broadcast preferences.
+                </div>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => {
+                playClick();
                 window.dispatchEvent(new CustomEvent('doab:open-permissions'));
               }}
-              className="text-[10px] font-mono text-[var(--color-brand-accent)] hover:underline font-bold cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 border border-neutral-950/20 dark:border-white/20 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 shadow-xs active:scale-98"
             >
-              Configure
+              <Sliders size={14} className="stroke-[2.2]" />
+              <span>All Permissions</span>
+              <ChevronRight size={14} className="opacity-70" />
             </button>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-            <button 
-              type="button" 
-              onClick={handlePromptLocation}
-              className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left group"
-            >
-              <div>
-                <span className="text-xs font-bold text-[var(--text-main)] block">GPS Location</span>
-                <span className="text-[10px] text-[var(--text-muted)]">Real-time flood elevation</span>
-              </div>
-              <span className={`mono-badge text-[10px] px-2.5 py-0.5 rounded-full border font-bold ${
-                livePerms.location === 'granted'
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                  : livePerms.location === 'denied'
-                  ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                  : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/20'
-              }`}>
-                {livePerms.location === 'granted' ? '✓ Granted' : livePerms.location === 'denied' ? '✗ Denied' : 'Tap to Grant'}
-              </span>
-            </button>
-
-            <button 
-              type="button" 
-              onClick={handlePromptNotifications}
-              className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left group"
-            >
-              <div>
-                <span className="text-xs font-bold text-[var(--text-main)] block">Civic Notifications</span>
-                <span className="text-[10px] text-[var(--text-muted)]">Flash flood beacons</span>
-              </div>
-              <span className={`mono-badge text-[10px] px-2.5 py-0.5 rounded-full border font-bold ${
-                livePerms.notifications === 'granted'
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                  : livePerms.notifications === 'denied'
-                  ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                  : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/20'
-              }`}>
-                {livePerms.notifications === 'granted' ? '✓ Enabled' : livePerms.notifications === 'denied' ? '✗ Blocked' : 'Tap to Enable'}
-              </span>
-            </button>
-
-            <button 
-              type="button" 
-              onClick={() => window.dispatchEvent(new CustomEvent('doab:open-permissions'))}
-              className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
-            >
-              <div>
-                <span className="text-xs font-bold text-[var(--text-main)] block">Commuter Geofencing</span>
-                <span className="text-[10px] text-[var(--text-muted)]">Underpass proximity</span>
-              </div>
-              <span className="mono-badge text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                ✓ Active
-              </span>
-            </button>
-
-            <button 
-              type="button" 
-              onClick={() => window.dispatchEvent(new CustomEvent('doab:open-permissions'))}
-              className="p-3 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] flex items-center justify-between hover:border-[var(--color-brand-accent)] transition-colors cursor-pointer text-left"
-            >
-              <div>
-                <span className="text-xs font-bold text-[var(--text-main)] block">DND / SOS Broadcast</span>
-                <span className="text-[10px] text-[var(--text-muted)]">Full-screen takeover</span>
-              </div>
-              <span className="mono-badge text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                ✓ Active
-              </span>
-            </button>
-          </div>
-
-          <label className="flex items-start gap-3.5 cursor-pointer group w-full">
-            <div className="relative flex items-center justify-center mt-0.5">
-              <input type="checkbox" className="peer appearance-none h-4.5 w-4.5 border border-[var(--border-color)] rounded-md bg-[var(--bg-card)] checked:bg-[var(--text-main)] checked:border-[var(--text-main)] transition-colors focus:ring-1 focus:ring-[var(--text-main)]" defaultChecked />
-              <Shield className="h-3 w-3 text-[var(--bg-card)] absolute opacity-0 peer-checked:opacity-100 pointer-events-none" />
-            </div>
-            <div className="flex-1">
-              <div className="font-bold text-xs text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] transition-colors">Background Risk Geofencing</div>
-              <div className="text-[11px] text-[var(--text-muted)] mt-0.5 leading-relaxed">Transmit passive road elevation telemetry to alert surrounding riders in real-time.</div>
-            </div>
-          </label>
         </div>
       </div>
 
@@ -465,7 +389,7 @@ export default function ProfilePage() {
               <span className="font-mono text-[var(--text-muted)]">Verified Commuter (Top 5% Bengaluru Grid)</span>
             </span>
           </div>
-          <span className="text-[10px] font-mono font-bold text-[var(--color-brand-accent)] inline-flex items-center gap-1">
+          <span className="text-[10px] font-mono font-bold text-[var(--text-main)] dark:text-neutral-200 inline-flex items-center gap-1">
             <span>Level 3 Hydrology Back-Checker</span>
           </span>
         </div>
@@ -504,10 +428,10 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={handleLogout}
-              className="p-3.5 rounded-2xl bg-rose-500/[0.06] hover:bg-rose-500/[0.12] dark:bg-rose-500/[0.08] dark:hover:bg-rose-500/[0.16] border border-rose-200/80 dark:border-rose-500/20 transition-all flex flex-col items-center justify-center gap-2 text-center group cursor-pointer shadow-2xs"
+              className="p-3.5 rounded-2xl bg-rose-950/[0.06] hover:bg-rose-950/[0.12] dark:bg-rose-500/[0.08] dark:hover:bg-rose-500/[0.16] border border-rose-600/25 dark:border-rose-400/25 transition-all flex flex-col items-center justify-center gap-2 text-center group cursor-pointer shadow-2xs"
             >
-              <LogOut size={18} className="text-rose-500 dark:text-rose-400 group-hover:scale-105 transition-transform" />
-              <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400 text-center leading-tight">
+              <LogOut size={18} className="text-rose-700 dark:text-rose-300 group-hover:scale-105 transition-transform" />
+              <span className="text-[11px] font-medium text-rose-700 dark:text-rose-300 text-center leading-tight">
                 Sign Out
               </span>
             </button>
@@ -517,7 +441,7 @@ export default function ProfilePage() {
               onClick={handleLogin}
               className="p-3.5 rounded-2xl bg-[var(--bg-card)] hover:bg-[var(--bg-main)] border border-[var(--border-color)] transition-all flex flex-col items-center justify-center gap-2 text-center group cursor-pointer shadow-2xs"
             >
-              <User size={18} className="text-[var(--color-brand-accent)] group-hover:scale-105 transition-transform" />
+              <User size={18} className="text-[var(--text-muted)] group-hover:text-[var(--text-main)] group-hover:scale-105 transition-all" />
               <span className="text-[11px] font-medium text-[var(--text-main)] text-center leading-tight">
                 Sign In
               </span>

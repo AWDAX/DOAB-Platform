@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Menu, Search, Compass, Settings, X, MapPin, Route as RouteIcon, Bell, User, 
-  Droplets, ShieldAlert, ArrowRight, Bot, Navigation2, SlidersHorizontal, Sparkles
+  Droplets, Activity, Radio, ArrowRight, Bot, Navigation2, SlidersHorizontal, Sparkles
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,9 +18,10 @@ interface NavbarProps {
   toggleEnvMode: () => void;
   onOpenTour?: () => void;
   onOpenPreferences?: () => void;
+  user?: any;
 }
 
-export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode, onOpenTour, onOpenPreferences }: NavbarProps) {
+export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode, onOpenTour, onOpenPreferences, user }: NavbarProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -95,7 +96,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
           title: 'Life-Safety & Permissions Suite',
           subtitle: 'Manage GPS, Civic Notifications, Geofencing, & SOS',
           action: () => window.dispatchEvent(new CustomEvent('doab:open-permissions')),
-          icon: ShieldAlert,
+          icon: SlidersHorizontal,
           type: 'Safety Suite',
         },
       ];
@@ -199,13 +200,18 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-[var(--border-color)] bg-[var(--bg-main)]/90 backdrop-blur-xl transition-colors duration-200">
-        <div className="w-full max-w-[1800px] 2xl:max-w-full mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="w-full max-w-[1800px] 2xl:max-w-full mx-auto px-4 sm:px-6 h-16 flex items-center justify-between relative">
           
-          {/* Logo Area with Animated Video Badge */}
-          <Link id="tour-brand" to="/" onClick={() => playClick()} className="flex items-center gap-3 group cursor-pointer shrink-0">
+          {/* Logo Area: Centered Logo-Only on Mobile/Touch (< md), Left-Aligned with Text on Desktop (md+) */}
+          <Link
+            id="tour-brand"
+            to="/"
+            onClick={() => playClick()}
+            className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 flex items-center gap-3 group cursor-pointer shrink-0 z-10"
+          >
             <BrandLogo size="md" />
-            <div className="flex flex-col">
-              <span className="font-bold text-sm tracking-tight leading-none text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] transition-colors">DOAB</span>
+            <div className="hidden md:flex flex-col">
+              <span className="font-bold text-sm tracking-tight leading-none text-[var(--text-main)] transition-colors">DOAB</span>
               <span className="text-[10px] text-[var(--text-muted)] tracking-tight leading-none mt-1">Two Waters Response System</span>
             </div>
           </Link>
@@ -216,12 +222,12 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
               onClick={() => inputRef.current?.focus()}
               className={`w-full bg-[var(--bg-card)] border rounded-xl px-3.5 py-1.5 flex items-center justify-between gap-2.5 text-xs shadow-2xs transition-all cursor-text ${
                 isFocused 
-                  ? 'border-[var(--color-brand-accent)] ring-2 ring-[var(--color-brand-accent)]/20 shadow-sm' 
-                  : 'border-[var(--border-color)] hover:border-[var(--text-muted)]/40'
+                  ? 'border-neutral-900 dark:border-white/75 ring-2 ring-neutral-900/15 dark:ring-white/15 shadow-sm' 
+                  : 'border-neutral-300 dark:border-white/25 hover:border-neutral-500 dark:hover:border-white/50'
               }`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Search className={`h-4 w-4 shrink-0 transition-colors ${isFocused ? 'text-[var(--color-brand-accent)]' : 'text-[var(--text-muted)]'}`} />
+                <Search className={`h-4 w-4 shrink-0 transition-colors ${isFocused ? 'text-[var(--text-main)] dark:text-white' : 'text-[var(--text-muted)]'}`} />
                 <input
                   ref={inputRef}
                   type="text"
@@ -293,7 +299,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                             <div className={`p-1.5 rounded-lg shrink-0 ${
                               isSelected 
                                 ? 'bg-[var(--bg-card)]/15 text-current' 
-                                : 'bg-[var(--bg-main)] text-[var(--color-brand-accent)]'
+                                : 'bg-[var(--bg-main)] text-[var(--text-main)] dark:text-neutral-200'
                             }`}>
                               <Icon className="h-4 w-4" />
                             </div>
@@ -328,158 +334,191 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
             </AnimatePresence>
           </div>
 
-          {/* Action Controls & Navigation Utilities: Bell Alerts, Theme & Settings */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Quick Alerts Dropdown Window */}
-            <div ref={alertsContainerRef} className="relative">
-              <Tooltip content="All Alerts & Telemetry" shortcut="4" position="bottom">
-                <button
-                  type="button"
-                  id="tour-nav-bell"
-                  onClick={() => {
-                    playClick();
-                    setIsAlertsOpen((prev) => !prev);
-                  }}
-                  className={`w-9 h-9 rounded-full border transition-all flex items-center justify-center cursor-pointer shadow-2xs relative ${
-                    isAlertsOpen
-                      ? 'border-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/15 text-[var(--color-brand-accent)] ring-2 ring-[var(--color-brand-accent)]/20'
-                      : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--color-brand-accent)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10'
-                  }`}
-                  aria-label="Open Alerts Feed Window"
-                  aria-expanded={isAlertsOpen}
-                >
-                  <Bell className="h-4 w-4 text-[var(--color-brand-accent)] transition-colors" />
-                  {/* Subtle, refined theme-harmonious notification badge */}
-                  <span className="absolute top-1 right-1 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-brand-accent)] opacity-60" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-brand-accent)]" />
-                  </span>
-                </button>
-              </Tooltip>
-
-              {/* Popover Window: Small window of All Alerts */}
-              <AnimatePresence>
-                {isAlertsOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute right-0 top-full mt-2 w-80 sm:w-92 bg-[var(--bg-card)]/95 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col"
+          {/* Action Controls & Navigation Utilities:
+              On Mobile (< md): [Bell + ThemeToggle] on Left, [Hamburger Menu] on Right
+              On Desktop (md+): [Bell + ThemeToggle + Settings + Profile] on Right */}
+          <div className="w-full md:w-auto flex items-center justify-between md:justify-end gap-2 sm:gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              {/* Quick Alerts Dropdown Window */}
+              <div ref={alertsContainerRef} className="relative">
+                <Tooltip content="All Alerts & Telemetry" shortcut="4" position="bottom">
+                  <button
+                    type="button"
+                    id="tour-nav-bell"
+                    onClick={() => {
+                      playClick();
+                      setIsAlertsOpen((prev) => !prev);
+                    }}
+                    className={`w-9 h-9 rounded-full border transition-colors flex items-center justify-center cursor-pointer shadow-2xs relative group ${
+                      isAlertsOpen
+                        ? 'border-[var(--text-main)]/30 bg-[var(--text-main)]/10 text-[var(--text-main)] ring-2 ring-[var(--text-main)]/15'
+                        : 'border-[var(--border-color)] bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200 hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5'
+                    }`}
+                    aria-label="Open Alerts Feed Window"
+                    aria-expanded={isAlertsOpen}
                   >
-                    {/* Header */}
-                    <div className="p-3 bg-[var(--bg-main)]/90 border-b border-[var(--border-color)] flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Bell className="h-4 w-4 text-[var(--color-brand-accent)]" />
-                        <span className="text-xs font-bold text-[var(--text-main)]">Recent Alerts</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playClick();
-                          setIsAlertsOpen(false);
-                        }}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
-                        aria-label="Close Alerts Panel"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
+                    <Bell strokeWidth={2.2} className="h-[17px] w-[17px] text-neutral-700 dark:text-neutral-200 group-hover:text-[var(--text-main)] transition-colors" />
+                    {/* Subtle, refined monochromatic notification badge */}
+                    <span className="absolute top-1 right-1 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--text-main)] dark:bg-neutral-300 opacity-50 transition-colors" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--text-main)] dark:bg-neutral-300 transition-colors" />
+                    </span>
+                  </button>
+                </Tooltip>
 
-                    {/* Quick Items List */}
-                    <div className="p-1.5 flex flex-col gap-1 max-h-72 overflow-y-auto custom-scrollbar">
-                      {CIVIC_INCIDENTS.slice(0, 4).map((inc) => {
-                        const isCrit = inc.severity === 'Critical';
-                        const isHigh = inc.severity === 'High';
-                        return (
-                          <Link
-                            key={inc.id}
-                            to={`/routes/best?lat=${inc.lat}&lng=${inc.lng}`}
-                            onClick={() => {
-                              playClick();
-                              setIsAlertsOpen(false);
-                            }}
-                            className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] transition-colors flex items-start gap-2.5 group cursor-pointer border border-transparent hover:border-[var(--border-color)]"
-                          >
-                            <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 ${
-                              isCrit
-                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                                : isHigh
-                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                  : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
-                            }`}>
-                              <ShieldAlert className="h-3.5 w-3.5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="text-xs font-semibold text-[var(--text-main)] group-hover:text-[var(--color-brand-accent)] truncate transition-colors">
-                                  {inc.title}
-                                </span>
-                                <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded-full border shrink-0 ${
-                                  isCrit
-                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                                    : isHigh
-                                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                      : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
-                                }`}>
-                                  {inc.severity}
+                {/* Popover Window: Responsive on Mobile (never overflows screen) & Anchored on Desktop */}
+                <AnimatePresence>
+                  {isAlertsOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                      transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+                      className="fixed top-[4.25rem] left-3 right-3 max-w-[calc(100vw-1.5rem)] sm:absolute sm:top-full sm:left-0 sm:right-auto md:left-auto md:right-0 sm:mt-2 sm:w-92 bg-[var(--bg-card)]/95 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col"
+                    >
+                      {/* Header */}
+                      <div className="p-3 bg-[var(--bg-main)]/90 border-b border-[var(--border-color)] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Bell className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200" />
+                          <span className="text-xs font-bold text-[var(--text-main)]">Recent Alerts</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClick();
+                            setIsAlertsOpen(false);
+                          }}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+                          aria-label="Close Alerts Panel"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+
+                      {/* Quick Items List */}
+                      <div className="p-1.5 flex flex-col gap-1 max-h-72 overflow-y-auto custom-scrollbar">
+                        {CIVIC_INCIDENTS.slice(0, 4).map((inc) => {
+                          const isCrit = inc.severity === 'Critical';
+                          const isHigh = inc.severity === 'High';
+                          return (
+                            <Link
+                              key={inc.id}
+                              to={`/notifications?alertId=${encodeURIComponent(inc.id)}&title=${encodeURIComponent(inc.title)}`}
+                              onClick={() => {
+                                playClick();
+                                setIsAlertsOpen(false);
+                              }}
+                              className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] transition-colors flex items-start gap-2.5 group cursor-pointer border border-transparent hover:border-[var(--border-color)]"
+                            >
+                              <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 transition-colors ${
+                                isCrit
+                                  ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
+                                  : isHigh
+                                    ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
+                                    : 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 border-teal-600/25 dark:border-teal-400/25'
+                              }`}>
+                                {isCrit ? <Radio className="h-3.5 w-3.5" /> : <Activity className="h-3.5 w-3.5" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-xs font-semibold text-[var(--text-main)] truncate transition-colors">
+                                    {inc.title}
+                                  </span>
+                                  <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded-full border shrink-0 ${
+                                    isCrit
+                                      ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
+                                      : isHigh
+                                        ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
+                                        : 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 border-teal-600/25 dark:border-teal-400/25'
+                                  }`}>
+                                    {inc.severity}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-[var(--text-muted)] font-mono block truncate mt-0.5">
+                                  {inc.ward} • {inc.waterDepthCm || 45} cm water
                                 </span>
                               </div>
-                              <span className="text-[10px] text-[var(--text-muted)] font-mono block truncate mt-0.5">
-                                {inc.ward} • {inc.waterDepthCm || 45} cm water
-                              </span>
-                            </div>
-                          </Link>
-                        );
-                      })}
+                            </Link>
+                          );
+                        })}
+                      </div>
+
+                      {/* Footer View All Link (Strict Monochromatic) */}
+                      <div className="p-2.5 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)]/80 backdrop-blur-md flex items-center justify-center">
+                        <Link
+                          to="/notifications"
+                          onClick={() => {
+                            playClick();
+                            setIsAlertsOpen(false);
+                          }}
+                          className="w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-xs font-semibold active:scale-98 transition-all cursor-pointer shadow-xs select-none group"
+                        >
+                          <span>View All Alerts Page</span>
+                          <ArrowRight size={13} className="text-current transition-transform group-hover:translate-x-1" />
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Theme Toggle (Visible on both mobile left cluster and desktop right cluster) */}
+              <div className="flex items-center">
+                <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
+              </div>
+
+              {onOpenPreferences && (
+                <Tooltip content="Preferences & Controls" shortcut="Shift+S" position="bottom">
+                  <button
+                    type="button"
+                    id="tour-permissions"
+                    onClick={() => { playClick(); onOpenPreferences(); }}
+                    className="hidden md:flex w-9 h-9 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200 hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors items-center justify-center cursor-pointer shadow-2xs group"
+                    aria-label="Open System Preferences"
+                  >
+                    <Settings strokeWidth={2.2} className="h-[17px] w-[17px] text-neutral-700 dark:text-neutral-200 group-hover:text-[var(--text-main)] transition-all duration-500 group-hover:rotate-90" />
+                  </button>
+                </Tooltip>
+              )}
+
+              {/* Signed-in User Profile Button with SAHNIRMAAN Golden Ring */}
+              {user ? (
+                <Tooltip content={`${user.displayName || 'Account'} (Profile)`} shortcut="5" position="bottom">
+                  <Link
+                    to="/profile"
+                    onClick={() => playClick()}
+                    className="hidden md:flex items-center gap-1.5 p-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer shadow-2xs shrink-0 group"
+                    aria-label="User Profile"
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.55)] border border-white/20">
+                      <img
+                        src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`}
+                        alt="avatar"
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover"
+                      />
                     </div>
-
-                    {/* Footer View All Link */}
-                    <div className="p-2.5 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)]/80 backdrop-blur-md flex items-center justify-center">
-                      <Link
-                        to="/notifications"
-                        onClick={() => {
-                          playClick();
-                          setIsAlertsOpen(false);
-                        }}
-                        className="w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none group"
-                      >
-                        <span>View All Alerts Page</span>
-                        <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
-                      </Link>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Theme Toggle (Visible on both mobile next to hamburger and desktop) */}
-            <div className="flex items-center">
-              <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
-            </div>
-
-            {onOpenPreferences && (
-              <Tooltip content="Preferences & Controls" shortcut="Shift+S" position="bottom">
-                <button
-                  type="button"
-                  id="tour-permissions"
-                  onClick={() => { playClick(); onOpenPreferences(); }}
-                  className="hidden md:flex w-9 h-9 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all items-center justify-center cursor-pointer shadow-2xs group"
-                  aria-label="Open System Preferences"
+                  </Link>
+                </Tooltip>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => playClick()}
+                  className="hidden md:flex px-3 py-1.5 rounded-full text-xs font-semibold border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] transition-colors shadow-2xs cursor-pointer shrink-0"
                 >
-                  <Settings className="h-4.5 w-4.5 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-90" />
-                </button>
-              </Tooltip>
-            )}
+                  Sign In
+                </Link>
+              )}
+            </div>
 
-            {/* Mobile Menu Trigger */}
+            {/* Mobile Menu Trigger (Far Right on Mobile/Touch) */}
             <button 
               type="button"
               onClick={() => { playClick(); setIsMobileMenuOpen(true); }}
-              className="md:hidden w-9 h-9 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors shadow-2xs cursor-pointer active:scale-95"
+              className="md:hidden w-9 h-9 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200 hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors shadow-2xs cursor-pointer active:scale-95 group shrink-0"
               aria-label="Open Navigation Drawer"
             >
-              <Menu className="h-4.5 w-4.5" />
+              <Menu strokeWidth={2.2} className="h-[17px] w-[17px] text-neutral-700 dark:text-neutral-200 group-hover:text-[var(--text-main)] transition-colors" />
             </button>
           </div>
         </div>
@@ -559,7 +598,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                           className="w-full text-left p-2 rounded-lg hover:bg-[var(--bg-card)] flex items-center justify-between gap-2 text-xs cursor-pointer"
                         >
                           <div className="flex items-center gap-2 min-w-0">
-                            <Icon className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0" />
+                            <Icon className="h-3.5 w-3.5 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
                             <div className="flex flex-col min-w-0">
                               <span className="font-bold text-[11px] truncate text-[var(--text-main)]">{item.title}</span>
                               <span className="text-[9px] text-[var(--text-muted)] truncate">{item.subtitle}</span>
@@ -585,7 +624,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                     onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
                     className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-main)] flex items-center gap-3 transition-colors"
                   >
-                    <MapPin className="h-4 w-4 text-[var(--color-brand-accent)]" />
+                    <MapPin className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200" />
                     <span>Live Command Map</span>
                   </Link>
 
@@ -594,7 +633,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                     onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
                     className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-main)] flex items-center gap-3 transition-colors"
                   >
-                    <RouteIcon className="h-4 w-4 text-[var(--color-brand-accent)]" />
+                    <RouteIcon className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200" />
                     <span>Safe Routes Optimizer</span>
                   </Link>
 
@@ -613,7 +652,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                     className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-main)] flex items-center justify-between transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <Bell className="h-4 w-4 text-[var(--color-brand-accent)]" />
+                      <Bell className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200" />
                       <span>All Alerts</span>
                     </div>
                     <span className="mono-badge text-[9px] px-1.5 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)]">
@@ -624,10 +663,28 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                   <Link
                     to="/profile"
                     onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
-                    className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-main)] flex items-center gap-3 transition-colors"
+                    className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-main)] flex items-center justify-between transition-colors"
                   >
-                    <User className="h-4 w-4 text-[var(--text-muted)]" />
-                    <span>Stakeholder Profile</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {user ? (
+                        <div className="w-6.5 h-6.5 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.55)] border border-white/20">
+                          <img
+                            src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`}
+                            alt="avatar"
+                            referrerPolicy="no-referrer"
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <User className="h-5 w-5 text-[var(--text-muted)] shrink-0" />
+                      )}
+                      <span className="truncate">{user?.displayName || 'Stakeholder Profile'}</span>
+                    </div>
+                    {user && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)] dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200 font-bold shrink-0">
+                        Active
+                      </span>
+                    )}
                   </Link>
 
                   <Link
@@ -652,7 +709,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                       onClick={() => { playClick(); setIsMobileMenuOpen(false); onOpenPreferences(); }}
                       className="p-2.5 rounded-xl bg-[var(--bg-main)] text-[var(--text-main)] hover:bg-[var(--text-main)]/10 text-left flex items-center gap-3 text-xs font-semibold transition-colors cursor-pointer"
                     >
-                      <Settings className="h-4 w-4 text-[var(--color-brand-accent)]" />
+                      <Settings className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200" />
                       <span>System Preferences</span>
                     </button>
                   )}
@@ -663,7 +720,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                       onClick={() => { playClick(); setIsMobileMenuOpen(false); onOpenTour(); }}
                       className="p-2.5 rounded-xl bg-[var(--bg-main)] text-[var(--text-main)] hover:bg-[var(--text-main)]/10 text-left flex items-center gap-3 text-xs font-semibold transition-colors cursor-pointer"
                     >
-                      <Compass className="h-4 w-4 text-[var(--color-brand-accent)]" />
+                      <Compass className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200" />
                       <span>Start Platform Tour</span>
                     </button>
                   )}
@@ -677,7 +734,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                     }}
                     className="p-2.5 rounded-xl bg-[var(--bg-main)] text-[var(--text-main)] hover:bg-[var(--text-main)]/10 text-left flex items-center gap-3 text-xs font-semibold transition-colors cursor-pointer"
                   >
-                    <ShieldAlert className="h-4 w-4 text-orange-500" />
+                    <SlidersHorizontal className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200" />
                     <span>Life-Safety Permissions</span>
                   </button>
                 </div>

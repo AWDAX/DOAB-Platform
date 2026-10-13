@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  ShieldAlert, 
   Radio, 
   MapPin, 
   Bell, 
   Send, 
   UserPlus, 
   Trash2, 
-  CheckCircle, 
+  CheckCircle2, 
   AlertTriangle, 
   LogOut, 
   Users, 
@@ -37,7 +36,7 @@ export default function DevAdminDashboard() {
   const [loginError, setLoginError] = useState('');
 
   // Active Admin Tabs
-  const [activeTab, setActiveTab] = useState<'triggers' | 'broadcast' | 'admins' | 'audit'>('triggers');
+  const [activeTab, setActiveTab] = useState<'triggers' | 'admins'>('triggers');
 
   // Trigger Action States
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -159,7 +158,7 @@ export default function DevAdminDashboard() {
     showToast('Cleared all custom admin alerts.');
   };
 
-  // 4. Handle Add New Admin
+  // 4. Register New Sub-Admin
   const handleAddAdmin = (e: React.FormEvent) => {
     e.preventDefault();
     playClick();
@@ -190,32 +189,32 @@ export default function DevAdminDashboard() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // 1. UNPROTECTED / LOGIN SCREEN
+  // 1. UNPROTECTED / LOGIN SCREEN (SAHNIRMAAN Monochromatic Strict Obsidian & Porcelain)
   // ─────────────────────────────────────────────────────────────
   if (!session) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[var(--bg-main)] text-[var(--text-main)]">
-        <div className="w-full max-w-md p-6 sm:p-8 rounded-3xl neo-glass-card border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl space-y-6">
+      <div className="min-h-screen w-full flex items-center justify-center p-4 bg-white dark:bg-[#080808] text-neutral-900 dark:text-neutral-100 font-sans selection:bg-neutral-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
+        <div className="w-full max-w-md p-6 sm:p-8 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-2xl space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 mx-auto flex items-center justify-center shadow-md">
-              <Terminal className="h-6 w-6" />
+            <div className="w-12 h-12 rounded-2xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 mx-auto flex items-center justify-center shadow-md">
+              <Terminal className="h-6 w-6 stroke-[2]" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight">DOAB Developer Console</h1>
-            <p className="text-xs text-[var(--text-muted)] font-mono">
-              Restricted Demo Simulation & Operations Dispatch
+            <h1 className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white">DOAB Developer Console</h1>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
+              [RESTRICTED] Operations Dispatch & Demo Simulation
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             {loginError && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-neutral-200/80 dark:bg-white/10 border border-neutral-400 dark:border-white/20 text-neutral-950 dark:text-white text-xs font-mono font-medium flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 <span>{loginError}</span>
               </div>
             )}
 
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-[var(--text-muted)] uppercase tracking-wider block">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block font-semibold">
                 Admin Username / Email
               </label>
               <input
@@ -225,12 +224,12 @@ export default function DevAdminDashboard() {
                 placeholder="Enter username or email"
                 autoComplete="off"
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white placeholder:text-neutral-400 font-mono transition-colors"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-[var(--text-muted)] uppercase tracking-wider block">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block font-semibold">
                 Password
               </label>
               <input
@@ -239,20 +238,20 @@ export default function DevAdminDashboard() {
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white placeholder:text-neutral-400 font-mono transition-colors"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] font-bold text-xs hover:opacity-90 transition-opacity shadow-sm cursor-pointer active:scale-95"
+              className="w-full py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer font-sans"
             >
               Sign In to Dev Console
             </button>
           </form>
 
-          <div className="pt-2 border-t border-[var(--border-color)] text-center text-[10px] font-mono text-[var(--text-muted)]">
-            <span>Confidential & Internal Team Use Only</span>
+          <div className="pt-2 border-t border-neutral-200 dark:border-white/10 text-center text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
+            <span>[INTERNAL USE ONLY] • AUTHENTICATED ACCESS REQUIRED</span>
           </div>
         </div>
       </div>
@@ -260,27 +259,27 @@ export default function DevAdminDashboard() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // 2. AUTHENTICATED DEV / ADMIN DASHBOARD
+  // 2. AUTHENTICATED DEV / ADMIN DASHBOARD (Pure Obsidian & Porcelain Monochromatic Architecture)
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] p-4 sm:p-6 md:p-8 flex flex-col items-center">
+    <div className="min-h-screen w-full bg-white dark:bg-[#080808] text-neutral-900 dark:text-neutral-100 p-4 sm:p-6 md:p-8 flex flex-col items-center font-sans selection:bg-neutral-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
       <div className="w-full max-w-5xl space-y-6">
         
         {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-3xl neo-glass-card border border-[var(--border-color)] bg-[var(--bg-card)] shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-md">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-[var(--text-main)] text-[var(--bg-card)] flex items-center justify-center shrink-0 shadow-sm">
-              <Terminal className="h-5 w-5" />
+            <div className="w-11 h-11 rounded-2xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-sm">
+              <Terminal className="h-5 w-5 stroke-[2]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight">Developer Operations Center</h1>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                  {session.role === 'super_admin' ? 'Super Admin' : 'Dev Admin'}
+                <h1 className="text-base sm:text-lg font-bold tracking-tight text-neutral-950 dark:text-white">Developer Operations Center</h1>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-white/20 uppercase tracking-wider">
+                  {session.role === 'super_admin' ? '[SUPER ADMIN]' : '[DEV ADMIN]'}
                 </span>
               </div>
-              <p className="text-xs text-[var(--text-muted)] font-mono">
-                Operator: <span className="font-semibold text-[var(--text-main)]">{session.username}</span> ({session.email})
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
+                Operator: <span className="font-semibold text-neutral-950 dark:text-white">{session.username}</span> ({session.email})
               </p>
             </div>
           </div>
@@ -290,14 +289,14 @@ export default function DevAdminDashboard() {
               onClick={() => {
                 window.open('/', '_blank');
               }}
-              className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] text-xs font-semibold hover:bg-[var(--bg-main)] transition-colors cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-white/15 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5"
             >
               <Activity className="h-3.5 w-3.5" />
               <span>Open Public App</span>
             </button>
             <button
               onClick={handleLogout}
-              className="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-semibold hover:bg-rose-500/20 transition-colors cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-white/15 bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white text-xs font-semibold hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors cursor-pointer flex items-center gap-1.5"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span>Log Out</span>
@@ -307,21 +306,16 @@ export default function DevAdminDashboard() {
 
         {/* Global Action Toast */}
         {statusMsg && (
-          <div className={`p-3.5 rounded-2xl border text-xs font-medium flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200 ${
-            statusMsg.type === 'error'
-              ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
-              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
-          }`}>
-            <CheckCircle className="h-4 w-4 shrink-0" />
+          <div className="p-3.5 rounded-2xl border border-neutral-400 dark:border-white/20 bg-neutral-100 dark:bg-[#18181b] text-neutral-950 dark:text-white text-xs font-mono font-medium flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>{statusMsg.text}</span>
           </div>
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-2 overflow-x-auto">
+        <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-white/10 pb-2 overflow-x-auto">
           {[
-            { id: 'triggers', label: 'Demo Instant Triggers', icon: Play },
-            { id: 'broadcast', label: 'SOS Broadcast Config', icon: ShieldAlert },
+            { id: 'triggers', label: 'Instant Triggers & Broadcast Suite', icon: Play },
             { id: 'admins', label: 'Admin Access Control', icon: Users },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -332,8 +326,8 @@ export default function DevAdminDashboard() {
                 onClick={() => { playClick(); setActiveTab(tab.id as any); }}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   active
-                    ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)]'
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
+                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5'
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -348,72 +342,153 @@ export default function DevAdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             {/* Action 1: Destination Arrival Modal Trigger */}
-            <div className="p-5 rounded-3xl neo-glass-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-3">
+            <div className="p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                <div className="p-2 rounded-xl bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20">
                   <MapPin className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">Simulate Destination Reached</h3>
-                  <p className="text-[10px] text-[var(--text-muted)]">
-                    Trigger the Safe Path Completion & Model Feedback Modal without walking
+                  <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Simulate Destination Reached</h3>
+                  <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                    [TELEMETRY] Trigger Arrival & AI Accuracy Verification Modal
                   </p>
                 </div>
               </div>
 
-              <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                During 3-minute hackathon demos, developers cannot physically walk across the city. This button immediately invokes the user arrival confirmation flow with risk probability verification and bookmarking options.
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                During 3-minute hackathon evaluations, testers cannot walk across the city. This dispatches the destination arrival flow with AI model feedback and bookmarking across desktop and connected phones.
               </p>
 
               <button
                 type="button"
                 onClick={triggerDestinationArrival}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                className="w-full py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
               >
                 <Play className="h-3.5 w-3.5" />
                 <span>Trigger Destination Reached Modal</span>
               </button>
             </div>
 
-            {/* Action 2: SOS Emergency Siren Trigger */}
-            <div className="p-5 rounded-3xl neo-glass-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-3">
+            {/* Section 2: Direct OS Push Notification Dispatcher */}
+            <div className="p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
-                  <ShieldAlert className="h-4 w-4" />
+                <div className="p-2 rounded-xl bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20">
+                  <Radio className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">Dispatch Full-Screen SOS Alarm</h3>
-                  <p className="text-[10px] text-[var(--text-muted)]">
-                    Simulate full emergency danger override with audible siren & haptics
+                  <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Direct Push Notification Dispatcher</h3>
+                  <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                    [SYSTEM TRAY] Broadcast OS-Level Banner & Chime to All Phones
                   </p>
                 </div>
               </div>
 
-              <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                Immediately broadcasts the critical life-safety screen on all connected devices, triggering local haptics, warning audio alarms, and rerouting bypass options.
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Broadcasts an instant system tray push notification with alert sound and haptics to connected mobile units without requiring app-switching.
               </p>
 
               <button
                 type="button"
-                onClick={triggerSosDanger}
-                className="w-full py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                onClick={() => {
+                  playClick();
+                  RemoteAdminChannel.broadcast('push_notification' as any, {
+                    title: '🚨 DOAB Civic Alert: Flash Waterlogging',
+                    body: 'Immediate bypass recommended around 80ft Road corridor.',
+                    isCritical: true
+                  });
+                  showToast('Dispatched OS Push Notification to all active phones.');
+                }}
+                className="w-full py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
               >
-                <Radio className="h-3.5 w-3.5" />
-                <span>Fire Full-Screen SOS Alarm Now</span>
+                <Send className="h-3.5 w-3.5" />
+                <span>Dispatch Instant Push Notification</span>
               </button>
             </div>
 
-            {/* Action 3: Inject Live Alert Stream Item */}
-            <div className="md:col-span-2 p-5 rounded-3xl neo-glass-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-4">
+            {/* Section 3: Full-Screen SOS Alarm Configuration & Fire Trigger */}
+            <div className="md:col-span-2 p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/15 shadow-md space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/25">
+                  <div className="p-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950">
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Full-Screen SOS Danger Override</h3>
+                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                      [CRITICAL OVERRIDE] Siren, aggressive haptics & immediate takeover
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20 font-bold uppercase tracking-wider">
+                  [DND BYPASS]
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Broadcast Title</label>
+                  <input
+                    type="text"
+                    value={sosTitle}
+                    onChange={(e) => setSosTitle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Ward / Location</label>
+                  <input
+                    type="text"
+                    value={sosWard}
+                    onChange={(e) => setSosWard(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Reported Depth (cm)</label>
+                  <input
+                    type="number"
+                    value={sosDepth}
+                    onChange={(e) => setSosDepth(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                  />
+                </div>
+
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Warning Description</label>
+                  <textarea
+                    rows={2}
+                    value={sosDesc}
+                    onChange={(e) => setSosDesc(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={triggerSosDanger}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Fire Full-Screen SOS Alarm Now</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Action 4: Inject Live Alert Stream Item */}
+            <div className="md:col-span-2 p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20">
                     <Bell className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold">Inject Custom Municipal Alert</h3>
-                    <p className="text-[10px] text-[var(--text-muted)]">
-                      Broadcast realistic flood alerts into the All Alerts feed
+                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Simulate Municipal Hazard Alert</h3>
+                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                      [INUNDATION STREAM] Injects instant live alert into All Alerts feed
                     </p>
                   </div>
                 </div>
@@ -421,7 +496,7 @@ export default function DevAdminDashboard() {
                 <button
                   type="button"
                   onClick={clearAdminAlerts}
-                  className="px-2.5 py-1 text-[10px] font-mono rounded-lg border border-[var(--border-color)] text-[var(--text-muted)] hover:text-rose-500 cursor-pointer"
+                  className="px-2.5 py-1 text-[10px] font-mono rounded-lg border border-neutral-300 dark:border-white/15 text-neutral-500 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 cursor-pointer"
                 >
                   Clear Custom Alerts
                 </button>
@@ -429,29 +504,29 @@ export default function DevAdminDashboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Title</label>
+                  <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Title</label>
                   <input
                     type="text"
                     value={alertTitle}
                     onChange={(e) => setAlertTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Ward / Location</label>
+                  <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Ward / Location</label>
                   <input
                     type="text"
                     value={alertWard}
                     onChange={(e) => setAlertWard(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Severity</label>
+                  <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Severity</label>
                   <select
                     value={alertSeverity}
                     onChange={(e: any) => setAlertSeverity(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                   >
                     <option value="Critical">Critical</option>
                     <option value="High">High</option>
@@ -459,12 +534,12 @@ export default function DevAdminDashboard() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Water Depth (cm)</label>
+                  <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Water Depth (cm)</label>
                   <input
                     type="number"
                     value={alertDepth}
                     onChange={(e) => setAlertDepth(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                   />
                 </div>
               </div>
@@ -472,7 +547,7 @@ export default function DevAdminDashboard() {
               <button
                 type="button"
                 onClick={injectMunicipalAlert}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] font-bold text-xs hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-95"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
               >
                 <Send className="h-3.5 w-3.5" />
                 <span>Inject Alert into Notifications Stream</span>
@@ -482,131 +557,65 @@ export default function DevAdminDashboard() {
           </div>
         )}
 
-        {/* TAB 2: BROADCAST CONFIG */}
-        {activeTab === 'broadcast' && (
-          <div className="p-6 rounded-3xl neo-glass-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-4">
-            <h2 className="text-sm font-bold flex items-center gap-2">
-              <Radio className="h-4 w-4 text-[var(--color-brand-accent)]" />
-              <span>Customize Full-Screen SOS Alarm Payload</span>
-            </h2>
-            <p className="text-xs text-[var(--text-muted)]">
-              Modify the emergency payload before triggering to demonstrate specific disaster simulation cases (e.g. cloudburst, river dam breach, flash ponding).
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="font-mono text-[10px] text-[var(--text-muted)] block mb-1">Broadcast Title</label>
-                <input
-                  type="text"
-                  value={sosTitle}
-                  onChange={(e) => setSosTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-mono text-[10px] text-[var(--text-muted)] block mb-1">Ward / Location</label>
-                <input
-                  type="text"
-                  value={sosWard}
-                  onChange={(e) => setSosWard(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-mono text-[10px] text-[var(--text-muted)] block mb-1">Reported Depth (cm)</label>
-                <input
-                  type="number"
-                  value={sosDepth}
-                  onChange={(e) => setSosDepth(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="font-mono text-[10px] text-[var(--text-muted)] block mb-1">Warning Description</label>
-                <textarea
-                  rows={2}
-                  value={sosDesc}
-                  onChange={(e) => setSosDesc(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={triggerSosDanger}
-                className="px-5 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition-colors shadow-sm cursor-pointer flex items-center gap-2"
-              >
-                <Play className="h-3.5 w-3.5" />
-                <span>Test Live Alarm with This Payload</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: ADMIN ACCESS CONTROL */}
+        {/* TAB 2: ADMIN ACCESS CONTROL */}
         {activeTab === 'admins' && (
           <div className="space-y-6">
             
             {/* Add Admin Form */}
             {session.role === 'super_admin' ? (
-              <div className="p-6 rounded-3xl neo-glass-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-4">
+              <div className="p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-4">
                 <div className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-[var(--color-brand-accent)]" />
-                  <h2 className="text-sm font-bold">Register New Dev Admin</h2>
+                  <UserPlus className="h-4 w-4 text-neutral-950 dark:text-white" />
+                  <h2 className="text-sm font-bold text-neutral-950 dark:text-white">Register New Dev Admin</h2>
                 </div>
-                <p className="text-xs text-[var(--text-muted)]">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
                   Only the Super Admin ({session.username}) can grant access to team members to operate this dashboard.
                 </p>
 
                 {adminMgmtMsg && (
-                  <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 text-xs">
+                  <div className="p-3 rounded-xl bg-neutral-200 dark:bg-white/10 border border-neutral-300 dark:border-white/20 text-neutral-950 dark:text-white text-xs font-mono">
                     {adminMgmtMsg}
                   </div>
                 )}
 
                 <form onSubmit={handleAddAdmin} className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Username</label>
+                    <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Username</label>
                     <input
                       type="text"
                       placeholder="e.g. dev_alex"
                       value={newAdminUsername}
                       onChange={(e) => setNewAdminUsername(e.target.value)}
                       required
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Email Address</label>
+                    <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Email Address</label>
                     <input
                       type="email"
                       placeholder="alex@example.com"
                       value={newAdminEmail}
                       onChange={(e) => setNewAdminEmail(e.target.value)}
                       required
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Initial Password</label>
+                    <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Initial Password</label>
                     <input
                       type="text"
                       placeholder="Secret password"
                       value={newAdminPassword}
                       onChange={(e) => setNewAdminPassword(e.target.value)}
                       required
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
                     />
                   </div>
                   <div className="sm:col-span-3 flex justify-end">
                     <button
                       type="submit"
-                      className="px-5 py-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] font-bold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                      className="px-5 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-sm font-sans"
                     >
                       Grant Admin Credentials
                     </button>
@@ -614,14 +623,14 @@ export default function DevAdminDashboard() {
                 </form>
               </div>
             ) : (
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">
-                You are logged in as a Dev Admin. Only Super Admin has permission to invite or remove administrators.
+              <div className="p-4 rounded-2xl bg-neutral-100 dark:bg-white/5 border border-neutral-300 dark:border-white/15 text-neutral-700 dark:text-neutral-300 text-xs font-mono">
+                [NOTICE] You are logged in as a Dev Admin. Only Super Admin has permission to invite or remove administrators.
               </div>
             )}
 
             {/* Admin Table */}
-            <div className="p-6 rounded-3xl neo-glass-card border border-[var(--border-color)] bg-[var(--bg-card)] space-y-4">
-              <h3 className="text-sm font-bold flex items-center gap-2">
+            <div className="p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-4">
+              <h3 className="text-sm font-bold flex items-center gap-2 text-neutral-950 dark:text-white">
                 <Users className="h-4 w-4" />
                 <span>Authorized Dashboard Operators</span>
               </h3>
@@ -629,7 +638,7 @@ export default function DevAdminDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-[var(--border-color)] text-[10px] font-mono uppercase text-[var(--text-muted)]">
+                    <tr className="border-b border-neutral-200 dark:border-white/10 text-[10px] font-mono uppercase text-neutral-500 dark:text-neutral-400">
                       <th className="py-2.5 px-3">Username</th>
                       <th className="py-2.5 px-3">Email</th>
                       <th className="py-2.5 px-3">Role</th>
@@ -637,21 +646,17 @@ export default function DevAdminDashboard() {
                       <th className="py-2.5 px-3 text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--border-color)]">
+                  <tbody className="divide-y divide-neutral-200 dark:border-white/10">
                     {adminsList.map((a) => (
-                      <tr key={a.username} className="hover:bg-[var(--bg-main)]/50 transition-colors">
-                        <td className="py-3 px-3 font-bold">{a.username}</td>
-                        <td className="py-3 px-3 text-[var(--text-muted)] font-mono">{a.email}</td>
+                      <tr key={a.username} className="hover:bg-neutral-100/50 dark:hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-3 font-bold text-neutral-950 dark:text-white">{a.username}</td>
+                        <td className="py-3 px-3 text-neutral-500 dark:text-neutral-400 font-mono">{a.email}</td>
                         <td className="py-3 px-3">
-                          <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                            a.role === 'super_admin'
-                              ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25'
-                              : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/25'
-                          }`}>
-                            {a.role}
+                          <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-100 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 uppercase">
+                            [{a.role}]
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-[10px] font-mono text-[var(--text-muted)]">
+                        <td className="py-3 px-3 text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
                           {new Date(a.addedAt).toLocaleDateString()}
                         </td>
                         <td className="py-3 px-3 text-right">
@@ -659,7 +664,7 @@ export default function DevAdminDashboard() {
                             <button
                               type="button"
                               onClick={() => handleRemoveAdmin(a.username)}
-                              className="p-1 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                              className="p-1 rounded-lg text-neutral-500 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors cursor-pointer"
                               title="Revoke Admin Access"
                             >
                               <Trash2 className="h-3.5 w-3.5" />

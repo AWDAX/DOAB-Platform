@@ -7,7 +7,7 @@ import {
   X,
   ArrowLeft,
   Route as RouteIcon,
-  ShieldCheck,
+  Activity,
   Radio,
   ChevronRight,
   ChevronLeft
@@ -18,6 +18,7 @@ import BrandLogo from '../components/BrandLogo';
 import ThemeToggle from '../components/ThemeToggle';
 import Tooltip from '../components/Tooltip';
 import FooterParticles from '../components/FooterParticles';
+import DragScrollController from '../components/DragScrollController';
 
 function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -46,11 +47,12 @@ interface TeamPageProps {
   onOpenTour?: () => void;
 }
 
-export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
+export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }: TeamPageProps) {
   const navigate = useNavigate();
   const [lightboxMember, setLightboxMember] = useState<TeamMember | null>(null);
   const [lightboxTilt, setLightboxTilt] = useState({ x: 0, y: 0 });
   const [scrolled, setScrolled] = useState(false);
+  const isDrought = envMode === 'drought' || (typeof document !== 'undefined' && document.documentElement.classList.contains('theme-drought'));
 
   useEffect(() => {
     // Ensure viewport immediately resets to absolute top when entering team page
@@ -184,7 +186,9 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
             <div className="relative flex items-center justify-center flex-shrink-0">
               <span
                 aria-hidden="true"
-                className="absolute inset-0 -m-2 rounded-full bg-sky-500/20 blur-lg dark:block hidden pointer-events-none group-hover:scale-125 transition-transform"
+                className={`absolute inset-0 -m-2 rounded-full blur-lg dark:block hidden pointer-events-none group-hover:scale-125 transition-transform ${
+                  isDrought ? 'bg-amber-500/20' : 'bg-sky-500/20'
+                }`}
               />
               <BrandLogo size="md" />
             </div>
@@ -203,36 +207,36 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
       <main className="flex-1 w-full max-w-[1300px] mx-auto px-4 sm:px-6 md:px-8 pt-28 sm:pt-36 md:pt-40 pb-20 relative z-10 flex flex-col items-center">
         {/* Hero Section */}
         <div id="tour-team-header" className="text-center max-w-2xl mx-auto mb-14 sm:mb-16 relative">
-          {/* Theme-Adaptive Soft Blurred Smudge Background Aura (from SAHNIRMAAN) */}
+          {/* Theme-Adaptive Soft Blurred Smudge Background Aura (Flood vs Drought) */}
           <div
             aria-hidden="true"
-            className="absolute -top-12 sm:-top-16 left-1/2 -translate-x-1/2 w-[340px] sm:w-[540px] md:w-[620px] h-[200px] sm:h-[260px] md:h-[300px] rounded-full pointer-events-none -z-0 transition-all duration-500
-              /* Flood Light: Very subtle airy cerulean mist */
-              bg-[radial-gradient(ellipse_at_center,_rgba(2,132,199,0.09),_rgba(14,165,233,0.03),_transparent_68%)]
-              /* Flood Dark: Luminous Abyssal Aqua-Cyan Glow */
-              dark:bg-[radial-gradient(ellipse_at_center,_rgba(56,189,248,0.24),_rgba(2,132,199,0.12),_transparent_70%)]
-              /* Drought Light: Very subtle warm amber mist */
-              theme-drought:bg-[radial-gradient(ellipse_at_center,_rgba(217,119,6,0.08),_rgba(245,158,11,0.03),_transparent_68%)]
-              /* Drought Dark: Luminous Amber-Gold Halo */
-              theme-drought:dark:bg-[radial-gradient(ellipse_at_center,_rgba(251,191,36,0.24),_rgba(217,119,6,0.14),_transparent_70%)]
-              blur-2xl sm:blur-3xl filter"
+            className={`absolute -top-12 sm:-top-16 left-1/2 -translate-x-1/2 w-[340px] sm:w-[540px] md:w-[620px] h-[200px] sm:h-[260px] md:h-[300px] rounded-full pointer-events-none -z-0 transition-all duration-500 blur-2xl sm:blur-3xl filter ${
+              isDrought
+                ? 'bg-[radial-gradient(ellipse_at_center,_rgba(217,119,6,0.11),_rgba(120,53,15,0.04),_transparent_68%)] dark:bg-[radial-gradient(ellipse_at_center,_rgba(251,191,36,0.24),_rgba(217,119,6,0.14),_transparent_70%)]'
+                : 'bg-[radial-gradient(ellipse_at_center,_rgba(2,132,199,0.09),_rgba(14,165,233,0.03),_transparent_68%)] dark:bg-[radial-gradient(ellipse_at_center,_rgba(56,189,248,0.24),_rgba(2,132,199,0.12),_transparent_70%)]'
+            }`}
           />
 
           {/* Secondary Direct Text-Backdrop Smudge Shadow (Centered directly behind h1) */}
           <div
             aria-hidden="true"
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[260px] sm:w-[420px] h-[90px] sm:h-[130px] rounded-full pointer-events-none -z-0
-              bg-sky-500/[0.05] dark:bg-sky-400/20 
-              theme-drought:bg-amber-500/[0.05] theme-drought:dark:bg-amber-400/20
-              blur-xl sm:blur-2xl filter"
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[260px] sm:w-[420px] h-[90px] sm:h-[130px] rounded-full pointer-events-none -z-0 blur-xl sm:blur-2xl filter ${
+              isDrought
+                ? 'bg-amber-600/[0.06] dark:bg-amber-400/20'
+                : 'bg-sky-500/[0.05] dark:bg-sky-400/20'
+            }`}
           />
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[10px] font-mono font-bold text-[var(--text-muted)] mb-4 shadow-2xs relative z-10">
-            <Users2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+            <Users2 className="h-3.5 w-3.5 text-[var(--text-main)] dark:text-neutral-200" />
             <span>Team Contrarians · Core Engineering Architects</span>
           </div>
           
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[var(--text-main)] mb-4 text-balance relative z-10 drop-shadow-[0_1px_4px_rgba(2,132,199,0.03)] dark:drop-shadow-[0_2px_20px_rgba(56,189,248,0.15)] theme-drought:drop-shadow-[0_1px_4px_rgba(217,119,6,0.03)] theme-drought:dark:drop-shadow-[0_2px_20px_rgba(245,158,11,0.18)]">
+          <h1 className={`text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[var(--text-main)] mb-4 text-balance relative z-10 ${
+            isDrought
+              ? 'drop-shadow-[0_1px_4px_rgba(217,119,6,0.06)] dark:drop-shadow-[0_2px_20px_rgba(245,158,11,0.18)]'
+              : 'drop-shadow-[0_1px_4px_rgba(2,132,199,0.03)] dark:drop-shadow-[0_2px_20px_rgba(56,189,248,0.15)]'
+          }`}>
             The Team Behind DOAB
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-lg mx-auto text-balance relative z-10">
@@ -249,7 +253,9 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
               className="neo-glass-card rounded-3xl border border-[var(--border-color)] p-5 sm:p-6 flex flex-col justify-between cursor-pointer group hover:border-[var(--text-main)]/35 hover:-translate-y-1.5 transition-all duration-300 shadow-sm hover:shadow-xl relative overflow-hidden bg-[var(--bg-card)]"
             >
               {/* Subtle top-right corner ambient geometric accent */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sky-500/10 via-transparent to-transparent rounded-bl-full pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+              <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl via-transparent to-transparent rounded-bl-full pointer-events-none group-hover:scale-125 transition-transform duration-500 ${
+                isDrought ? 'from-amber-500/10' : 'from-sky-500/10'
+              }`} />
 
               <div>
                 {/* Avatar & Social Row */}
@@ -370,7 +376,7 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
               <div key={idx} className="neo-glass-card p-6 rounded-2xl border border-[var(--border-color)] shadow-2xs flex flex-col justify-between">
                 <div>
                   <div className="h-9 w-9 rounded-xl bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)] flex items-center justify-center mb-4">
-                    {idx === 0 ? <Radio className="h-4.5 w-4.5" /> : idx === 1 ? <RouteIcon className="h-4.5 w-4.5" /> : <ShieldCheck className="h-4.5 w-4.5" />}
+                    {idx === 0 ? <Radio className="h-4.5 w-4.5" /> : idx === 1 ? <RouteIcon className="h-4.5 w-4.5" /> : <Activity className="h-4.5 w-4.5" />}
                   </div>
                   <h3 className="font-bold text-sm text-[var(--text-main)] mb-2">
                     {pillar.title}
@@ -582,6 +588,9 @@ export default function TeamPage({ isDarkMode, toggleTheme }: TeamPageProps) {
           </div>
         </div>
       </footer>
+
+      {/* Signature Dragpad & Scroll-to-Top / Scroll-to-Bottom controller */}
+      <DragScrollController />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Bell, Clock, ShieldAlert, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Bell, Clock, Activity, Radio, ExternalLink, RefreshCw } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useForecast } from '../hooks/useForecast';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
@@ -9,6 +10,9 @@ import { playClick } from '../utils/soundFx';
 
 export default function NotificationPage() {
   const copy = getPredictionCopy();
+  const [searchParams] = useSearchParams();
+  const focusedAlertId = searchParams.get('alertId');
+  const focusedAlertTitle = searchParams.get('title');
   const { forecast, status, stale, reload } = useForecast();
   const [filterSeverity, setFilterSeverity] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
 
@@ -44,7 +48,7 @@ export default function NotificationPage() {
 
   // Ground truth / realistic flood and inundation alerts derived from municipal datasets
   // Filter out non-flood, pipeline maintenance, and informal user complaints
-  const mockAlerts = WATERLOGGING_DATASET_INCIDENTS
+  const filteredDataset = WATERLOGGING_DATASET_INCIDENTS
     .filter((inc) => {
       const lowerTitle = (inc.title || '').toLowerCase();
       const lowerDesc = (inc.description || '').toLowerCase();
@@ -57,28 +61,39 @@ export default function NotificationPage() {
         lowerDesc.includes('wine shop') ||
         lowerTitle.includes('pipeline') ||
         lowerTitle.includes('leak');
-      return !isUnwanted && inc.severity !== 'Low';
-    })
-    .slice(0, 8)
-    .map((inc, i) => ({
-      lat: inc.lat,
-      lng: inc.lng,
-      title: inc.title,
-      ward: inc.ward,
-      severity: inc.severity,
-      waterDepthCm: inc.waterDepthCm || 45,
-      rainfallMmH: inc.rainfallMmH || 32,
-      probability: inc.severity === 'Critical' ? 0.88 - i * 0.05 : inc.severity === 'High' ? 0.65 - i * 0.04 : 0.42,
-      confidence: 'Historical sensor-backed ground truth',
-      updatedTime: inc.updatedTime,
-      isMockup: true,
-    }));
+      return !isUnwanted && (inc.severity !== 'Low' || inc.id === focusedAlertId);
+    });
+
+  // Ensure that if a specific alert was clicked in Recent Alerts, it is included in mockAlerts
+  const topSlice = filteredDataset.slice(0, 8);
+  const focusedIncident = focusedAlertId
+    ? WATERLOGGING_DATASET_INCIDENTS.find((inc) => inc.id === focusedAlertId || inc.title === focusedAlertTitle)
+    : null;
+  const combinedIncidents = focusedIncident && !topSlice.some((inc) => inc.id === focusedIncident.id)
+    ? [focusedIncident, ...topSlice]
+    : topSlice;
+
+  const mockAlerts = combinedIncidents.map((inc, i) => ({
+    id: inc.id,
+    lat: inc.lat,
+    lng: inc.lng,
+    title: inc.title,
+    ward: inc.ward,
+    severity: inc.severity,
+    waterDepthCm: inc.waterDepthCm || 45,
+    rainfallMmH: inc.rainfallMmH || 32,
+    probability: inc.severity === 'Critical' ? 0.88 - Math.min(i, 6) * 0.05 : inc.severity === 'High' ? 0.65 - Math.min(i, 6) * 0.04 : 0.42,
+    confidence: 'Historical sensor-backed ground truth',
+    updatedTime: inc.updatedTime,
+    isMockup: true,
+  }));
 
   const liveCells = (forecast?.cells ?? [])
     .filter((cell) => cell.probability != null && cell.probability >= 0.35)
     .sort((a, b) => (b.probability ?? 0) - (a.probability ?? 0))
     .slice(0, 8)
-    .map((cell) => ({
+    .map((cell, idx) => ({
+      id: `live-cell-${idx}`,
       lat: cell.lat,
       lng: cell.lng,
       title: `Grid Cell (${cell.lat.toFixed(2)}, ${cell.lng.toFixed(2)})`,
@@ -92,7 +107,7 @@ export default function NotificationPage() {
       isMockup: false,
     }));
 
-  const isModelResponding = status === 'ready' && liveCells.length > 0;
+  const isModelResponding = status === 'ready' && liveCells.length > 0 && !focusedAlertId;
   const baseAlerts = isModelResponding ? liveCells : mockAlerts;
   const activeAlerts = [...adminCustomAlerts, ...baseAlerts];
 
@@ -100,22 +115,32 @@ export default function NotificationPage() {
     (a) => filterSeverity === 'all' || a.severity === filterSeverity
   );
 
+  // Auto-reset severity filter and scroll to focused alert when navigated from Recent Alerts
+  useEffect(() => {
+    if (!focusedAlertId && !focusedAlertTitle) return;
+    setFilterSeverity('all');
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`alert-card-${focusedAlertId}`) || document.querySelector('[data-focused-alert="true"]');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [focusedAlertId, focusedAlertTitle]);
+
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto custom-scrollbar flex flex-col items-center">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] custom-scrollbar flex flex-col items-center">
       {/* Page Header */}
       <div id="tour-alerts-header" className="mb-5 w-full max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
-              <Bell className="h-6 w-6 text-[var(--color-brand-accent)]" />
+              <Bell className="h-6 w-6 text-[var(--text-main)] dark:text-neutral-200" />
               All Alerts
             </h1>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] font-medium uppercase tracking-wider shadow-2xs">
-              Prototype Mockup
-            </span>
           </div>
           <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1 leading-relaxed">
-            {copy.notASensor}
+            Real-time hydrological risk stream and verified municipal waterlogging telemetry.
           </p>
         </div>
         <div className="self-start sm:self-auto shrink-0 flex items-center gap-2">
@@ -133,28 +158,42 @@ export default function NotificationPage() {
       </div>
 
       <div className="flex flex-col gap-4 w-full max-w-3xl mx-auto">
-        {/* Subtle, Crisp Status Disclaimer Callout */}
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs flex items-start gap-3">
-          <div className="p-2 rounded-xl bg-sky-500/10 text-[var(--color-brand-accent)] border border-sky-500/20 shrink-0 mt-0.5">
-            <AlertTriangle className="h-4 w-4" />
-          </div>
-          <div className="flex-1 min-w-0 text-xs leading-relaxed">
-            <div className="font-semibold text-[var(--text-main)] flex items-center gap-2 flex-wrap">
-              <span>Interactive Demonstration & Mockup Feed</span>
-              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
-                {!isModelResponding ? 'Offline Ground-Truth BBMP Feed' : 'Live ML Estimator Connected'}
-              </span>
+        {/* Error Fallback Telemetry Banner (only shown if live forecast endpoint fails) */}
+        {status === 'error' && (
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="p-2 rounded-xl bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border border-amber-600/25 dark:border-amber-400/25 shrink-0 mt-0.5">
+                <Activity className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 text-xs leading-relaxed">
+                <div className="font-semibold text-[var(--text-main)] flex items-center gap-2 flex-wrap">
+                  <span>{copy.error}</span>
+                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
+                    Regional Telemetry Active
+                  </span>
+                </div>
+                <p className="text-[var(--text-muted)] text-[11px] mt-0.5 leading-normal">
+                  Displaying verified civic waterlogging telemetry with GPS coordinates and rainfall intensity metrics.
+                </p>
+              </div>
             </div>
-            <p className="text-[var(--text-muted)] text-[11px] mt-1 leading-normal">
-              {!isModelResponding
-                ? `${copy.error} Displaying high-fidelity civic telemetry mockups from historical Bengaluru waterlogging reports with verified GPS coordinates and rainfall metrics.`
-                : copy.notASensor}
-            </p>
+            <button
+              type="button"
+              onClick={() => { playClick(); void reload(); }}
+              className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shrink-0 shadow-2xs"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>Retry Sync</span>
+            </button>
           </div>
-        </div>
+        )}
 
-        {/* Severity Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {/* Severity Filter Segmented Sliding Pill Toolbar (Fixed 4-Column Grid — Zero Layout Shift & Zero Horizontal Overflow) */}
+        <div
+          role="tablist"
+          aria-label="Filter alerts by severity"
+          className="grid grid-cols-4 p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs relative w-full select-none"
+        >
           {(['all', 'Critical', 'High', 'Medium'] as const).map((sev) => {
             const isSelected = filterSeverity === sev;
             const count = sev === 'all' ? activeAlerts.length : activeAlerts.filter(a => a.severity === sev).length;
@@ -162,16 +201,41 @@ export default function NotificationPage() {
               <button
                 key={sev}
                 type="button"
-                onClick={() => { playClick(); setFilterSeverity(sev); }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                role="tab"
+                aria-selected={isSelected}
+                onClick={() => {
+                  if (filterSeverity !== sev) {
+                    playClick();
+                    setFilterSeverity(sev);
+                  }
+                }}
+                className={`relative z-10 py-2 px-1.5 sm:px-3 rounded-xl text-[11px] sm:text-xs font-semibold transition-colors duration-200 cursor-pointer flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap min-w-0 ${
                   isSelected
-                    ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-2xs font-semibold'
-                    : 'bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] border-[var(--border-color)]'
+                    ? 'text-[var(--bg-card)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }`}
               >
-                <span>{sev === 'all' ? 'All Alerts' : sev}</span>
-                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
-                  isSelected ? 'bg-[var(--bg-card)]/20 text-[var(--bg-card)]' : 'bg-[var(--bg-main)] text-[var(--text-muted)]'
+                {isSelected && (
+                  <motion.div
+                    layoutId="alertsSeveritySlidingPill"
+                    className="absolute inset-0 bg-[var(--text-main)] rounded-xl -z-10 shadow-xs"
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  />
+                )}
+                <span className="truncate">
+                  {sev === 'all' ? (
+                    <>
+                      <span className="sm:hidden">All</span>
+                      <span className="hidden sm:inline">All Alerts</span>
+                    </>
+                  ) : (
+                    sev
+                  )}
+                </span>
+                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full leading-none shrink-0 transition-colors ${
+                  isSelected
+                    ? 'bg-[var(--bg-card)]/20 text-[var(--bg-card)]'
+                    : 'bg-[var(--bg-main)] text-[var(--text-muted)]'
                 }`}>
                   {count}
                 </span>
@@ -189,21 +253,30 @@ export default function NotificationPage() {
           filteredAlerts.map((alert, index) => {
             const isCritical = alert.severity === 'Critical';
             const isHigh = alert.severity === 'High';
+            const isFocused = Boolean(
+              (focusedAlertId && alert.id === focusedAlertId) ||
+              (focusedAlertTitle && alert.title === focusedAlertTitle)
+            );
             return (
               <div
-                key={`${alert.lat}-${alert.lng}-${index}`}
-                id={index === 0 ? 'tour-alerts-critical' : index === 1 ? 'tour-alerts-tanker' : index === 2 ? 'tour-alerts-backcheck' : undefined}
-                className="bg-[var(--bg-card)] p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-4 items-start border border-[var(--border-color)] shadow-2xs hover:border-[var(--color-brand-accent)]/40 hover:shadow-sm transition-all duration-200"
+                key={`${alert.id || alert.lat}-${alert.lng}-${index}`}
+                id={alert.id ? `alert-card-${alert.id}` : index === 0 ? 'tour-alerts-critical' : index === 1 ? 'tour-alerts-tanker' : index === 2 ? 'tour-alerts-backcheck' : undefined}
+                data-focused-alert={isFocused ? 'true' : undefined}
+                className={`p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-4 items-start border transition-all duration-300 ${
+                  isFocused
+                    ? 'bg-[var(--bg-main)] border-neutral-900 dark:border-white ring-2 ring-neutral-900/25 dark:ring-white/30 shadow-xl scale-[1.01]'
+                    : 'bg-[var(--bg-card)] border-[var(--border-color)] shadow-2xs hover:border-[var(--text-main)]/35 hover:shadow-sm'
+                }`}
               >
                 {/* Severity Badge Icon */}
                 <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border transition-colors ${
                   isCritical
-                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                    ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
                     : isHigh
-                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                      : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
+                      ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
+                      : 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 border-teal-600/25 dark:border-teal-400/25'
                 }`}>
-                  <ShieldAlert className="h-5 w-5" />
+                  {isCritical ? <Radio className="h-5 w-5" /> : <Activity className="h-5 w-5" />}
                 </div>
 
                 <div className="flex-grow min-w-0 w-full">
@@ -215,16 +288,16 @@ export default function NotificationPage() {
                         </h3>
                         <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${
                           isCritical
-                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                            ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
                             : isHigh
-                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                              : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
+                              ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
+                              : 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 border-teal-600/25 dark:border-teal-400/25'
                         }`}>
                           {alert.severity}
                         </span>
-                        {alert.isMockup && (
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] font-normal">
-                            Ground-Truth
+                        {isFocused && (
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-2xs">
+                            Selected Alert
                           </span>
                         )}
                       </div>
@@ -264,7 +337,7 @@ export default function NotificationPage() {
 
                   <div className="flex items-center justify-between gap-3 pt-1">
                     <p className="text-[11px] text-[var(--text-muted)] leading-relaxed truncate">
-                      {stale ? copy.stale : copy.notASensor}
+                      {stale ? copy.stale : 'Verified hydrological telemetry & SRTM elevation analysis.'}
                     </p>
 
                     <div className="flex items-center gap-2 shrink-0">

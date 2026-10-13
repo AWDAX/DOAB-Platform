@@ -47,50 +47,158 @@ function getInitialSeasonalClimateMode(): 'flood' | 'drought' {
 
 function BottomNav() {
   const location = useLocation();
+  const [user, setUser] = useState<any>(() => {
+    try {
+      const raw = localStorage.getItem('doab_demo_user_v1');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const unsub = onDOABAuthStateChanged((u) => setUser(u));
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, []);
+
+  const [hasUnreadAlerts, setHasUnreadAlerts] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('doab_notifications_read') !== 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleAlertsRead = () => setHasUnreadAlerts(false);
+    const handleNewAlert = () => setHasUnreadAlerts(true);
+    window.addEventListener('doab:alerts-read', handleAlertsRead);
+    window.addEventListener('doab:admin-alerts-updated', handleNewAlert);
+    return () => {
+      window.removeEventListener('doab:alerts-read', handleAlertsRead);
+      window.removeEventListener('doab:admin-alerts-updated', handleNewAlert);
+    };
+  }, []);
+
   if (location.pathname === '/login' || location.pathname === '/landing' || location.pathname === '/team') return null;
   
-  const navItems = [
-    { path: '/', icon: Map, label: 'Map' },
-    { path: '/routes/best', icon: RouteIcon, label: 'Routes' },
+  // SAHNIRMAAN inspired layout: Leftmost All Alerts, Routes, Center Raised Map, Assistant, Profile
+  const leftItems = [
+    { path: '/notifications', icon: Bell, label: 'All Alerts', badge: hasUnreadAlerts ? '!' : undefined },
+    { path: '/routes/best', icon: RouteIcon, label: 'Routes' }
+  ];
+
+  const rightItems = [
     { path: '/assistant', icon: AIOrbIcon, label: 'Assistant', badge: 'AI' },
-    { path: '/notifications', icon: Bell, label: 'All Alerts', badge: '3' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
 
+  const isMapActive = location.pathname === '/';
+
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)]/92 backdrop-blur-2xl border-t border-[var(--border-color)] pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 z-40 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
-      <div className="flex justify-around items-center h-14 px-2 max-w-md mx-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
-          return (
-            <Link 
-              key={item.path} 
-              to={item.path}
-              onClick={() => playClick()}
-              className={`relative flex flex-col items-center justify-center flex-1 h-full py-1 rounded-xl transition-all duration-200 active:scale-95 ${
-                isActive 
-                  ? 'text-[var(--color-brand-accent)] font-bold' 
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-              }`}
-            >
-              <div className="relative">
-                <Icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? 'scale-110 stroke-[2.4]' : 'stroke-[1.8]'}`} />
-                {item.badge && (
-                  <span className="absolute -top-1 -right-2 h-3.5 min-w-[14px] px-1 rounded-full bg-[var(--color-brand-accent)] text-[var(--bg-card)] text-[9px] font-mono font-black flex items-center justify-center shadow-xs">
-                    {item.badge}
-                  </span>
+    <nav 
+      aria-label="Mobile Navigation"
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)]/95 backdrop-blur-2xl border-t border-[var(--border-color)] pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-1 z-40 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
+    >
+      <div className="max-w-md mx-auto flex items-center h-16 relative px-2">
+        {/* Left cluster: All Alerts & Routes */}
+        <div className="flex-1 flex items-center justify-around">
+          {leftItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => playClick()}
+                className={`relative flex flex-col items-center justify-center flex-1 h-full py-1 rounded-xl transition-all duration-200 active:scale-95 ${
+                  isActive ? 'text-[var(--text-main)] font-bold' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+              >
+                <div className="relative">
+                  <Icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? 'scale-110 stroke-[2.4]' : 'stroke-[1.8]'}`} />
+                  {item.badge && (
+                    <span className="absolute -top-1 -right-2 h-3.5 min-w-[14px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-mono font-black flex items-center justify-center shadow-xs">
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+                <span className={`text-[10px] tracking-tight truncate max-w-[4.5rem] mt-0.5 ${isActive ? 'font-bold' : 'font-medium'}`}>
+                  {item.label}
+                </span>
+                {isActive && (
+                  <span className="absolute bottom-0 w-1 h-1 rounded-full bg-[var(--text-main)] animate-pulse" />
                 )}
-              </div>
-              <span className={`text-[10px] tracking-tight truncate max-w-[4rem] mt-0.5 ${isActive ? 'font-bold' : 'font-medium'}`}>
-                {item.label}
-              </span>
-              {isActive && (
-                <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-[var(--color-brand-accent)] animate-pulse" />
-              )}
-            </Link>
-          );
-        })}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Center Raised Primary Action FAB: Map Button (Shifted up & bigger for mobile touch) */}
+        <div className="relative w-20 flex justify-center shrink-0">
+          <Link
+            to="/"
+            onClick={() => playClick()}
+            aria-label="Operations Grid Map"
+            title="Operations Grid Map"
+            className="absolute -top-8 h-[62px] w-[62px] rounded-2xl flex items-center justify-center shadow-2xl cursor-pointer transition-all duration-200 active:scale-95 border-2 border-[var(--border-color)] dark:border-white/20 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-main)] hover:-translate-y-0.5"
+            style={{
+              backgroundImage: 'var(--auth-btn-gradient, linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%))'
+            }}
+          >
+            {/* White SVG in light theme (using text-white), Black SVG in dark theme (using dark:text-slate-900) */}
+            <Map className="h-7 w-7 text-white dark:text-slate-100 stroke-[2.3] transition-transform duration-200 hover:scale-105" />
+            {isMapActive && (
+              <span className="absolute -bottom-1.5 w-2 h-2 rounded-full bg-amber-400 dark:bg-sky-400 shadow-[0_0_10px_rgba(245,158,11,0.9)]" />
+            )}
+          </Link>
+        </div>
+
+        {/* Right cluster: Assistant & Profile */}
+        <div className="flex-1 flex items-center justify-around">
+          {rightItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => playClick()}
+                className={`relative flex flex-col items-center justify-center flex-1 h-full py-1 rounded-xl transition-all duration-200 active:scale-95 ${
+                  isActive ? 'text-[var(--text-main)] font-bold' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+              >
+                <div className="relative">
+                  {item.path === '/profile' && user ? (
+                    <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/80 shadow-[0_0_8px_rgba(245,158,11,0.55)] border border-white/20">
+                      <img
+                        src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`}
+                        alt="avatar"
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <Icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? 'scale-110 stroke-[2.4]' : 'stroke-[1.8]'}`} />
+                  )}
+                  {item.badge && (
+                    <span className="absolute -top-1 -right-2 h-3.5 min-w-[14px] px-1 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] text-[9px] font-mono font-black flex items-center justify-center shadow-xs">
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+                <span className={`text-[10px] tracking-tight truncate max-w-[4.5rem] mt-0.5 ${isActive ? 'font-bold' : 'font-medium'}`}>
+                  {item.label}
+                </span>
+                {isActive && (
+                  <span className="absolute bottom-0 w-1 h-1 rounded-full bg-[var(--text-main)] animate-pulse" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
@@ -175,6 +283,24 @@ function AppContent({
           setShowWelcomeTour(true);
         }, 600);
         return () => clearTimeout(timer);
+      } else {
+        // If tour was already done/prompted, check if life-safety permissions have been prompted or fully granted
+        const permsPrompted = localStorage.getItem('doab_permissions_prompted');
+        let allEnabled = false;
+        try {
+          const savedPerms = JSON.parse(localStorage.getItem('doab_user_permissions_v2') || '{}');
+          if (savedPerms.location && savedPerms.notifications && savedPerms.geofence && savedPerms.dndBroadcast) {
+            allEnabled = true;
+          }
+        } catch {}
+
+        // Never prompt if all permissions are enabled or user has already configured/dismissed
+        if (!permsPrompted && !allEnabled) {
+          const permTimer = setTimeout(() => {
+            setIsPermissionsOpen(true);
+          }, 800);
+          return () => clearTimeout(permTimer);
+        }
       }
     }
   }, [user]);
@@ -288,6 +414,7 @@ function AppContent({
           toggleEnvMode={toggleEnvMode}
           onOpenTour={() => { playClick(); setIsTourOpen(true); }}
           onOpenPreferences={() => { playClick(); setIsPreferencesOpen(true); }}
+          user={user}
         />
       )}
       
@@ -464,10 +591,6 @@ function AppContent({
       <PermissionsModal
         isOpen={isPermissionsOpen}
         onClose={() => setIsPermissionsOpen(false)}
-        onTestDangerBroadcast={() => {
-          setIsPermissionsOpen(false);
-          setIsDangerBroadcastOpen(true);
-        }}
       />
 
       {/* Emergency Danger Broadcast (SOS Full-Screen Danger Screen) */}
