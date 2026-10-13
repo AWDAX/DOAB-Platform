@@ -1,12 +1,16 @@
 {
-  "name": "DOAB Sentinel — Urban Disaster Copilot",
+  "name": "DOAB (दोआब) — Dual-Climate Geospatial & Civic Safety Platform",
   "short_name": "DOAB",
-  "description": "Urban life-safety crisis response, flood-avoidance rerouting, and real-time civic dispatch.",
+  "description": "DOAB (Detect → Order → Alert → Back-check): AI-powered dual-climate municipal flood routing, inundation early warning, and disaster resilience platform.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#030712",
-  "orientation": "portrait",
+  "orientation": "any",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["weather", "navigation", "utilities", "safety"],
   "icons": [
     {
       "src": "/favicon.svg",

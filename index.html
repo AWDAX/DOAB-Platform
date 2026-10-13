@@ -1,23 +1,114 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <title>DOAB (दोआब) — Dual-Climate Geospatial &amp; Civic Safety Platform</title>
+    
+    <!-- Primary SEO Meta Tags -->
+    <meta name="title" content="DOAB (दोआब) — Dual-Climate Geospatial &amp; Civic Safety Platform" />
+    <meta name="description" content="DOAB (Detect → Order → Alert → Back-check): AI-powered dual-climate municipal flood routing, inundation early warning, and disaster resilience platform." />
+    <meta name="keywords" content="DOAB, urban flood prediction, municipal routing, civic safety, dual-climate resilience, inundation map, Copernicus DEM, IMD rainfall, Bangalore waterlogging, disaster management" />
+    <meta name="author" content="Team Contrarians" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://doab.sahnirmaan.live/" />
+    
+    <!-- Geo Meta Tags -->
+    <meta name="geo.region" content="IN" />
+    <meta name="geo.placename" content="India" />
+
+    <!-- Favicons & Mobile Web App PWA Manifest -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#030712" />
-    <meta name="description" content="DOAB: Urban life-safety crisis response, flood-avoidance rerouting, and real-time civic dispatch." />
-    <title>DOAB — Detect. Order. Alert. Back-check.</title>
+
+    <!-- Open Graph / Facebook / LinkedIn / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DOAB Platform" />
+    <meta property="og:url" content="https://doab.sahnirmaan.live/" />
+    <meta property="og:title" content="DOAB (दोआब) — Dual-Climate Geospatial &amp; Civic Safety Platform" />
+    <meta property="og:description" content="AI-powered municipal flood routing, inundation risk prediction, and dual-climate civic safety platform. Real-time Copernicus DEM and IMD telemetry." />
+    <meta property="og:image" content="https://doab.sahnirmaan.live/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="DOAB Platform Logo &amp; Geospatial Radar" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DOAB (दोआब) — Dual-Climate Geospatial &amp; Civic Safety Platform" />
+    <meta name="twitter:description" content="AI-powered municipal flood routing, inundation risk prediction, and dual-climate civic safety platform." />
+    <meta name="twitter:image" content="https://doab.sahnirmaan.live/logo.png" />
+
+    <!-- Fonts Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "https://doab.sahnirmaan.live/#webapp",
+          "name": "DOAB Platform",
+          "alternateName": "दोआब",
+          "url": "https://doab.sahnirmaan.live/",
+          "applicationCategory": "PublicSafetyApplication",
+          "operatingSystem": "Web, Android",
+          "browserRequirements": "Requires JavaScript. Requires HTML5.",
+          "description": "AI-powered municipal flood routing, inundation risk prediction, and dual-climate civic safety platform with real-time Copernicus DEM and IMD rainfall telemetry.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "INR"
+          },
+          "author": {
+            "@type": "Organization",
+            "name": "Team Contrarians",
+            "url": "https://doab.sahnirmaan.live/team"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://doab.sahnirmaan.live/#organization",
+          "name": "DOAB — Team Contrarians",
+          "url": "https://doab.sahnirmaan.live/",
+          "logo": "https://doab.sahnirmaan.live/logo.png",
+          "sameAs": [
+            "https://github.com/AWDAX/DOAB-Platform"
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
   <body class="font-sans antialiased">
     <div id="root"></div>
+
+    <!-- Noscript Crawler Fallback -->
+    <noscript>
+      <div style="padding: 2rem; font-family: sans-serif; background-color: #030712; color: #f8fafc; min-height: 100vh;">
+        <h1>DOAB (दोआब) — Dual-Climate Geospatial &amp; Civic Safety Platform</h1>
+        <p><strong>Detect → Order → Alert → Back-check</strong></p>
+        <p>DOAB is an AI-powered municipal intelligence and citizen life-safety platform engineered to tackle India's extreme dual-climate crises: urban flash flooding and waterlogging during monsoon, and acute drought and tanker logistics deficits during dry seasons.</p>
+        <p>Core Capabilities:</p>
+        <ul>
+          <li><strong>Real-time 3D Inundation &amp; Hazard Radar:</strong> Multi-layer spatial clustering with 15cm road flood thresholds.</li>
+          <li><strong>AI Elevation-Aware Safe Routing:</strong> Dijkstra pathfinding over Copernicus Digital Elevation Models (DEM) prioritizing dry ridgelines over waterlogged underpasses.</li>
+          <li><strong>Dual-Climate Intelligence:</strong> Dynamic seasonal modes for Monsoon Flood Mitigation and Drought Water Logistics.</li>
+          <li><strong>Emergency Civic Dispatch:</strong> Real-time situational awareness and localized responder coordination.</li>
+        </ul>
+        <p>Please enable JavaScript to access the interactive 3D map, geospatial routing engine, and real-time radar.</p>
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
