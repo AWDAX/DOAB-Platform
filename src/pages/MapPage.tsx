@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Circle, G
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Haversine formula from SAHNIRMAAN to compute high-precision spatial distance (km) between GPS coordinates
+// Haversine formula to compute high-precision spatial distance (km) between GPS coordinates
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   if (!Number.isFinite(lat1) || !Number.isFinite(lon1) || !Number.isFinite(lat2) || !Number.isFinite(lon2)) return 0;
   const R = 6371; // Earth radius in kilometers
@@ -1237,7 +1237,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     };
   }, [userCoords, filteredIncidents, hasRealLocation]);
 
-  // SAHNIRMAAN Cluster Engine: Group incidents by Ward / Corridor into macro danger clusters
+  // DOAB Cluster Engine: Group incidents by Ward / Corridor into macro danger clusters
   const recurringClusters = useMemo(() => {
     const clusterMap = new Map<string, {
       ward: string;
@@ -1269,7 +1269,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     });
 
     return Array.from(clusterMap.values()).map((c) => {
-      // Calculate max spatial span between reports in this ward/sector cluster using SAHNIRMAAN haversine
+      // Calculate max spatial span between reports in this ward/sector cluster using haversine
       let maxDist = 0;
       for (let i = 0; i < c.points.length; i++) {
         for (let j = i + 1; j < c.points.length; j++) {
@@ -2437,7 +2437,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </div>
               )}
 
-              {/* TAB 3: SAHNIRMAAN Macro Danger Cluster Table */}
+              {/* TAB 3: DOAB Macro Danger Cluster Table */}
               {activeLeftTab === 'clusters' && (
                 <div className="flex flex-col gap-2 animate-in fade-in duration-150">
                   <div className="flex items-center justify-between pb-1 border-b border-[var(--border-color)]">
@@ -2637,7 +2637,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         </div>
       </div>
 
-      {/* ── Top-Right SAHNIRMAAN Floating Neo-Glass Map Controls Toolbar (Shifted down on mobile/touch views below Live Risk) ── */}
+      {/* ── Top-Right DOAB Floating Neo-Glass Map Controls Toolbar (Shifted down on mobile/touch views below Live Risk) ── */}
       <div id="tour-map-controls" className="absolute top-[4.5rem] right-2.5 sm:top-4 sm:right-4 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">
         {/* 1. Start Map Page Tour Guide (Placed at the very top, matching theme styling) */}
         <Tooltip content="Live Map Guide" position="left">
@@ -2770,7 +2770,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         </Tooltip>
       </div>
 
-      {/* ── SAHNIRMAAN Floating Map Intelligence & Proximity Radar Card (Anchored to the left of the vertical toolbar) ── */}
+      {/* ── DOAB Floating Map Intelligence & Proximity Radar Card (Anchored to the left of the vertical toolbar) ── */}
       <AnimatePresence>
         {showInfo && (
           <motion.div 
@@ -3036,7 +3036,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               )}
 
 
-              {/* SAHNIRMAAN Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
+              {/* DOAB Macro Danger Cluster Halos (Visible when showHeatLayer is toggled) */}
               {showHeatLayer && recurringClusters.slice(0, Capacitor.isNativePlatform() ? 12 : 40).map((cluster, cIdx) => {
                 const clusterColor = cluster.highestSeverity === 'Critical' 
                   ? '#BE123C' 
@@ -3102,7 +3102,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 />
               )}
 
-              {/* SAHNIRMAAN Spatial Proximity Vector from User GPS to Inspected Incident */}
+              {/* DOAB Spatial Proximity Vector from User GPS to Inspected Incident */}
               {hasRealLocation && selectedIncident && !isMapFlying && (
                 <Polyline
                   positions={[

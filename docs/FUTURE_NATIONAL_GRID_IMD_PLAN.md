@@ -1,7 +1,7 @@
-# DOAB / SAHNIRMAAN: Future National Grid & Real-Time IMD Architecture Plan
+# DOAB: Future National Grid & Real-Time IMD Architecture Plan
 
 **Document Version:** 1.0.0  
-**Project:** DOAB (Dynamic Overland Aquifer & Bathymetry Flood Intelligence) / SAHNIRMAAN  
+**Project:** DOAB (Dynamic Overland Aquifer & Bathymetry Flood Intelligence)  
 **Date:** October 12, 2026  
 **Status:** Approved Architectural Roadmap (Future Plan & Hackathon Demo Blueprint)
 

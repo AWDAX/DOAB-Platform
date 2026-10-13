@@ -25,7 +25,7 @@ import { useNavigate } from 'react-router-dom';
 /**
  * High-Precision ToggleSwitch Component
  * Replaces default checkboxes with a clean, semantic animated button slider.
- * Ported directly from SWATVA and SAHNIRMAAN design standard.
+ * DOAB design standard.
  */
 export function ToggleSwitch({ 
   checked, 
@@ -179,7 +179,7 @@ export default function PreferencesModal({
             aria-hidden="true"
           />
 
-          {/* Modal Container Card (SAHNIRMAAN & SWATVA Standard) */}
+          {/* Modal Container Card (DOAB Standard) */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

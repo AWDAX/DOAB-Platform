@@ -102,6 +102,12 @@ Do NOT invent alternative architectures or revert to unverified scrapers. Follow
 - **Dual-Engine Hardware Parity (`MapLibreView.tsx`):**
   - Added `isCameraFlying` state tracking with MapLibre's `moveend` listener and `fill-opacity-transition: { duration: 400 }` / `line-opacity-transition: { duration: 400 }` paint rules so 3D GPU mode exhibits identical visual polish.
 
+### 12. Licensing Architecture & Anti-Theft Copyleft Protection (GNU GPLv3)
+- **Adopted GNU General Public License v3.0 (`LICENSE`):**
+  - Resolved discrepancy between `README.md` badge and missing root license file.
+  - Formally established strong copyleft protection: anyone who uses, modifies, or forks DOAB must keep all derivative works 100% open source under the same GPLv3 terms, preventing closed-source commercial exploitation or proprietary copycats while maintaining open public benefit.
+  - Updated `README.md` badge to `License: GPLv3`, synced `package.json` with `"license": "GPL-3.0-or-later"`, and attributed copyright to `Team Contrarians (AWDAX)`.
+
 ---
 
 ## Next Implementation Phases (From `FUTURE_NATIONAL_GRID_IMD_PLAN.md`)

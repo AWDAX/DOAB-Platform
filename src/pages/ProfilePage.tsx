@@ -387,7 +387,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* ── Mobile-Only / Touch-Friendly Quick Action Grid (SAHNIRMAAN Standard) ── */}
+      {/* ── Mobile-Only / Touch-Friendly Quick Action Grid (DOAB Standard) ── */}
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-2 sm:hidden my-2">
         {/* Civic Standing & Trust Score Card */}
         <div className="w-full p-2.5 rounded-xl neo-glass-card border border-[var(--border-color)] flex flex-col items-center justify-center text-center gap-1 shadow-2xs">

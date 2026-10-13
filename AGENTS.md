@@ -4,20 +4,14 @@ Guidance for AI coding agents (Claude Code, Cursor, Copilot, Antigravity, openco
 
 ---
 
-## 🚀 Current phase — POST-HACKATHON: results pending — keep building to industry level (read first)
+## 🚀 Current phase — Production Engineering & Hackathon Readiness (read first)
 
-**SIH 2026 has concluded; the final team results have NOT been declared yet — treat our
-status as PENDING. Do not claim selection, non-selection, or placement either way on any
-surface.** The developer is now running DOAB as a production-grade product: keep
-hardening + shipping features as if continuing solo for real users; if results later
-declare otherwise, the work continues unchanged — only the public framing around
-"results pending" can be updated then.
-
-- Treat every change as **production software for real users** — not a demo/prototype. No hackathon hacks, no "it works on my machine" shortcuts.
-- **Industry standards everywhere**: clean architecture, real security, automated tests, observability, accurate i18n (en/hi/sat via native checks), and documented ops on every feature/change.
-- **Priority is hardening first, features second.** Follow the live backlog in `docs/DEV_SESSION_STATE.md` → "Phase 2 — production hardening backlog": rotate leaked credentials, VM SSH key-only, server-issued session tokens, strict Firebase verification, CI + secret scanning + dependabot, data durability, monitoring.
-- **Never weaken the two Critical rules below** (secrets + no-false-claims). They now protect us **legally**, not just from judges. The product is independently built; it must STILL not claim government/institution affiliation, real partnerships, or movement of real funds.
-- **Credentials are high-value now.** Anything that ever appeared in chat/session logs is considered exposed (session text persists in local `.opencode/*.db`) — rotate it. Service-account JSON and keys NEVER go into the repo or chat; keep them as env vars / `chmod 600` files on the VM.
+DOAB is an advanced Disaster Operations & Advisory Board platform engineering project:
+- Treat every change as **production software for real users** — not an incomplete demo. Clean architecture, high availability, zero-jerk UI transitions, and solid test coverage.
+- **Industry standards everywhere**: clean architecture, real security, automated tests, observability, and documented operations on every feature/change.
+- **Priority is hardening first, features second.** Follow the live state in `docs/DEV_SESSION_STATE.md`.
+- **Never weaken the two Critical rules below** (secrets + no-false-claims). The product is independently built; do not claim unauthorized government/institution endorsements or affiliations.
+- **Credentials are high-value.** Service-account keys, database passwords, and AWS credentials NEVER go into the repository.
 - When uncertain whether a change is "industry standard", apply the "Industry standards & assumption-checking" section below and state a clear recommendation rather than guessing.
 
 ---
@@ -28,7 +22,7 @@ declare otherwise, the work continues unchanged — only the public framing arou
 
 - **Never commit any real credential**: API keys, tokens, `client_secret`, passwords, connection strings, private keys, or secrets of any kind.
 - **Never commit `.env` / `.env.*` files.** They are gitignored. Only `.env.example` (with **placeholders only**) may be tracked.
-- **Never commit sensitive deployment identifiers**: real Azure VM names, public IPs, subscription IDs, or connection endpoints.
+- **Never commit sensitive deployment identifiers**: real production secrets, private IPs, subscription IDs, or connection endpoints.
 - **Never hardcode keys in source** — read them from environment/`.env` at runtime (e.g. `import.meta.env.VITE_GROQ_API_KEY`, `process.env.*`).
 - **Docs must be credential-free.** Any doc referencing an API/credential uses placeholder values only (e.g. `your_api_key`, `my-vm`, `my-rg`).
 
@@ -38,71 +32,23 @@ declare otherwise, the work continues unchanged — only the public framing arou
 
 ---
 
-## ⛔ Critical: NEVER add anything that gets us disqualified (read first)
+## ⛔ Critical: Zero False Claims & Accurate Framing (read first)
 
 **Absolute rule — no exception.**
 
-This is an **independently built civic-technology product** (origin: Smart India Hackathon
-SIH26043, which is over). The developer has NO authorization from, or partnerships with, any
-government body, university, or company. Never ship text, metadata, imagery, or claims that
-make it look official, state-operated, or institution-endorsed.
+DOAB is an **independently built civic disaster resilience platform**. The team does NOT have real authorization from, or official partnerships with, unverified government agencies or corporate bodies. Never ship text, metadata, imagery, or claims that make it look officially state-operated or endorsed without genuine agreements.
 
-**Forbidden on ANY surface users can see, share, or that crawlers index** — this includes
-`index.html` `<head>`, `SEO.jsx` defaults, JSON-LD/structured data, the `<noscript>` block,
-the public landing page, `og:`/`twitter:`/`author`/geo meta tags, `og-image`, and visible copy:
-- Claiming authorship by or affiliation with any real government body (e.g. "Government of
-  Jharkhand, Department of Higher and Technical Education"), or implying official/state operation.
-- Claiming partnership, involvement, endorsement, sponsorship, or data/funding from any **real
-  named institution or company** (e.g. BIT Mesra, NIT Jamshedpur, IIT(ISM) Dhanbad, Birsa
-  Agricultural University, Tata Steel, Coal India, JSLPS, NABARD, Jindal Steel) — unless that
-  entity has actually agreed, which we must **assume NOT**.
-- Asserting concrete real-world operational facts we do not have (e.g. "4,500+ Pragya Kendras",
-  "100+ University Laboratories", live district/node counts, disbursed grants).
-- Impersonating real handles (e.g. Twitter `@JharkhandGov`) or setting `author`/geo tags that
-  assert real institutional presence.
-- Any claim of real permissions, deployments, or third-party credentials we haven't obtained.
-- Claiming to actually **hold, move, or disburse third-party/escrow money**, or describing a live
-  financial arrangement with real CSR/industry sponsors. Escrow accounts, RBI/banking handling, and
-  CSR disbursement under the Companies Act are regulated activities a student team cannot claim to
-  have built. Refer to the **"proposed CSR co-funding model"** ONLY — never imply funds are actually
-  held or moving; name no real sponsor as the source of funds.
-- Calling our database record-keeping **"immutable"** or **"cryptographically verifiable"** (e.g. "SHA-256
-  immutable/cryptographic academic credits ledger"). MongoDB/PostgreSQL/Typesense are not immutable or
-  hash-chain-verifiable by default. Unless a real hash-chained append-only mechanism is implemented, call
-  it what it is: an **audit trail / signed log**. If we later add a genuine hash chain, then the term may
-  return — until then drop "immutable"/"cryptographic".
+**Forbidden on ANY surface users can see, share, or that crawlers index**:
+- Claiming official state authorship or statutory authority without verified agreements.
+- Claiming official endorsement or live signed contracts from unconfirmed entities.
+- Asserting real-world operational deployments that are simulated in the prototype.
+- Impersonating real official handles or setting false institutional credentials.
+- Claiming live custody or movement of real commercial funds unless using an explicitly labeled sandbox mode.
 
 **Required for public/indexed surfaces:**
-- Frame everything as a **student concept/prototype** for the Smart India Hackathon (SIH26043) —
-  phrase with "concept", "prototype", "targets", "intended to", "example"; never present-tense claims.
-- Replace real institution/company names with **generic or explicitly "example/hypothetical"**
-  labels (e.g. "Example Research Partner", "Example CSR Sponsor") on public pages.
-- Include a visible **disclaimer** on the public landing page and in the `<noscript>` fallback
-  (e.g. "Project Concept — student prototype. Not affiliated with or endorsed by any listed
-  institution, company, or government body.").
-- When in doubt about a phrase, **ask/flag rather than ship**.
-- Describe CSR as a **"proposed" or "intended" co-funding model** ("proposed CSR co-funding model"),
-  never as active escrow/holding of funds.
-- Describe the credits/ledger as an **audit trail or signed log**, not "immutable"/"cryptographic",
-  unless a real hash-chain mechanism exists.
-
-**Allowed:** authenticated demo dashboards (behind login) may show hypothetical partners ONLY if a
-clear "demo/illustrative data" notice is present (existing pattern on `Governance`/`kiosk` pages).
-Keep real names off any public/indexed surface.
-
-**Alternative — the ONLY legitimate way to demo real fund *movement* (future work):** use a **sandbox/test
-mode payment processor** (RazorpayX Test Mode — best fit for ₹/Indian CSR framing, or Stripe Test Mode) with
-**test keys only** and fake money. This is what hackathon teams do: wire a sandbox processor behind the
-existing simulation (escrow orchestration + `EscrowLedger` are already built as a demo), label everything
-"sandbox / simulated — no real funds", and optionally add the processor (test mode) to the tech-stack diagram
-so the stack-vs-escrow gap is owned. A student team must **never** hold/move real third-party funds;
-real custody requires a licensed intermediary + a registered merchant entity. If sandbox keys are not yet
-available, keep the simulated model rather than claiming real payments.
-
-**Enforcement (before every commit-push):** grep changed files for `Government of Jharkhand`,
-`@JharkhandGov`, and the named-entity list above; if any appears on a public/indexed surface or
-lacks demo/example framing, fix before committing. See `docs/GITHUB_PROFILE.md` "Accuracy rules"
-(established precedent: Bhashini = future idea only).
+- Frame prototype and concept modules accurately as an advanced resilience architecture and simulation engine.
+- Replace unverified third-party names with generic or explicitly "Example / Simulated" labels.
+- Include appropriate disclaimers where mock data or synthetic disaster telemetry is visualized.
 
 ---
 
@@ -168,7 +114,7 @@ The PWA must support all **three** languages everywhere: `en`, `hi` (Devanagari)
 2. **Never leave a user-visible string hardcoded** in a component (pages, components, dashboard shell, role pages). Always route through `t` via `useLanguage()`.
 3. When adding a new key tree to `translations.js`, mirror the exact same key path in `en`, `hi`, and `sat` — all three must exist or the fallback will silently show the English/raw-key text.
 4. Dynamic data (user/DB content) does NOT need translation — only static UI chrome.
-5. Do not translate brand names (`DOAB`, `ClusterGuilders` is kept as-is in English; `CLUSTERGUILDERS`) or technical tokens like `SIH26043`.
+5. Do not translate brand names (`DOAB` is kept as-is in English).
 6. On Windows, verify touched translation files still decode as UTF-8 (no mojibake) — see mojibake rules above.
 
 ### Translation must be REAL and language-accurate — never literal/transliterated (read first)
@@ -219,136 +165,69 @@ The landing-page FAQ lives in `apps/client-pwa/src/i18n/translations.js` under `
 
 ---
 
-## 🧭 Mandatory: Sub-Tours / In-Service Walkthroughs for Portal Hub Services
+## 🧭 Mandatory: Guided Walkthroughs for Core Platform Modules
 
-Every major tool, module, and sub-service within the Portal Hub (e.g., `ProblemMap`, `CivicLeaderboard`, `PragyaKendraIntake`, `StateCommandAnalytics`, `CivicImpact`, `CSREscrowPortal`, `FederatedLearningDashboard`, `ConsortiumBuilder`, etc.) must have an interactive, localized in-service guided sub-tour (`ServiceTour.jsx`).
+Every major tool, module, and view within DOAB (e.g., `MapPage`, `BestRoutesPage`, `DevAdminDashboard`, `AssistantPage`, `OldRoutesPage`) includes an interactive, multi-step guided tour (`GuidedTour.tsx`).
 
-### Rules for New Services & Upgrades (Absolute Requirement)
+### Rules for New Features & Views
 
-1. **New Services Require a Sub-Tour:**
-   - Whenever any new Portal Hub service, sub-service, or module is created, you **MUST** implement an in-service sub-tour for it in the same pass.
-   - The sub-tour must provide a 30-second walkthrough highlighting key inputs, filters, actions, and output views.
+1. **New Modules Support Tour Steps:**
+   - Whenever a major platform module or view is updated or created, update `src/components/GuidedTour.tsx` with relevant tour highlights.
+   - The walkthrough highlights primary action controls, spatial filters, radar diagnostics, and route options.
 
-2. **Upgrades & Additions Require Sub-Tour Updates:**
-   - Whenever any existing Portal Hub sub-service is upgraded, redesigned, or has new features/controls added, its sub-tour **MUST** be updated to reflect the new capabilities.
-   - Never leave obsolete tour targets or descriptions behind when upgrading a UI component.
-
-3. **In-Service Tour Architecture & Integration Checklist:**
-   - **Component Mount:** Mount `<ServiceTour serviceKey="<serviceKey>" />` inside the root container of the service.
-   - **Header Trigger Button:** Include `<ServiceTourButton serviceKey="<serviceKey>" />` in the service header bar so users can re-trigger the walkthrough on-demand at any time.
-   - **Target Elements:** Attach semantic `data-service-tour="<target-name>"` attributes to key containers and interactive controls.
-   - **Step Definitions:** Add the step array in `SERVICE_TOUR_CONFIGS` inside `apps/client-pwa/src/components/ServiceTour.jsx`.
-   - **Polyglot i18n Parity:** Add matching `serviceTours.<serviceKey>` translation blocks in `apps/client-pwa/src/i18n/translations.js` across **ALL 3 languages**: English (`en`), Hindi (`hi` in Devanagari), and Santali (`sat` in Ol Chiki).
-   - **Design Standards:** Maintain the monochromatic obsidian/porcelain minimalist design system. Never use colored beacons, blinking arrows, or raw emojis in tour tooltips.
+2. **Integration Checklist:**
+   - **Target Elements:** Attach semantic `data-tour="<step-name>"` attributes to key containers and interactive controls.
+   - **Step Definitions:** Maintain step arrays in `src/components/GuidedTour.tsx`.
+   - **Design Standards:** Maintain the dual-climate monochromatic obsidian / porcelain / sea-blue design system. Never use distracting animations or raw unstyled elements in tour cards.
 
 ---
 
-## 🎬 Demo & Simulation Scripts (mandatory for demo-worthy features)
-
-Whenever a feature, simulation, or flow is added that needs to be *demonstrated* at hackathon
-evaluation (e.g. Federated edge training, Consortium MOU execution, CSR milestone escrow, Living
-Lab telemetry, Problem Map triage, Kiosk offline sync), ship a runnable demo/script in the SAME
-batch as the feature. Never leave a demo-worthy feature with no way to showcase it.
-
-### Rules
-
-1. **Place them in `scripts/demo/`** — one subfolder per feature, containing:
-   - A **Windows batch file** (`NN_<feature>.bat`, zero-indexed for run order) that starts anything
-     needed locally (dev servers, seeders, simulators) and prints clear step-by-step instructions.
-   - The simulation script itself (`.bat`, `.js`, `.py`) that drives a hands-off, deterministic
-     walkthrough of the feature.
-   - A **`README.md`** how-to inside the folder: prerequisites, one-command start, what the viewer
-     should look for on screen (what to click, what changes, expected timings/labels).
-2. **Runnable & safe:** scripts must be re-runnable (idempotent), respect `%~dp0`, encode UTF-8
-   (BOM-free), define `chcp 65001` + console `echo` hex hints where useful, and NEVER hit real
-   externals — simulate locally only (no secret keys, no real network calls, no real funds).
-3. **Deterministic & self-documenting:** fixed seed/fixtures so the demo output is predictable;
-   echo each stage so the operator knows what to say/point at during the pitch.
-4. **i18n/design note:** demo output copy follows the same monochrome + en/hi/sat rules as the app
-   where practical; never introduce disqualified claims (mock/named institutions → "Example ..."
-   or "Proposed" framing only).
-5. **Routing:** `scripts/` lives on the **`backend`** branch; commit the scripts + `README.md`
-   there with `[skip ci]` (Vercel quota). Keep `scripts/demo/README.md` current every time a demo
-   script changes or a demo-worthy feature lands.
-6. **Mandatory pairing:** when adding a demo-worthy feature, create its demo script + runbook in
-   the same pass you add the feature (mirror of the Sub-Tours rule above). Verify the script runs
-   (`cmd /c scripts\demo\NN_<feature>.bat`) before committing.
-7. **Keep the runbook + index current:** the canonical how-to-run reference is
-   `scripts/demo/README.md` (launcher table, feature→script map, first-run caveats). Whenever you
-   add or change a script, update that README **and** the live script index below in the **same
-   commit** — a demo script that isn't documented does not count as shipped.
-
-### How to run & test features with the demo scripts (live index)
-
-> One command from a **Windows Terminal / PowerShell** at the repo root (Git Bash: read each
-> `.bat` and run the same `node`/`npm` commands directly):
-> `cmd /c scripts\demo\NN_<feature>.bat`. Scripts are idempotent and run against local services
-> only. `scripts/demo/README.md` is the full runbook; the index below is the at-a-glance map.
-
-| Script | What it runs | Feature(s) it verifies |
-|--------|--------------|------------------------|
-| `01-start-mesh.bat` | Docker Compose mesh (MongoDB/Redis/Typesense) + deps + seed | local infra bring-up |
-| `02-seed-demo-data.bat` | Re-seeds deterministic demo reports/MOUs/escrow/telemetry | seed data |
-| `03-run-pwa.bat` | Client PWA dev server (`http://localhost:5173`) | all UI features |
-| `04-capture-demo-screens.bat` | Puppeteer screenshot capture → `artifacts/screenshots/mobile/` | pitch-deck slide assets |
-| `05-test-tts.bat` | ai-service `/tts` (EN/HI neural, SAT fallback) | localized read-aloud |
-| `06-trustcore-loop.bat` | Self-contained trust-core sim (in-memory Mongo + app on ephemeral port) | photo-proof → VLE attest (+25) → govt resolve → certificate + honor roll; `REPORT_RECEIVED`/`PROOF_VERIFIED`/`AI_VERIFICATION_COMPLETE`/`MILESTONE_APPROVED` inbox + read/clear; govt-only audit trail; anti-sybil 409 |
-
-**When does a new feature need a script?** Anything that must be *demonstrated* (see the section
-header) gets `NN_<feature>.bat` (+ driver + runbook row + this index row) in the same batch.
-
----
 ## Repo overview
 
-**DOAB (SIH26043)** — "Societal Innovation Collaboration Portal" for the Government of Jharkhand. A polyglot monorepo bridging citizens, universities, industry, and government.
+**DOAB (Z-Sentinel)** — Disaster Operations & Advisory Board Nationwide Dual-Climate Flood & Drought Resilience Platform.
 
-Polyglot monorepo:
+Architecture overview:
 ```
-DOAB_(CrowdSourcing)/
-├── apps/
-│   ├── client-pwa/          # React 18 + Vite + Tailwind + PWA + Bubblewrap TWA
-│   ├── core-api/            # Node.js + Express + Mongoose + Typesense
-│   ├── university-service/  # Java 21 + Spring Boot 3.3 + PostgreSQL
-│   └── ai-service/          # Python 3.11 + FastAPI + PyTorch + Sentence-BERT
-├── contracts/               # JSON Schemas & OpenAPI specs (single source of truth)
-├── infra/                   # Docker Compose mesh, Redis, Typesense, MongoDB configs
-├── public/avatars/          # offline WebP team/contributor assets
-├── scripts/                 # data seeding & system init
-└── docs/                    # technical documentation & architecture blueprints
+Codebase/
+├── src/                     # React 19 + TypeScript + Vite + Tailwind CSS + MapLibre GL
+│   ├── components/          # High-performance modular UI, map views, telemetry panels
+│   ├── pages/               # LandingPage, MapPage, BestRoutesPage, AssistantPage, etc.
+│   ├── services/            # AWS SDK integrations, Location Service, Bedrock AI
+│   └── data/                # Hydrological and meteorological datasets, spatial grids
+├── docs/                    # Architecture blueprints, AWS deployment guides, UI design system
+├── public/                  # Cursors, icons, PWA manifest, audio assets
+└── scripts/                 # Utility scripts and deployment tooling
 ```
 
 Brand identity:
-- English: **DOAB** (was "DOAB" before rebrand — do not reintroduce the old name)
-- Hindi (Devanagari): `सहनिर्माण`
-- Santali (Ol Chiki): `ᱥᱦᱱᱤᱨᱢᱟᱧ`
+- English: **DOAB** (Z-Sentinel)
+- Climate Modes: **Flood Resilience (Aqua Sea Porcelain)** & **Drought Mitigation (Golden Earth Umber)**
 
 ---
 
 ## Languages & frameworks
 
-| Service | Stack |
+| Layer | Stack |
 |---|---|
-| client-pwa | React 18, Vite, Tailwind, PWA (workbox), Google Bubblewrap TWA |
-| core-api | Node.js, Express, Mongoose (MongoDB), Typesense search |
-| university-service | Java 21, Spring Boot 3.3, PostgreSQL, RBAC |
-| ai-service | Python 3.11, FastAPI, PyTorch, Sentence-BERT, Groq (Qwen 3.8B) client |
+| Frontend & PWA | React 19, TypeScript, Vite, Tailwind CSS, Workbox PWA |
+| Native Mobile | Capacitor 7, Android APK |
+| Geospatial & Mapping | MapLibre GL, Leaflet, Turf.js spatial analysis |
+| Cloud Infrastructure | AWS CloudFront CDN, S3, EC2, RDS PostgreSQL, Amazon Location Service |
+| AI Copilot | AWS Bedrock / Groq LLaMA 3.3 70B & Qwen Spatial Copilot |
 
 ---
 
 ## Commands
 
 ```bash
-# seed demo data
-npm run seed
-
-# e2e test (puppeteer)
-npm run test:e2e
-
-# docker mesh
-docker-compose -f infra/docker-compose.yml up --build -d
+# install dependencies
+npm install
 
 # client dev
-cd apps/client-pwa && npm install && npm run dev   # http://localhost:5173
+npm run dev   # http://localhost:5173
+
+# production build
+npm run build
 ```
 
 ---

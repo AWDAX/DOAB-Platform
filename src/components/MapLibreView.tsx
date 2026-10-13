@@ -120,7 +120,7 @@ export default function MapLibreView({
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    // 1. SAHNIRMAAN Macro Danger Cluster Halos (Matching 2D Lite Double-Outline + Calibrated Alpha Fill)
+    // 1. DOAB Macro Danger Cluster Halos (Matching 2D Lite Double-Outline + Calibrated Alpha Fill)
     const clusterSourceId = 'cluster-halos-source';
     const clusterFillId = 'cluster-halos-fill';
     const clusterLineId = 'cluster-halos-line';

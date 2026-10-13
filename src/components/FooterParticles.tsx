@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * FooterParticleCanvas (adapted from SWATVA & SAHNIRMAAN)
- * Replicates the exact typography sizing, quadratic dispersion physics, 
- * stippled pointillism particle engine, and dissolve scattering on scroll-to-top.
+ * FooterParticleCanvas
+ * DOAB stippled pointillism particle engine and dissolve scattering on scroll-to-top.
  */
 interface FooterParticlesProps {
   text?: string;
@@ -224,11 +223,7 @@ export default function FooterParticles({ text = 'DOAB', darkMode = true }: Foot
     };
 
     window.addEventListener('doab-trigger-particle-dissolve', triggerParticleDissolve);
-    window.addEventListener('swatva-trigger-particle-dissolve', triggerParticleDissolve);
-    window.addEventListener('sahnirmaan-trigger-particle-dissolve', triggerParticleDissolve);
     window.addEventListener('doab-reset-particles', resetParticles);
-    window.addEventListener('swatva-reset-particles', resetParticles);
-    window.addEventListener('sahnirmaan-reset-particles', resetParticles);
 
     const updatePointer = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
@@ -355,11 +350,7 @@ export default function FooterParticles({ text = 'DOAB', darkMode = true }: Foot
       observer.disconnect();
       window.removeEventListener('resize', resize);
       window.removeEventListener('doab-trigger-particle-dissolve', triggerParticleDissolve);
-      window.removeEventListener('swatva-trigger-particle-dissolve', triggerParticleDissolve);
-      window.removeEventListener('sahnirmaan-trigger-particle-dissolve', triggerParticleDissolve);
       window.removeEventListener('doab-reset-particles', resetParticles);
-      window.removeEventListener('swatva-reset-particles', resetParticles);
-      window.removeEventListener('sahnirmaan-reset-particles', resetParticles);
       container.removeEventListener('mousemove', onMouseMove);
       container.removeEventListener('mouseleave', onLeave);
       container.removeEventListener('touchstart', onTouchMove);

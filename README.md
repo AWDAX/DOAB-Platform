@@ -5,7 +5,7 @@
 [![React 19](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20Tailwind-61DAFB?logo=react&logoColor=black)](https://vite.dev)
 [![Python 3.12](https://img.shields.io/badge/AI%20Service-FastAPI%20%7C%20XGBoost%20%7C%20PyTorch-3776AB?logo=python&logoColor=white)](https://fastapi.tiangolo.com)
 [![Android APK](https://img.shields.io/badge/Android-Native%20APK%20Ready-3DDC84?logo=android&logoColor=white)](https://github.com/AWDAX/DOAB-Platform)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 **Live Production URL:** [https://doab.sahnirmaan.live](https://doab.sahnirmaan.live) *(Direct CloudFront Edge: [d38z2t6y9aj34z.cloudfront.net](https://d38z2t6y9aj34z.cloudfront.net))*  
 Developed by **Team Contrarians** for **WeMakeDevs Hackathon**.
@@ -237,7 +237,7 @@ All detailed architecture specifications, deployment guides, and design docs are
 | [**Android Native App Guide**](./docs/ANDROID_APP_GUIDE.md) | Mobile (Android) | Capacitor native APK build, offline geolocation caching, and Android permissions |
 | [**UI Design System**](./docs/UI_DESIGN_SYSTEM.md) | Design & UX | Dual-climate color tokens, neo-glassmorphism, a11y standards, and custom SVG cursors |
 | [**Hackathon Video Script**](./docs/HACKATHON_VIDEO_SCRIPT.md) | Presentation | Step-by-step video demonstration flow and live product presentation script |
-| [**Verification Checklist**](./docs/Checklist.md) | QA & Audit | Full project readiness checklist and verification matrix |
+
 
 ---
 
@@ -245,4 +245,4 @@ All detailed architecture specifications, deployment guides, and design docs are
 
 - **Team**: Contrarians
 - **Project**: DOAB (दोआब) — Dual-Climate Geospatial & Civic Safety Platform
-- **License**: MIT License
+- **License**: GNU General Public License v3.0 (GPLv3)

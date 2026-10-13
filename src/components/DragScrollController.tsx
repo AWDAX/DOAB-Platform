@@ -4,7 +4,7 @@ import ProgressRing from './ProgressRing';
 
 /**
  * DragScrollController
- * Full reproduction of the Portfolio's signature Draggable Scroll System from SAHNIRMAAN:
+ * DOAB's signature Draggable Scroll System:
  * - Diagonal -45deg drag track
  * - Tactile drag-to-rotate inertia physics loop (0.14 damping factor)
  * - Bidirectional Scroll-to-Top <-> Scroll-to-Bottom mode toggle on drag snap

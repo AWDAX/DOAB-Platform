@@ -506,7 +506,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                 </Tooltip>
               )}
 
-              {/* Signed-in User Profile Button with SAHNIRMAAN Golden Ring */}
+              {/* Signed-in User Profile Button with DOAB Golden Ring */}
               {user ? (
                 <Tooltip content={`${user.displayName || 'Account'} (Profile)`} shortcut="5" position="bottom">
                   <Link

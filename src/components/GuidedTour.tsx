@@ -605,7 +605,7 @@ export const ROUTE_PATH_MAP: Record<string, string> = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// HELPER: ELEMENT VISIBILITY CHECK (SAHNIRMAAN STANDARD)
+// HELPER: ELEMENT VISIBILITY CHECK (DOAB STANDARD)
 // ─────────────────────────────────────────────────────────────
 
 export function isElementVisible(el: HTMLElement | null): boolean {
@@ -617,7 +617,7 @@ export function isElementVisible(el: HTMLElement | null): boolean {
 }
 
 // ─────────────────────────────────────────────────────────────
-// WELCOME PROMPT MODAL (SAHNIRMAAN / SWATVA OBSIDIAN STANDARD)
+// WELCOME PROMPT MODAL (DOAB OBSIDIAN STANDARD)
 // ─────────────────────────────────────────────────────────────
 
 interface WelcomeTourPromptModalProps {
@@ -745,7 +745,7 @@ export function WelcomeTourPromptModal({
 }
 
 // ─────────────────────────────────────────────────────────────
-// PAGE TOUR TRIGGER BUTTON (SWATVA / SAHNIRMAAN STANDARD)
+// PAGE TOUR TRIGGER BUTTON (DOAB STANDARD)
 // ─────────────────────────────────────────────────────────────
 
 interface PageTourButtonProps {

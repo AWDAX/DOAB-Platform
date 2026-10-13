@@ -214,7 +214,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300 relative overflow-x-clip font-sans selection:bg-[var(--color-brand-accent)] selection:text-white">
       
-      {/* ── Dynamic Morphing Navbar (SAHNIRMAAN / SWATVA Standard) ── */}
+      {/* ── Dynamic Morphing Navbar (DOAB Standard) ── */}
       <header className={`portfolio-header ${scrolled ? 'scrolled' : ''}`}>
         
         {/* Left: Brand Logo & Title */}
@@ -466,7 +466,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           </form>
         </div>
 
-        {/* Primary Action Buttons (Fully Ovalish SAHNIRMAAN Standard) */}
+        {/* Primary Action Buttons (DOAB Standard) */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-14">
           <Link
             to={user ? "/" : "/login"}
@@ -787,7 +787,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         </div>
       </section>
 
-      {/* ── SAHNIRMAAN-INSPIRED MINIMAL FINAL CALL-TO-ACTION WITH DUAL-CLIMATE VECTOR ARTWORK ── */}
+      {/* ── DOAB MINIMAL FINAL CALL-TO-ACTION WITH DUAL-CLIMATE VECTOR ARTWORK ── */}
       <section className="w-full flex flex-col justify-center items-center text-center relative px-4 sm:px-6 py-16 sm:py-24 overflow-hidden border-t border-[var(--border-color)]">
         {/* Dual-Climate Dynamic Water Flowing / Desert Dunes Vector Artwork */}
         <div className="w-full max-w-4xl mx-auto mb-6 sm:mb-8 px-2 flex justify-center">

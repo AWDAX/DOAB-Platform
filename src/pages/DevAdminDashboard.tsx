@@ -189,7 +189,7 @@ export default function DevAdminDashboard() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // 1. UNPROTECTED / LOGIN SCREEN (SAHNIRMAAN Monochromatic Strict Obsidian & Porcelain)
+  // 1. UNPROTECTED / LOGIN SCREEN (DOAB Monochromatic Strict Obsidian & Porcelain)
   // ─────────────────────────────────────────────────────────────
   if (!session) {
     return (
