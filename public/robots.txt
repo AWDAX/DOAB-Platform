@@ -1,0 +1,18 @@
+# DOAB Platform - Robots Configuration
+User-agent: *
+Allow: /
+Allow: /map
+Allow: /routes/best
+Allow: /routes/old
+Allow: /notifications
+Allow: /team
+Allow: /landing
+Allow: /login
+Disallow: /dev-admin
+Disallow: /dev-admin/*
+
+# Host
+Host: https://doab.sahnirmaan.live
+
+# Sitemaps
+Sitemap: https://doab.sahnirmaan.live/sitemap.xml

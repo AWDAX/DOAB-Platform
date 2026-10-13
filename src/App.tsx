@@ -15,6 +15,7 @@ import DevAdminDashboard from './pages/DevAdminDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 import PageTransition, { ScrollToTop } from './components/PageTransition';
 import SplashLoader from './components/SplashLoader';
+import RouteSEO from './components/RouteSEO';
 import PreferencesModal from './components/PreferencesModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -404,6 +405,7 @@ function AppContent({
     <div className={`flex flex-col font-sans transition-colors duration-200 max-w-full bg-[var(--bg-main)] text-[var(--text-main)] selection:bg-[var(--color-brand-accent)] selection:text-white antialiased ${
       isStandalonePage ? 'min-h-[100dvh]' : 'h-[100dvh] max-h-[100dvh] overflow-hidden'
     }`}>
+      <RouteSEO />
       <SplashLoader />
       
       {!isStandalonePage && (
