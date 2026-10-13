@@ -405,12 +405,28 @@ export default function DevAdminDashboard() {
                   playClick();
                   playAlertAlarm();
                   NativeService.triggerSosHaptics();
-                  RemoteAdminChannel.broadcast('push_notification' as any, {
-                    title: `🚨 ${sosTitle || 'DOAB EMERGENCY SOS ALERT'}`,
-                    body: `${sosWard ? `[${sosWard}] ` : ''}${sosDesc || 'Severe flash waterlogging reported. Immediate high-ground bypass advised.'}`,
-                    isCritical: true
+
+                  const alertTitle = `🚨 ${sosTitle || 'DOAB EMERGENCY SOS ALERT'}`;
+                  const alertBody = `${sosWard ? `[${sosWard}] ` : ''}${sosDesc || 'Severe flash waterlogging reported. Immediate high-ground bypass advised.'}`;
+
+                  // 1. Broadcast 'sos_danger' (the exact event type required by the downloaded native APK)
+                  RemoteAdminChannel.broadcast('sos_danger', {
+                    title: alertTitle,
+                    ward: sosWard,
+                    waterDepthCm: 85,
+                    description: alertBody,
+                    distanceAhead: '200 meters',
+                    isCritical: true,
                   });
-                  showToast('Dispatched Emergency SOS Push Notification to all active phones.');
+
+                  // 2. Also broadcast push_notification for generic listeners
+                  RemoteAdminChannel.broadcast('push_notification' as any, {
+                    title: alertTitle,
+                    body: alertBody,
+                    isCritical: true,
+                  });
+
+                  showToast('Dispatched Emergency SOS Alert to all active phones & devices.');
                 }}
                 className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
               >

@@ -54,10 +54,29 @@ function riskLabel(route: RouteOption, copy: ReturnType<typeof getPredictionCopy
   return `${Math.round(route.mean_risk * 1000) / 10}%`;
 }
 
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 // Realistic fallback alternatives when the local prediction API is offline
 function generateFallbackRoutes(origin: { lat: number; lng: number }, destination: { lat: number; lng: number }): RouteResponse {
   const directMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
-  
+  const crowKm = Math.max(0.5, haversineKm(origin.lat, origin.lng, destination.lat, destination.lng));
+  // Urban road network factor ~1.35x crow-flies distance
+  const baseRoadMeters = Math.round(crowKm * 1350);
+  // Average city driving speed ~25 km/h (~7 m/s)
+  const baseSeconds = Math.round(baseRoadMeters / 7);
+
   return {
     scored: true,
     label: 'safety_then_elevation',
@@ -66,9 +85,9 @@ function generateFallbackRoutes(origin: { lat: number; lng: number }, destinatio
     routes: [
       {
         summary: 'Elevated Ridge Corridor (Safest - Minimum Water Accumulation)',
-        distance_meters: 8400,
-        duration_seconds: 1320,
-        mean_risk: 0.082,
+        distance_meters: Math.round(baseRoadMeters * 1.15),
+        duration_seconds: Math.round(baseSeconds * 1.18),
+        mean_risk: 0.038,
         data_quality: 'ok',
         scored: true,
         maps_url: directMapsUrl,
@@ -76,9 +95,9 @@ function generateFallbackRoutes(origin: { lat: number; lng: number }, destinatio
       },
       {
         summary: 'Inner Ring Road Elevated Bypass (Low Submersion Risk)',
-        distance_meters: 9100,
-        duration_seconds: 1480,
-        mean_risk: 0.165,
+        distance_meters: Math.round(baseRoadMeters * 1.08),
+        duration_seconds: Math.round(baseSeconds * 1.10),
+        mean_risk: 0.125,
         data_quality: 'ok',
         scored: true,
         maps_url: directMapsUrl,
@@ -86,9 +105,9 @@ function generateFallbackRoutes(origin: { lat: number; lng: number }, destinatio
       },
       {
         summary: 'Direct Lowland Arterial (Valley Cross - Caution Advised)',
-        distance_meters: 7200,
-        duration_seconds: 1140,
-        mean_risk: 0.448,
+        distance_meters: baseRoadMeters,
+        duration_seconds: baseSeconds,
+        mean_risk: 0.295,
         data_quality: 'ok',
         scored: true,
         maps_url: directMapsUrl,
@@ -110,6 +129,7 @@ export default function BestRoutesPage() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [active, setActive] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [copiedSummary, setCopiedSummary] = useState<string | null>(null);
   const [usingFallback, setUsingFallback] = useState(false);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [savedOfflineRoutes, setSavedOfflineRoutes] = useState<SavedOfflineRoute[]>(() => {
@@ -284,6 +304,25 @@ export default function BestRoutesPage() {
     setTimeout(() => {
       setIsArrivalModalOpen(false);
     }, 1200);
+  };
+
+  // Share specific route option via Web Share API or Clipboard fallback
+  const handleShareRoute = (route: RouteOption) => {
+    playClick();
+    const shareData = {
+      title: 'DOAB Safe Elevation Route',
+      text: `Safe Route: ${route.summary} (${formatKm(route.distance_meters)}, ${formatMinutes(route.duration_seconds)} - Risk: ${riskLabel(route, copy)})`,
+      url: route.maps_url || window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      navigator.share(shareData).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(shareData.url).then(() => {
+        setCopiedSummary(route.summary);
+        setTimeout(() => setCopiedSummary(null), 2000);
+      }).catch(() => {});
+    }
   };
 
   // Prompt delete with accessible ConfirmationModal
@@ -743,6 +782,18 @@ export default function BestRoutesPage() {
                         </a>
                         <button
                           type="button"
+                          onClick={() => handleShareRoute(route)}
+                          className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                          title="Share safe route"
+                        >
+                          {copiedSummary === route.summary ? (
+                            <Check className="h-3.5 w-3.5 text-emerald-500" />
+                          ) : (
+                            <Share2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => toggleRouteOfflineSave(route)}
                           className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
                             isRouteSavedOffline(route.summary)
@@ -809,6 +860,18 @@ export default function BestRoutesPage() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleShareRoute(route)}
+                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                      title="Share safe route"
+                    >
+                      {copiedSummary === route.summary ? (
+                        <Check className="h-4 w-4 text-emerald-500" />
+                      ) : (
+                        <Share2 className="h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => promptDeleteRoute(route)}
                       className="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                       title="Delete path"
@@ -835,16 +898,34 @@ export default function BestRoutesPage() {
                   <button
                     type="button"
                     onClick={() => handleMarkAsReached(route)}
-                    className="flex-1 py-2.5 px-3.5 rounded-xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] dark:text-neutral-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 group whitespace-nowrap cursor-pointer"
+                    className="flex-1 py-2.5 px-3 rounded-xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] dark:text-neutral-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 group whitespace-nowrap cursor-pointer"
                   >
                     <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] group-hover:text-current transition-colors" />
                     <span className="whitespace-nowrap">Reached Destination</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleShareRoute(route)}
+                    className="py-2.5 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 group cursor-pointer whitespace-nowrap"
+                    title="Share safe route"
+                  >
+                    {copiedSummary === route.summary ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        <span className="font-bold whitespace-nowrap">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
+                        <span className="whitespace-nowrap">Share</span>
+                      </>
+                    )}
                   </button>
                   <a 
                     href={route.maps_url} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3.5 bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 rounded-xl font-semibold text-xs shadow-xs transition-all whitespace-nowrap"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 rounded-xl font-semibold text-xs shadow-xs transition-all whitespace-nowrap"
                   >
                     <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
                     <span className="whitespace-nowrap">{copy.openMaps}</span>
