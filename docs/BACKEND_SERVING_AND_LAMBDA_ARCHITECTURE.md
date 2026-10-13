@@ -1,4 +1,4 @@
-# DOAB / SAHNIRMAAN: Backend Serving & AWS Lambda Architecture Plan
+# DOAB: Backend Serving & AWS Lambda Architecture Plan
 
 **Document Version:** 1.0.0  
 **Status:** Approved for Immediate Implementation  

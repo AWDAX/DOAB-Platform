@@ -84,7 +84,7 @@ function BottomNav() {
 
   if (location.pathname === '/login' || location.pathname === '/landing' || location.pathname === '/team') return null;
   
-  // SAHNIRMAAN inspired layout: Leftmost All Alerts, Routes, Center Raised Map, Assistant, Profile
+  // DOAB layout: Leftmost All Alerts, Routes, Center Raised Map, Assistant, Profile
   const leftItems = [
     { path: '/notifications', icon: Bell, label: 'All Alerts', badge: hasUnreadAlerts ? '!' : undefined },
     { path: '/routes/best', icon: RouteIcon, label: 'Routes' }
@@ -272,7 +272,7 @@ function AppContent({
 
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
 
-  // Check for first-time login welcome tour prompt (SAHNIRMAAN standard)
+  // Check for first-time login welcome tour prompt (DOAB standard)
   useEffect(() => {
     if (user) {
       const alreadyPrompted = localStorage.getItem('doab_tour_first_login_prompted');
@@ -623,7 +623,7 @@ function AppContent({
         tourType={activeTourType}
       />
 
-      {/* First-Time Login Welcome Guided Tour Prompt Modal (SAHNIRMAAN standard) */}
+      {/* First-Time Login Welcome Guided Tour Prompt Modal (DOAB standard) */}
       <WelcomeTourPromptModal
         isOpen={showWelcomeTour}
         onClose={handleCloseWelcomeTour}

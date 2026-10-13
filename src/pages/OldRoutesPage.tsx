@@ -244,7 +244,7 @@ export default function OldRoutesPage() {
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
           <PageTourButton pageKey="routes_old" label="History Guide" />
 
-          {/* Export CSV / Export History Button (SAHNIRMAAN / SWATVA Standard) */}
+          {/* Export CSV / Export History Button (DOAB Standard) */}
           <button
             type="button"
             onClick={handleExportCSV}

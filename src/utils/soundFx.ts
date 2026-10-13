@@ -1,6 +1,6 @@
 /**
  * Sound Effects Engine for DOAB Platform
- * Replicates low-latency audio pool and tactical click sound feedback from SAHNIRMAAN / SWATVA.
+ * Low-latency audio pool and tactical click sound feedback.
  */
 
 const CLICK_SOUND_PATH = '/sounds/click.mp3';

@@ -477,7 +477,7 @@ export default function BestRoutesPage() {
             <span className="whitespace-nowrap">Create Safe Path</span>
           </button>
 
-          {/* Share Route Button (SWATVA / SAHNIRMAAN Standard) */}
+          {/* Share Route Button (DOAB Standard) */}
           <button
             type="button"
             onClick={() => {

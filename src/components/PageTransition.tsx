@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 /**
  * ScrollToTop
  * Resets window and document scroll position synchronously before paint.
- * Ported from SAHNIRMAAN & SWATVA zero-jerk standard.
+ * DOAB zero-jerk standard.
  */
 export function ScrollToTop() {
   const { pathname } = useLocation();
