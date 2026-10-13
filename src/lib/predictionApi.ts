@@ -61,7 +61,42 @@ export interface BoundaryCollection {
   gaul_loaded?: boolean;
 }
 
-const BASE = (import.meta.env.VITE_PREDICTION_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+const BASE = (import.meta.env.VITE_PREDICTION_API_URL || 'https://api-doab.sahnirmaan.live').replace(/\/$/, '');
+
+export interface ImdTelemetry {
+  source: string;
+  status: 'live' | 'cached_offline';
+  station_id: string;
+  station_name: string;
+  state: string;
+  lat?: number;
+  lng?: number;
+  observed_at: string;
+  rainfall_24h_mm: number;
+  temp_max_c: number;
+  temp_min_c: number;
+  relative_humidity_morning: number;
+  relative_humidity_evening: number;
+  warning: {
+    color: string;
+    text: string;
+  };
+  forecast_summary: string;
+  forecast_7day?: Array<{
+    day_offset: number;
+    forecast: string;
+    temp_max: number;
+    temp_min: number;
+    warning: string;
+    color: string;
+  }>;
+  is_live: boolean;
+}
+
+export interface ImdStation {
+  station_id: string;
+  station: string;
+}
 
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${BASE}${path}`, { signal, headers: { Accept: 'application/json' } });
@@ -87,6 +122,14 @@ export function fetchIncidents(signal?: AbortSignal): Promise<{ label: string; i
 
 export function fetchBoundaries(signal?: AbortSignal): Promise<BoundaryCollection> {
   return getJson('/boundaries', signal);
+}
+
+export function fetchImdTelemetry(stationId: string = '43295', signal?: AbortSignal): Promise<ImdTelemetry> {
+  return getJson<ImdTelemetry>(`/imd/station/${encodeURIComponent(stationId)}`, signal);
+}
+
+export function fetchImdStations(query: string = '', signal?: AbortSignal): Promise<{ query: string; count: number; stations: ImdStation[] }> {
+  return getJson(`/imd/stations?query=${encodeURIComponent(query)}`, signal);
 }
 
 export function fetchRoutes(

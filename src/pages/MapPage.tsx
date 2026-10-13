@@ -391,7 +391,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const copy = getPredictionCopy();
-  const { forecast, incidents: apiIncidents, boundaries, status, usingDemo, reload } = useForecast();
+  const { forecast, incidents: apiIncidents, boundaries, imdTelemetry, status, usingDemo, reload } = useForecast();
   const [destination, setDestination] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
   const [selectedState, setSelectedState] = useState<string>(() => mapSessionState.selectedState);
@@ -2425,6 +2425,29 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     )}
                     {status === 'ready' && (
                       <p>{copy.notASensor}</p>
+                    )}
+
+                    {imdTelemetry && (
+                      <div className="mt-2 p-2 rounded-lg bg-neutral-900/[0.04] dark:bg-white/[0.05] border border-[var(--border-color)]/70 space-y-1 font-mono text-[10px]">
+                        <div className="flex items-center justify-between text-[var(--text-main)] font-semibold">
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>{imdTelemetry.station_name}</span>
+                          </span>
+                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                            IMD Live
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 text-[var(--text-muted)] text-[9.5px]">
+                          <div>24h Rain: <span className="text-[var(--text-main)] font-bold">{imdTelemetry.rainfall_24h_mm} mm</span></div>
+                          <div>Temp: <span className="text-[var(--text-main)] font-bold">{imdTelemetry.temp_max_c}°C / {imdTelemetry.temp_min_c}°C</span></div>
+                        </div>
+                        {imdTelemetry.warning?.text && imdTelemetry.warning.text !== 'No warning' && (
+                          <div className="text-[9.5px] text-amber-600 dark:text-amber-400 font-sans line-clamp-2">
+                            ⚠️ {imdTelemetry.warning.text}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
 
