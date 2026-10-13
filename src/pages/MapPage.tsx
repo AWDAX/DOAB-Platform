@@ -493,7 +493,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     return [...WATERLOGGING_DATASET_INCIDENTS, ...NATIONAL_MUNICIPAL_INCIDENTS];
   }, []);
 
-  // Pre-indexed unique civic landmarks/wards for <1ms instant fuzzy autocomplete
+  // Pre-indexed unique civic landmarks, cities, and regions for <1ms instant fuzzy autocomplete (Clean Geocoding Only - No Incident Problems)
   const localCivicPlacesIndex = useMemo<import('../lib/amazonLocation').GeocodedPlace[]>(() => {
     const seen = new Set<string>();
     const list: import('../lib/amazonLocation').GeocodedPlace[] = [];
@@ -510,22 +510,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         country: 'IND',
       });
     }
-
-    for (const inc of allIncidentsPool) {
-      const key = `${inc.ward}-${inc.title}`.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      list.push({
-        label: `${inc.title} — ${inc.ward}, India`,
-        lat: inc.lat,
-        lng: inc.lng,
-        region: inc.ward,
-        municipality: inc.title,
-        country: 'IND',
-      });
-    }
     return list;
-  }, [allIncidentsPool]);
+  }, []);
 
   const getInstantLocalMatches = useCallback((rawQuery: string, maxResults = 4): import('../lib/amazonLocation').GeocodedPlace[] => {
     const q = rawQuery.trim().toLowerCase();
@@ -553,11 +539,17 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     const cacheKey = query.trim().toLowerCase();
     let awsResults = alsCacheRef.current.get(cacheKey);
     if (!awsResults) {
-      awsResults = await geocodePlace(query + ', India', 5);
+      // First try real Amazon Location Service SearchPlaceIndex query directly
+      awsResults = await geocodePlace(query, 5);
+      // If few results and query didn't end with India, try with national boundary qualification
+      if (awsResults.length === 0 && !query.toLowerCase().includes('india')) {
+        awsResults = await geocodePlace(query + ', India', 5);
+      }
       if (awsResults.length > 0) {
         alsCacheRef.current.set(cacheKey, awsResults);
       }
     }
+    // Prioritize AWS Location Service real places, then supplement with clean regional matches
     const merged: import('../lib/amazonLocation').GeocodedPlace[] = [...awsResults];
     const seenLabels = new Set(awsResults.map((r) => (r.municipality || r.label).toLowerCase()));
     for (const loc of localMatches) {
@@ -1472,8 +1464,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               <div className="grid grid-cols-2 gap-2">
                 {/* Waypoint A (Origin) */}
                 <div className="flex flex-col gap-1">
-                  <button
-                    type="button"
+                  <div
                     onClick={() => { playClick(); setPathPickingTarget('origin'); }}
                     className={`p-2.5 rounded-2xl text-left border transition-all cursor-pointer flex items-center gap-2.5 relative overflow-hidden ${
                       pathPickingTarget === 'origin'
@@ -1499,13 +1490,47 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                         {pathOrigin ? `${pathOrigin[0].toFixed(3)}°, ${pathOrigin[1].toFixed(3)}°` : 'Place on Map'}
                       </div>
                     </div>
-                  </button>
+
+                    {/* X Clear Origin */}
+                    {pathOrigin && (
+                      <Tooltip content="Clear Origin Point" position="top">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playClick();
+                            setPathOrigin(null);
+                            setPathOriginAddress('');
+                            setOriginSuggestions([]);
+                          }}
+                          className="p-1 rounded-lg text-[var(--text-muted)] hover:text-white hover:bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:shadow-[0_4px_10px_rgba(190,18,60,0.35)] transition-all cursor-pointer shrink-0 flex items-center justify-center"
+                          aria-label="Clear Origin Point"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Tooltip>
+                    )}
+
+                    {/* Integrated Live GPS Origin Target with Precision Tooltip */}
+                    <Tooltip content="Use Current Location as Origin (A)" position="top">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUseCurrentLocationForOrigin();
+                        }}
+                        className="p-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-muted)] transition-all cursor-pointer shadow-2xs shrink-0 flex items-center justify-center"
+                        aria-label="Use Current Location as Origin Point"
+                      >
+                        <LocateFixed className="h-3.5 w-3.5 text-sky-500 hover:text-inherit" />
+                      </button>
+                    </Tooltip>
+                  </div>
                 </div>
 
                 {/* Waypoint B (Destination) */}
                 <div className="flex flex-col gap-1">
-                  <button
-                    type="button"
+                  <div
                     onClick={() => { playClick(); setPathPickingTarget('destination'); }}
                     className={`p-2.5 rounded-2xl text-left border transition-all cursor-pointer flex items-center gap-2.5 relative overflow-hidden ${
                       pathPickingTarget === 'destination'
@@ -1531,27 +1556,38 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                         {pathDest ? `${pathDest[0].toFixed(3)}°, ${pathDest[1].toFixed(3)}°` : 'Place on Map'}
                       </div>
                     </div>
-                  </button>
+
+                    {/* X Clear Destination */}
+                    {pathDest && (
+                      <Tooltip content="Clear Destination Point" position="top">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playClick();
+                            setPathDest(null);
+                            setPathDestAddress('');
+                            setDestSuggestions([]);
+                          }}
+                          className="p-1 rounded-lg text-[var(--text-muted)] hover:text-white hover:bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:shadow-[0_4px_10px_rgba(190,18,60,0.35)] transition-all cursor-pointer shrink-0 flex items-center justify-center"
+                          aria-label="Clear Destination Point"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Tooltip>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Manual Input Fields (Address / Landmark Name with Amazon Location Autocomplete + Use Current Location) */}
+              {/* Manual Input Fields (Address / Landmark Name with Amazon Location Autocomplete) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {/* Origin Input + Use Current Location + ALS Dropdown */}
+                {/* Origin Input + ALS Dropdown */}
                 <div className="relative">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-[10px] font-mono text-[var(--text-muted)]">
                       Origin Address / Landmark
                     </label>
-                    <button
-                      type="button"
-                      onClick={handleUseCurrentLocationForOrigin}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)] hover:border-[var(--text-main)] transition-all cursor-pointer"
-                      title="Use your live GPS location as Origin Point (A)"
-                    >
-                      <LocateFixed className="h-2.5 w-2.5 text-sky-500" />
-                      <span>Use Current Location</span>
-                    </button>
                   </div>
                   <div className="relative">
                     <input
@@ -1562,7 +1598,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                       onKeyDown={(e) => {
                         if (e.key === 'Escape') setOriginSuggestions([]);
                       }}
-                      placeholder="Search origin or click Use Current Location..."
+                      placeholder="Search origin address or place on map..."
                       className="w-full px-2.5 py-1.5 pr-7 text-xs rounded-xl bg-[var(--bg-main)] border border-neutral-300 dark:border-white/25 hover:border-neutral-500 dark:hover:border-white/50 focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)] transition-colors"
                     />
                     {originAlsLoading && (
@@ -1854,67 +1890,104 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             </div>
           </div>
 
-          {!isMobileCollapsed && (
-            <div className="p-3 flex flex-col gap-2.5">
-              
-              {/* Segmented Tab Switcher (Search, Forecast, Clusters, Hazard) */}
-              <div className="grid grid-cols-4 gap-1 p-1 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] text-[10px] font-semibold">
-                <button
-                  type="button"
-                  onClick={() => { playClick(); setActiveLeftTab('search'); }}
-                  className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                    activeLeftTab === 'search'
-                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs font-bold'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                  }`}
-                >
-                  <Search className="h-3 w-3" />
-                  <span>Search</span>
-                </button>
+          <AnimatePresence initial={false}>
+            {!isMobileCollapsed && (
+              <motion.div
+                key="liveRiskPanelContent"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="p-3 flex flex-col gap-2.5">
+                  
+                  {/* Segmented Tab Switcher (Search, Forecast, Clusters, Hazard) with Shared-Layout Sliding Pill */}
+                  <div className="relative grid grid-cols-4 gap-1 p-1 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] text-[10px] font-semibold select-none">
+                    <button
+                      type="button"
+                      onClick={() => { playClick(); setActiveLeftTab('search'); }}
+                      className={`relative z-10 py-1.5 rounded-lg transition-colors duration-150 flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
+                        activeLeftTab === 'search'
+                          ? 'text-[var(--bg-card)] font-bold'
+                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      {activeLeftTab === 'search' && (
+                        <motion.div
+                          layoutId="liveRiskActiveTabPill"
+                          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                          className="absolute inset-0 rounded-lg bg-[var(--text-main)] shadow-xs -z-10 pointer-events-none"
+                        />
+                      )}
+                      <Search className="h-3 w-3 shrink-0" />
+                      <span className="truncate">Search</span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => { playClick(); setActiveLeftTab('forecast'); }}
-                  className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                    activeLeftTab === 'forecast'
-                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs font-bold'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                  }`}
-                >
-                  <Activity className="h-3 w-3" />
-                  <span>Forecast</span>
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => { playClick(); setActiveLeftTab('forecast'); }}
+                      className={`relative z-10 py-1.5 rounded-lg transition-colors duration-150 flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
+                        activeLeftTab === 'forecast'
+                          ? 'text-[var(--bg-card)] font-bold'
+                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      {activeLeftTab === 'forecast' && (
+                        <motion.div
+                          layoutId="liveRiskActiveTabPill"
+                          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                          className="absolute inset-0 rounded-lg bg-[var(--text-main)] shadow-xs -z-10 pointer-events-none"
+                        />
+                      )}
+                      <Activity className="h-3 w-3 shrink-0" />
+                      <span className="truncate">Forecast</span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    playClick();
-                    setActiveLeftTab('clusters');
-                    setShowHeatLayer(true);
-                  }}
-                  className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                    activeLeftTab === 'clusters'
-                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs font-bold'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                  }`}
-                >
-                  <Layers className="h-3 w-3" />
-                  <span>Clusters</span>
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        setActiveLeftTab('clusters');
+                        setShowHeatLayer(true);
+                      }}
+                      className={`relative z-10 py-1.5 rounded-lg transition-colors duration-150 flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
+                        activeLeftTab === 'clusters'
+                          ? 'text-[var(--bg-card)] font-bold'
+                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      {activeLeftTab === 'clusters' && (
+                        <motion.div
+                          layoutId="liveRiskActiveTabPill"
+                          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                          className="absolute inset-0 rounded-lg bg-[var(--text-main)] shadow-xs -z-10 pointer-events-none"
+                        />
+                      )}
+                      <Layers className="h-3 w-3 shrink-0" />
+                      <span className="truncate">Clusters</span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => { playClick(); setActiveLeftTab('incident'); }}
-                  className={`py-1 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                    activeLeftTab === 'incident'
-                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs font-bold'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                  }`}
-                >
-                  <AlertTriangle className="h-3 w-3" />
-                  <span>Hazard</span>
-                </button>
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => { playClick(); setActiveLeftTab('incident'); }}
+                      className={`relative z-10 py-1.5 rounded-lg transition-colors duration-150 flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
+                        activeLeftTab === 'incident'
+                          ? 'text-[var(--bg-card)] font-bold'
+                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      {activeLeftTab === 'incident' && (
+                        <motion.div
+                          layoutId="liveRiskActiveTabPill"
+                          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                          className="absolute inset-0 rounded-lg bg-[var(--text-main)] shadow-xs -z-10 pointer-events-none"
+                        />
+                      )}
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      <span className="truncate">Hazard</span>
+                    </button>
+                  </div>
 
               {/* TAB 1: Search & Safe Routes Action */}
               {activeLeftTab === 'search' && (
@@ -2485,8 +2558,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   )}
                 </div>
               )}
-            </div>
-          )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

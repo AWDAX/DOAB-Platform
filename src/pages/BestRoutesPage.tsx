@@ -578,7 +578,7 @@ export default function BestRoutesPage() {
                         <button
                           type="button"
                           onClick={() => promptDeleteRoute(route)}
-                          className="p-1.5 rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] hover:text-rose-500 hover:border-rose-500/40 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-xl text-white bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:bg-[image:var(--danger-btn-hover-gradient,linear-gradient(180deg,#881337_0%,#BE123C_50%,#E11D48_100%))] hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] transition-all cursor-pointer shadow-xs"
                           title="Delete this safe path"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -611,7 +611,7 @@ export default function BestRoutesPage() {
                   <button
                     type="button"
                     onClick={() => promptDeleteRoute(route)}
-                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
+                    className="p-1.5 rounded-lg text-white bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:bg-[image:var(--danger-btn-hover-gradient,linear-gradient(180deg,#881337_0%,#BE123C_50%,#E11D48_100%))] hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] transition-all cursor-pointer shrink-0 shadow-xs"
                     title="Delete path"
                   >
                     <Trash2 className="h-4 w-4" />
