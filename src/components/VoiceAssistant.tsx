@@ -68,8 +68,8 @@ export default function VoiceAssistant() {
       const w = window.innerWidth;
       const h = window.innerHeight;
       const orbSize = 54;
-      const rightPadding = w < 640 ? 12 : w < 768 ? 24 : 32;
-      const bottomPadding = w < 768 ? 76 : 24;
+      const rightPadding = w < 640 ? 14 : w < 768 ? 24 : 32;
+      const bottomPadding = w < 768 ? 108 : 28;
 
       // The button default position is at:
       // right = rightPadding, bottom = bottomPadding
@@ -430,13 +430,13 @@ export default function VoiceAssistant() {
             transition: { duration: 0.5 }
           } : undefined}
           onClick={() => { playClick(); setIsOpen(true); }}
-          className={`fixed bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] md:bottom-6 right-3 sm:right-6 md:right-8 h-[52px] w-[52px] sm:h-[54px] sm:w-[54px] rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.18)] flex items-center justify-center z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-grab touch-none origin-center ${
+          className={`fixed bottom-[calc(env(safe-area-inset-bottom)+6.75rem)] md:bottom-7 right-3.5 sm:right-6 md:right-8 h-[54px] w-[54px] sm:h-[56px] sm:w-[56px] rounded-full shadow-[0_8px_28px_rgba(0,0,0,0.22)] flex items-center justify-center z-40 bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden cursor-grab touch-none origin-center ${
             shouldHideOrb ? 'scale-0 opacity-0 pointer-events-none' : 'opacity-100'
           }`}
           aria-label="Open DOAB Assistant (Draggable)"
           title={isOrbGiggling ? "Hehe! (Giggling)" : "Open DOAB Assistant (Drag me around!)"}
         >
-          <AIOrbFace state={isOrbGiggling ? 'giggle' : 'idle'} size={54} className="w-full h-full pointer-events-none" />
+          <AIOrbFace state={isOrbGiggling ? 'giggle' : 'idle'} size={56} className="w-full h-full pointer-events-none" />
         </motion.button>
       )}
 

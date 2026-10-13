@@ -256,15 +256,15 @@ export default function AssistantPage() {
   return (
     <div 
       ref={containerRef}
-      className={`w-full mx-auto flex flex-col transition-all duration-300 ${
+      className={`w-full mx-auto flex flex-col min-h-0 flex-1 transition-all duration-300 ${
         isFullScreen 
-          ? 'fixed inset-0 z-[9999] p-4 sm:p-6 md:p-8 pt-6 sm:pt-8 bg-[var(--bg-main)] h-[100dvh] max-h-[100dvh] overflow-hidden' 
-          : 'h-[calc(100dvh-5.5rem)] max-w-6xl p-3 sm:p-5 md:p-6 pb-2'
+          ? 'fixed inset-0 z-[9999] p-3 sm:p-6 md:p-8 pt-4 sm:pt-6 bg-[var(--bg-main)] h-[100dvh] max-h-[100dvh] overflow-hidden' 
+          : 'h-full max-h-full max-w-6xl p-2 sm:p-4 md:p-6 pb-2 overflow-hidden'
       }`}
     >
       {/* Page Header Bar */}
-      <div id="tour-assistant-header" className={`relative flex items-center justify-between gap-3 mb-4 shrink-0 ${isFullScreen ? 'min-h-12' : ''}`}>
-        <div className={`flex items-center gap-3 min-w-0 ${
+      <div id="tour-assistant-header" className={`relative flex items-center justify-between gap-2 sm:gap-3 mb-2 sm:mb-3 shrink-0 ${isFullScreen ? 'min-h-12' : ''}`}>
+        <div className={`hidden md:flex [@media(pointer:coarse)]:!hidden items-center gap-3 min-w-0 ${
           isFullScreen 
             ? 'absolute inset-x-0 mx-auto w-fit z-0 select-none' 
             : ''
@@ -294,11 +294,11 @@ export default function AssistantPage() {
         </div>
 
         {/* Empty left spacer when fullscreen to balance layout */}
-        {isFullScreen && <div className="w-10 z-10" />}
+        {isFullScreen && <div className="hidden md:block w-10 z-10" />}
 
-        {/* Action Controls Toolbar */}
-        <div id="tour-assistant-actions" className="flex items-center gap-1.5 sm:gap-2 shrink-0 z-10">
-          <PageTourButton pageKey="assistant" label="Assistant Guide" />
+        {/* Action Controls Toolbar (Full-width balanced pills on Mobile/Touch, Right-aligned on Desktop) */}
+        <div id="tour-assistant-actions" className="w-full md:w-auto [@media(pointer:coarse)]:w-full flex items-center justify-between md:justify-end gap-2 shrink-0 z-10">
+          <PageTourButton pageKey="assistant" label="Assistant Guide" className="flex-1 sm:flex-initial justify-center" />
 
           <button
             type="button"
@@ -308,10 +308,11 @@ export default function AssistantPage() {
               newChat();
               setTimeout(() => inputRef.current?.focus(), 80);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--text-main)] text-[var(--bg-card)] hover:opacity-90 transition-all duration-200 cursor-pointer shadow-xs select-none"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-[var(--text-main)] text-[var(--bg-card)] hover:opacity-90 transition-all duration-200 cursor-pointer shadow-xs select-none whitespace-nowrap"
+            title="Start New Session"
           >
-            <Plus size={13} />
-            <span className="hidden sm:inline">New Session</span>
+            <Plus size={15} className="shrink-0" />
+            <span>New Session</span>
           </button>
 
           <button
@@ -320,16 +321,17 @@ export default function AssistantPage() {
               playClick();
               setIsHistoryOpen(prev => !prev);
             }}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer select-none ${
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer select-none whitespace-nowrap ${
               isHistoryOpen
-                ? 'bg-[var(--color-brand-accent)] text-white border-[var(--color-brand-accent)] shadow-xs'
-                : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/40 hover:text-[var(--color-brand-accent)]'
+                ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-950 dark:border-white shadow-xs'
+                : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--text-main)]/40'
             }`}
+            title="Past Sessions"
           >
-            <Clock size={13} />
-            <span className="hidden sm:inline">Sessions</span>
+            <Clock size={15} className="shrink-0" />
+            <span>Sessions</span>
             {sessions.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[var(--text-main)]/10 font-mono font-semibold">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-current/15 font-mono font-semibold leading-none">
                 {sessions.length}
               </span>
             )}
@@ -340,9 +342,9 @@ export default function AssistantPage() {
               type="button"
               onClick={handleExportChat}
               title="Export Conversation"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer shadow-xs"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-semibold border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer shadow-xs shrink-0"
             >
-              <Download size={13} />
+              <Download size={15} />
             </button>
           )}
 
@@ -350,9 +352,9 @@ export default function AssistantPage() {
             type="button"
             onClick={handleToggleFullscreen}
             title={isFullScreen ? 'Exit Fullscreen' : 'Fullscreen'}
-            className="p-1.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer shadow-xs"
+            className="hidden md:inline-flex [@media(pointer:coarse)]:!hidden items-center justify-center w-9 h-9 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer shadow-xs shrink-0"
           >
-            {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            {isFullScreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
         </div>
       </div>
@@ -363,12 +365,12 @@ export default function AssistantPage() {
         {/* Past Sessions Slide-over Drawer (SWATVA Pattern) */}
         {isHistoryOpen && (
           <div className="absolute inset-0 z-30 bg-[var(--bg-card)]/98 backdrop-blur-2xl flex flex-col p-4 sm:p-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)] gap-2">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)] gap-2 flex-wrap">
               <span className="text-xs font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                <Clock size={14} className="text-[var(--color-brand-accent)] shrink-0" />
+                <Clock size={15} className="text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
                 <span>Mission & Consultation History</span>
               </span>
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -377,9 +379,9 @@ export default function AssistantPage() {
                     newChat();
                     setTimeout(() => inputRef.current?.focus(), 80);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none whitespace-nowrap"
                 >
-                  <Plus size={13} />
+                  <Plus size={14} />
                   <span>New Session</span>
                 </button>
                 {sessions.length > 1 && (
@@ -389,10 +391,10 @@ export default function AssistantPage() {
                       playClick();
                       setIsClearAllConfirmOpen(true);
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border border-rose-500/20 text-rose-500 hover:text-rose-600 bg-rose-500/5 hover:bg-rose-500/15 active:scale-98 transition-all cursor-pointer select-none"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium border border-rose-600/25 text-rose-700 dark:text-rose-300 bg-rose-950/[0.06] dark:bg-rose-500/[0.12] hover:bg-rose-500/20 active:scale-98 transition-all cursor-pointer select-none whitespace-nowrap"
                     title="Clear consultation history"
                   >
-                    <Trash2 size={12} />
+                    <Trash2 size={14} />
                     <span>Clear All</span>
                   </button>
                 )}
@@ -402,11 +404,11 @@ export default function AssistantPage() {
                     playClick();
                     setIsHistoryOpen(false);
                   }}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/30 hover:bg-[var(--text-main)]/5 active:scale-98 transition-all cursor-pointer select-none"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--text-main)]/30 hover:bg-[var(--text-main)]/5 active:scale-98 transition-all cursor-pointer select-none whitespace-nowrap"
                   aria-label="Close History"
                   title="Close History"
                 >
-                  <X size={13} />
+                  <X size={14} />
                   <span>Close</span>
                 </button>
               </div>
@@ -434,8 +436,8 @@ export default function AssistantPage() {
                   }}
                   className={`group p-3 rounded-2xl border text-left flex items-center justify-between gap-3 transition-all cursor-pointer select-none ${
                     session.id === activeSessionId
-                      ? 'border-[var(--color-brand-accent)] bg-[var(--color-brand-accent)]/10 shadow-xs'
-                      : 'border-[var(--border-color)] hover:border-[var(--color-brand-accent)]/30 hover:bg-[var(--text-main)]/5'
+                      ? 'border-[var(--text-main)] bg-[var(--text-main)]/5 shadow-xs'
+                      : 'border-[var(--border-color)] hover:border-[var(--text-main)]/30 hover:bg-[var(--text-main)]/5'
                   }`}
                 >
                   <div className="min-w-0 flex-1">
@@ -453,7 +455,7 @@ export default function AssistantPage() {
                       playClick();
                       setSessionToDelete({ id: session.id, title: session.title || 'Civic Inundation Query' });
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-600 hover:bg-rose-500/10 transition-all cursor-pointer"
                     title="Delete this consultation session"
                   >
                     <Trash2 size={13} />
@@ -473,7 +475,7 @@ export default function AssistantPage() {
                 onClick={handleToggleListening}
                 title={isListening ? "Listening... (Click to stop)" : "Click to speak with DOAB Copilot"}
               >
-                <div className="absolute inset-0 -m-5 rounded-full bg-[var(--color-brand-accent)]/20 blur-2xl pointer-events-none transition-all group-hover:scale-125 animate-pulse" />
+                <div className="absolute inset-0 -m-5 rounded-full bg-[var(--text-main)]/10 blur-2xl pointer-events-none transition-all group-hover:scale-125 animate-pulse" />
                 <AIOrbFace size={92} state={orbState} className="relative z-10 transition-transform group-hover:scale-105" />
               </div>
               <h3 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)]">
@@ -492,10 +494,10 @@ export default function AssistantPage() {
                       playClick();
                       sendMessage(item.query);
                     }}
-                    className="text-left text-xs px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--color-brand-accent)]/50 hover:bg-[var(--color-brand-accent)]/5 transition-all cursor-pointer text-[var(--text-main)] flex items-center justify-between gap-2 shadow-2xs group"
+                    className="text-left text-xs px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:border-[var(--text-main)]/40 hover:bg-[var(--text-main)]/5 transition-all cursor-pointer text-[var(--text-main)] flex items-center justify-between gap-2 shadow-2xs group"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <MessageSquarePlus size={13} className="text-[var(--color-brand-accent)] shrink-0 opacity-75 group-hover:opacity-100 transition-opacity" />
+                      <MessageSquarePlus size={13} className="text-[var(--text-muted)] group-hover:text-[var(--text-main)] shrink-0 transition-colors" />
                       <span className="truncate">{item.label}</span>
                     </div>
                     <ChevronRight size={13} className="text-[var(--text-muted)] shrink-0 group-hover:translate-x-0.5 transition-transform" />
@@ -513,7 +515,7 @@ export default function AssistantPage() {
                     title="Copy text"
                     className="opacity-0 group-hover:opacity-100 p-1.5 mt-1 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-all"
                   >
-                    {copiedId === m.id ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                    {copiedId === m.id ? <Check size={13} className="text-[var(--text-main)] dark:text-neutral-200" /> : <Copy size={13} />}
                   </button>
                   <div className="max-w-[85%] rounded-2xl rounded-br-xs px-4 sm:px-5 py-3 text-xs sm:text-sm bg-[var(--text-main)] text-[var(--bg-card)] leading-relaxed shadow-xs">
                     {m.content}
@@ -535,7 +537,7 @@ export default function AssistantPage() {
                         onClick={() => handleCopy(m.id, m.content)}
                         className="text-[10px] font-mono text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center gap-1 cursor-pointer transition-colors"
                       >
-                        {copiedId === m.id ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                        {copiedId === m.id ? <Check size={11} className="text-[var(--text-main)] dark:text-neutral-200" /> : <Copy size={11} />}
                         <span>{copiedId === m.id ? 'Copied' : 'Copy'}</span>
                       </button>
 
@@ -544,7 +546,7 @@ export default function AssistantPage() {
                         onClick={() => handleToggleReadAloud(m.id, m.content)}
                         className={`text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-colors ${
                           playingMessageId === m.id 
-                            ? 'text-[var(--color-brand-accent)] font-bold' 
+                            ? 'text-[var(--text-main)] dark:text-neutral-200 font-bold' 
                             : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                         }`}
                       >
@@ -580,8 +582,8 @@ export default function AssistantPage() {
         >
           <div className={`flex-1 flex items-center rounded-2xl border transition-all duration-200 px-3.5 py-2.5 min-h-[46px] ${
             isListening
-              ? 'border-[var(--color-brand-accent)] ring-2 ring-[var(--color-brand-accent)]/30 bg-[var(--color-brand-accent)]/5'
-              : 'border-[var(--border-color)] bg-[var(--bg-card)] focus-within:border-[var(--color-brand-accent)]/80 focus-within:ring-2 focus-within:ring-[var(--color-brand-accent)]/20'
+              ? 'border-[var(--text-main)] ring-2 ring-[var(--text-main)]/20 bg-[var(--text-main)]/5'
+              : 'border-[var(--border-color)] bg-[var(--bg-card)] focus-within:border-[var(--text-main)]/80 focus-within:ring-2 focus-within:ring-[var(--text-main)]/20'
           }`}>
             <input
               ref={inputRef}
@@ -604,8 +606,8 @@ export default function AssistantPage() {
             title={isListening ? 'Stop Listening' : 'Voice Input'}
             className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-all shrink-0 cursor-pointer ${
               isListening
-                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105 animate-pulse'
-                : 'border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--color-brand-accent)] hover:border-[var(--color-brand-accent)]/40'
+                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-lg scale-105 animate-pulse'
+                : 'border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--text-main)]/40'
             }`}
           >
             {isListening ? <MicOff size={16} /> : <Mic size={16} />}
@@ -618,7 +620,7 @@ export default function AssistantPage() {
             title="Send Message"
             className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-all shrink-0 cursor-pointer ${
               inputVal.trim() && !isThinking
-                ? 'bg-[var(--color-brand-accent)] hover:opacity-95 text-white shadow-md shadow-[var(--color-brand-accent)]/20 active:scale-95'
+                ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 shadow-md active:scale-95'
                 : 'border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] cursor-not-allowed opacity-40'
             }`}
           >

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Route as RouteIcon, ShieldCheck, ShieldAlert, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink, MapPin, ThumbsUp, ThumbsDown, Star } from 'lucide-react';
+import { Route as RouteIcon, Navigation2, Activity, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink, MapPin, ThumbsUp, ThumbsDown, Star, RefreshCw } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
@@ -205,6 +205,14 @@ export default function BestRoutesPage() {
         };
         const filtered = existing.filter(r => r.summary !== arrivalRoute.summary);
         localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify([newEntry, ...filtered].slice(0, 20)));
+
+        // Also persist to Safe Routes custom list so it always appears on Safe Routes page
+        const existingCustom: RouteOption[] = JSON.parse(localStorage.getItem('doab_custom_created_routes') || '[]');
+        if (!existingCustom.some(r => r.summary === arrivalRoute.summary)) {
+          const updatedCustom = [arrivalRoute, ...existingCustom];
+          localStorage.setItem('doab_custom_created_routes', JSON.stringify(updatedCustom));
+          setCustomRoutes(updatedCustom);
+        }
         setSavedAsFavorite(true);
       } catch (e) {
         console.warn('Could not bookmark route', e);
@@ -320,6 +328,15 @@ export default function BestRoutesPage() {
       const filtered = existing.filter(r => r.summary !== current.summary);
       const updated = [newEntry, ...filtered].slice(0, 20);
       localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify(updated));
+
+      // Also persist to Safe Routes custom list so it always stays in Safe Routes page
+      const existingCustom: RouteOption[] = JSON.parse(localStorage.getItem('doab_custom_created_routes') || '[]');
+      if (!existingCustom.some(r => r.summary === current.summary)) {
+        const updatedCustom = [current, ...existingCustom];
+        localStorage.setItem('doab_custom_created_routes', JSON.stringify(updatedCustom));
+        setCustomRoutes(updatedCustom);
+      }
+
       setSavedOffline(true);
     } catch (e) {
       console.warn('Could not save route offline', e);
@@ -339,6 +356,8 @@ export default function BestRoutesPage() {
       window.removeEventListener('doab:trigger-destination-arrival', handleTriggerArrival as EventListener);
     };
   }, [current, routes]);
+
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -368,29 +387,31 @@ export default function BestRoutesPage() {
         setStatus('ready');
       });
     return () => controller.abort();
-  }, [destination.lat, destination.lng]);
+  }, [destination.lat, destination.lng, retryCount]);
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto custom-scrollbar">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div id="tour-best-header" className="min-w-0 flex-1">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
-            <RouteIcon className="h-6 w-6 text-[var(--color-brand-accent)] shrink-0" />
+            <RouteIcon className="h-6 w-6 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
             <span className="truncate">Safe Computed Paths</span>
           </h1>
-          <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">{copy.notASensor}</p>
+          <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">
+            Elevation-aware bypass corridors computed using SRTM digital terrain models and live flood risk telemetry.
+          </p>
         </div>
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
-          <PageTourButton pageKey="routes_best" label="Routes Guide" />
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto shrink-0">
+          <PageTourButton pageKey="routes_best" label="Routes Guide" className="h-9 w-full sm:w-auto justify-center" />
 
-          {/* Create Custom Path Button (Redirects to interactive Map with click & manual picking) */}
+          {/* Create Custom Path Button (Strict Monochromatic Obsidian/Porcelain) */}
           <button
             type="button"
             onClick={() => { playClick(); navigate('/map?mode=create_path'); }}
-            className="px-3.5 py-2 rounded-full border border-[var(--border-color)] bg-[var(--color-brand-accent)] text-white hover:opacity-90 text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+            className="h-9 px-3.5 rounded-full bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 border border-neutral-950/20 dark:border-white/20 text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 w-full sm:w-auto"
             title="Create and pick points interactively on map or via address autocomplete"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5 shrink-0" />
             <span className="whitespace-nowrap">Create Safe Path</span>
           </button>
 
@@ -414,17 +435,17 @@ export default function BestRoutesPage() {
                 }).catch(() => {});
               }
             }}
-            className="px-3.5 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95 group"
+            className="h-9 px-3.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 group w-full sm:w-auto"
             title="Share safe route with friends or emergency contacts"
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold whitespace-nowrap">Link Copied!</span>
+                <Check className="h-3.5 w-3.5 text-current shrink-0" />
+                <span className="font-bold whitespace-nowrap">Link Copied!</span>
               </>
             ) : (
               <>
-                <Share2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)] group-hover:text-current transition-colors shrink-0" />
+                <Share2 className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
                 <span className="whitespace-nowrap">Share Route</span>
               </>
             )}
@@ -434,46 +455,67 @@ export default function BestRoutesPage() {
           <button
             type="button"
             onClick={handleSaveOffline}
-            className={`px-3.5 py-2 rounded-full border border-[var(--border-color)] text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95 group ${
+            className={`h-9 px-3.5 rounded-full border text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 group w-full sm:w-auto ${
               savedOffline
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold'
-                : 'bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)]'
+                ? 'bg-neutral-900/10 dark:bg-white/10 border-neutral-900/25 dark:border-white/25 text-[var(--text-main)] dark:text-white font-bold'
+                : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)]'
             }`}
             title="Save safe elevation route to device for offline access during network loss"
           >
             {savedOffline ? (
               <>
-                <BookmarkCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <BookmarkCheck className="h-3.5 w-3.5 text-[var(--text-main)] dark:text-white shrink-0" />
                 <span className="whitespace-nowrap">Saved Offline</span>
               </>
             ) : (
               <>
-                <Bookmark className="h-3.5 w-3.5 text-[var(--color-brand-accent)] group-hover:text-current transition-colors shrink-0" />
+                <Bookmark className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
                 <span className="whitespace-nowrap">Save Offline</span>
               </>
             )}
           </button>
-
-          <div id="tour-best-switcher" className="flex items-center gap-1 sm:gap-2 bg-[var(--bg-main)] p-1 rounded-full border border-[var(--border-color)] shrink-0 whitespace-nowrap select-none">
-            <button type="button" className="p-1 px-2.5 rounded-full text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer shrink-0 font-bold text-sm" onClick={() => setActive((value) => Math.max(0, value - 1))} aria-label="Previous route">←</button>
-            <span className="text-xs font-mono font-semibold px-1 sm:px-2 text-[var(--text-main)] tabular-nums shrink-0 whitespace-nowrap">
-              {routes.length ? `${active + 1} / ${routes.length}` : '0 / 0'}
-            </span>
-            <button type="button" className="p-1 px-2.5 rounded-full text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer shrink-0 font-bold text-sm" onClick={() => setActive((value) => Math.min(routes.length - 1, value + 1))} aria-label="Next route">→</button>
-          </div>
         </div>
       </div>
 
-      {status === 'loading' && <p className="text-sm text-[var(--text-muted)]">{copy.loading}</p>}
-      {status === 'error' && <p className="text-sm text-[var(--text-muted)]">{copy.error}</p>}
+      {status === 'loading' && (
+        <div className="mb-4 p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center gap-2.5 text-xs font-mono text-[var(--text-muted)]">
+          <RefreshCw className="h-4 w-4 animate-spin text-[var(--text-main)]" />
+          <span>{copy.loading}</span>
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="mb-4 p-4 rounded-2xl border border-amber-600/25 dark:border-amber-400/25 bg-amber-950/[0.06] dark:bg-amber-500/[0.10] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="text-xs">
+            <strong className="text-amber-700 dark:text-amber-300 block font-semibold">{copy.error}</strong>
+            <span className="text-[var(--text-muted)] text-[11px]">{copy.offlineDemo}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => { playClick(); setRetryCount((c) => c + 1); }}
+            className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shrink-0"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Retry Sync</span>
+          </button>
+        </div>
+      )}
       {usingFallback && (
-        <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20">
-          <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
-          <span>SRTM Digital Elevation Model Bypass Computation (Offline/Simulated Mode)</span>
+        <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono bg-neutral-900/5 dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200 border border-[var(--border-color)] dark:border-white/15">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-main)] dark:bg-white animate-pulse"></span>
+          <span>SRTM Digital Elevation Model Active — High-Ground Bypass Routing</span>
         </div>
       )}
       {status === 'ready' && body && !body.scored && (
-        <p className="text-sm text-[var(--text-muted)] mb-4">{body.reason || copy.noRoute}</p>
+        <div className="mb-4 p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
+          <span>{body.reason || copy.noRoute}</span>
+          <button
+            type="button"
+            onClick={() => { playClick(); setRetryCount((c) => c + 1); }}
+            className="px-3 py-1 rounded-lg border border-[var(--border-color)] text-[var(--text-main)] font-semibold hover:bg-[var(--bg-main)] transition-colors cursor-pointer shrink-0"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {current && (
@@ -495,7 +537,11 @@ export default function BestRoutesPage() {
                     <td className="py-4 px-6 font-semibold text-[var(--text-main)]">
                       <div className="flex flex-wrap items-center gap-2 max-w-xl">
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {route.rank === 'safest' ? <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" /> : <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0" />}
+                          {route.rank === 'safest' ? (
+                            <Navigation2 className="h-4 w-4 text-teal-700 dark:text-teal-300 shrink-0" />
+                          ) : (
+                            <Activity className={`h-4 w-4 shrink-0 ${(route.mean_risk ?? 0) >= 0.3 ? 'text-rose-700 dark:text-rose-300' : 'text-amber-700 dark:text-amber-300'}`} />
+                          )}
                           <span className="mono-badge text-[9px] font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] whitespace-nowrap shrink-0">
                             {route.rank === 'safest' ? copy.safest : route.rank}
                           </span>
@@ -513,17 +559,17 @@ export default function BestRoutesPage() {
                         <button
                           type="button"
                           onClick={() => handleMarkAsReached(route)}
-                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] dark:text-neutral-200 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95 group"
                           title="Confirm you have reached destination safely and provide AI probability feedback"
                         >
-                          <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] group-hover:text-current transition-colors" />
                           <span>Reached Destination</span>
                         </button>
                         <a 
                           href={route.maps_url} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
+                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-xs font-semibold transition-all shadow-xs"
                         >
                           <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
                           <span>{copy.openMaps}</span>
@@ -551,7 +597,11 @@ export default function BestRoutesPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1">
-                      {route.rank === 'safest' ? <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" /> : <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0" />}
+                      {route.rank === 'safest' ? (
+                        <Navigation2 className="h-4 w-4 text-teal-700 dark:text-teal-300 shrink-0" />
+                      ) : (
+                        <Activity className={`h-4 w-4 shrink-0 ${(route.mean_risk ?? 0) >= 0.3 ? 'text-rose-700 dark:text-rose-300' : 'text-amber-700 dark:text-amber-300'}`} />
+                      )}
                       <span className="mono-badge text-[9px] font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] whitespace-nowrap">
                         {route.rank === 'safest' ? copy.safest : route.rank}
                       </span>
@@ -581,30 +631,29 @@ export default function BestRoutesPage() {
                     <span className="text-xs font-bold">{riskLabel(route, copy)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex flex-col min-[430px]:flex-row items-stretch min-[430px]:items-center gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => handleMarkAsReached(route)}
-                    className="flex-1 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95"
+                    className="flex-1 py-2.5 px-3.5 rounded-xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] dark:text-neutral-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 group whitespace-nowrap cursor-pointer"
                   >
-                    <MapPin className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Reached Destination</span>
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] group-hover:text-current transition-colors" />
+                    <span className="whitespace-nowrap">Reached Destination</span>
                   </button>
                   <a 
                     href={route.maps_url} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl font-semibold text-xs shadow-xs"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3.5 bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 rounded-xl font-semibold text-xs shadow-xs transition-all whitespace-nowrap"
                   >
                     <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
-                    <span>{copy.openMaps}</span>
+                    <span className="whitespace-nowrap">{copy.openMaps}</span>
                     <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
                   </a>
                 </div>
               </div>
             ))}
           </div>
-          {body?.disclaimer && <p className="mt-4 text-[11px] text-[var(--text-muted)]">{body.disclaimer}</p>}
         </>
       )}
 
@@ -614,7 +663,7 @@ export default function BestRoutesPage() {
           <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl w-full max-w-md p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
               <div className="flex items-center gap-2">
-                <RouteIcon className="h-5 w-5 text-[var(--color-brand-accent)]" />
+                <RouteIcon className="h-5 w-5 text-[var(--text-main)] dark:text-neutral-200" />
                 <h3 className="font-bold text-sm text-[var(--text-main)]">Create Safe Elevation Path</h3>
               </div>
               <button
@@ -669,13 +718,13 @@ export default function BestRoutesPage() {
                       key={r}
                       type="button"
                       onClick={() => { playClick(); setCustomRisk(r); }}
-                      className={`py-1.5 rounded-xl text-xs font-mono font-bold capitalize border cursor-pointer ${
+                      className={`py-1.5 rounded-xl text-xs font-mono font-bold capitalize border cursor-pointer transition-colors ${
                         customRisk === r
                           ? r === 'low'
-                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                            ? 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] border-teal-600/40 dark:border-teal-400/40 text-teal-700 dark:text-teal-300'
                             : r === 'moderate'
-                              ? 'bg-amber-500/20 border-amber-500 text-amber-600 dark:text-amber-400'
-                              : 'bg-rose-500/20 border-rose-500 text-rose-600 dark:text-rose-400'
+                              ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] border-amber-600/40 dark:border-amber-400/40 text-amber-700 dark:text-amber-300'
+                              : 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] border-rose-600/40 dark:border-rose-400/40 text-rose-700 dark:text-rose-300'
                           : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)]'
                       }`}
                     >
@@ -695,7 +744,7 @@ export default function BestRoutesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                  className="px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-xs font-bold transition-colors cursor-pointer shadow-xs"
                 >
                   Save & Compute Path
                 </button>
@@ -725,13 +774,13 @@ export default function BestRoutesPage() {
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-[var(--border-color)] pb-3.5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-neutral-500/10 border border-[var(--border-color)] text-[var(--text-main)] dark:text-neutral-200 flex items-center justify-center shrink-0">
                   <MapPin className="h-5 w-5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-[var(--text-main)] flex items-center gap-2">
                     <span>Destination Reached</span>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-500/10 text-[var(--text-main)] dark:text-neutral-200 border border-[var(--border-color)]">
                       Safe Arrival
                     </span>
                   </h3>
@@ -751,7 +800,7 @@ export default function BestRoutesPage() {
 
             {feedbackSubmitted ? (
               <div className="py-8 text-center space-y-2">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-500 mx-auto flex items-center justify-center animate-bounce">
+                <div className="w-12 h-12 rounded-full bg-neutral-500/15 text-[var(--text-main)] dark:text-neutral-200 mx-auto flex items-center justify-center animate-bounce">
                   <Check className="h-6 w-6 stroke-[3]" />
                 </div>
                 <h4 className="text-sm font-bold text-[var(--text-main)]">Thank You for Your Feedback!</h4>
@@ -784,11 +833,11 @@ export default function BestRoutesPage() {
                       onClick={() => { playClick(); setFeedbackRating('accurate'); }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                         feedbackRating === 'accurate'
-                          ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold shadow-xs'
-                          : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-emerald-500/40 hover:text-[var(--text-main)]'
+                          ? 'border-teal-600/40 dark:border-teal-400/40 bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 font-bold shadow-xs'
+                          : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-teal-600/30 hover:text-[var(--text-main)]'
                       }`}
                     >
-                      <ThumbsUp className="h-4 w-4 text-emerald-500" />
+                      <ThumbsUp className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                       <span className="text-[11px] leading-tight">Accurate & Clear</span>
                       <span className="text-[9px] opacity-75">No waterlogging</span>
                     </button>
@@ -798,11 +847,11 @@ export default function BestRoutesPage() {
                       onClick={() => { playClick(); setFeedbackRating('moderate'); }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                         feedbackRating === 'moderate'
-                          ? 'border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold shadow-xs'
-                          : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-amber-500/40 hover:text-[var(--text-main)]'
+                          ? 'border-amber-600/40 dark:border-amber-400/40 bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 font-bold shadow-xs'
+                          : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-amber-600/30 hover:text-[var(--text-main)]'
                       }`}
                     >
-                      <Star className="h-4 w-4 text-amber-500" />
+                      <Star className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       <span className="text-[11px] leading-tight">Slight Water</span>
                       <span className="text-[9px] opacity-75">Passable ponding</span>
                     </button>
@@ -812,11 +861,11 @@ export default function BestRoutesPage() {
                       onClick={() => { playClick(); setFeedbackRating('inaccurate'); }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                         feedbackRating === 'inaccurate'
-                          ? 'border-rose-500 bg-rose-500/15 text-rose-700 dark:text-rose-400 font-bold shadow-xs'
-                          : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-rose-500/40 hover:text-[var(--text-main)]'
+                          ? 'border-rose-600/40 dark:border-rose-400/40 bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 font-bold shadow-xs'
+                          : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:border-rose-600/30 hover:text-[var(--text-main)]'
                       }`}
                     >
-                      <ThumbsDown className="h-4 w-4 text-rose-500" />
+                      <ThumbsDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                       <span className="text-[11px] leading-tight">Flooded / Blocked</span>
                       <span className="text-[9px] opacity-75">Risk was higher</span>
                     </button>
@@ -840,7 +889,7 @@ export default function BestRoutesPage() {
                 {/* Save as Safe Path Bookmark Option */}
                 <div className="p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <Bookmark className="h-4 w-4 text-[var(--color-brand-accent)] shrink-0" />
+                    <Bookmark className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
                     <div>
                       <span className="font-semibold text-[var(--text-main)] block text-xs">Save as Safe Path for Future Trips</span>
                       <span className="text-[10px] text-[var(--text-muted)] block">Bookmark this tested elevation corridor for offline quick access</span>
@@ -851,8 +900,8 @@ export default function BestRoutesPage() {
                     onClick={() => { playClick(); setSavedAsFavorite(!savedAsFavorite); }}
                     className={`px-3 py-1.5 rounded-xl border font-bold text-[10px] shrink-0 cursor-pointer transition-all ${
                       savedAsFavorite
-                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs'
-                        : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--color-brand-accent)]'
+                        ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-950 dark:border-white shadow-2xs'
+                        : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--text-main)]'
                     }`}
                   >
                     {savedAsFavorite ? 'Bookmarked ✓' : 'Save Path'}

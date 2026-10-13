@@ -16,9 +16,9 @@ const ADMIN_STORAGE_KEY = 'doab_authorized_admins_v1';
 const ADMIN_SESSION_KEY = 'doab_admin_session_v1';
 
 // Super admin credentials read from local environment (.env)
-const DEFAULT_SUPER_ADMIN_USER = import.meta.env.VITE_ADMIN_USERNAME || 'krish';
-const DEFAULT_SUPER_ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || 'kysendoab';
-const DEFAULT_ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'chughsuneet7@gmail.com';
+const DEFAULT_SUPER_ADMIN_USER = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
+const DEFAULT_SUPER_ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || '';
+const DEFAULT_ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@doab.gov.in';
 
 // Initialize list of authorized admins if not yet present
 export function getAuthorizedAdmins(): AdminUser[] {
@@ -63,12 +63,21 @@ export function verifyAdminCredentials(username: string, pass: string): { succes
   const cleanUser = username.trim().toLowerCase();
   const cleanPass = pass.trim();
 
+  // Strict Security: Empty passwords are never allowed under any circumstance
+  if (!cleanPass || cleanPass.length < 6) {
+    return { success: false, error: 'Password must be at least 6 characters.' };
+  }
+
   const admins = getAuthorizedAdmins();
   const found = admins.find(a => a.username.toLowerCase() === cleanUser || a.email.toLowerCase() === cleanUser);
 
   // Check super-admin master password or stored password
   const customPasswords = JSON.parse(localStorage.getItem('doab_admin_passwords_v1') || '{}');
   const validPass = customPasswords[cleanUser] || DEFAULT_SUPER_ADMIN_PASS;
+
+  if (!validPass) {
+    return { success: false, error: 'Admin access is not configured.' };
+  }
 
   if (found && cleanPass === validPass) {
     const sessionUser = { ...found };

@@ -8,7 +8,6 @@ import {
   Sun, 
   MapPin, 
   Route as RouteIcon, 
-  ShieldCheck, 
   ChevronRight, 
   ChevronLeft, 
   X, 
@@ -261,7 +260,7 @@ export const BEST_ROUTES_TOUR_STEPS: TourStep[] = [
     proTip: 'Clicking opens native Google Maps with origin and destination pre-populated.',
     floodHighlight: '1-tap external turn-by-turn navigation',
     droughtHighlight: 'Seamless driver handoff',
-    icon: ShieldCheck,
+    icon: Compass,
     preferredPosition: 'left',
     highlightPadding: { x: 8, y: 8 },
     spotlightRadius: 18
@@ -357,7 +356,7 @@ export const NOTIFICATIONS_TOUR_STEPS: TourStep[] = [
     proTip: 'Click "Open in Google Maps" on any alert card to view its exact street coordinates.',
     floodHighlight: 'Direct link to safe bypass routing',
     droughtHighlight: 'Dispatch priority classification',
-    icon: ShieldCheck,
+    icon: Compass,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
     spotlightRadius: 22
@@ -405,7 +404,7 @@ export const PROFILE_TOUR_STEPS: TourStep[] = [
     proTip: 'One-click sign in preserves your trust badges across multiple devices.',
     floodHighlight: 'Verified Firebase & Demo authentication',
     droughtHighlight: 'Commercial dispatcher access',
-    icon: ShieldCheck,
+    icon: Compass,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
     spotlightRadius: 22
@@ -498,7 +497,7 @@ export const TEAM_TOUR_STEPS: TourStep[] = [
     proTip: 'Read the architectural philosophy driving our dual-climate platform.',
     floodHighlight: 'Zero hallucination ML guidelines',
     droughtHighlight: 'Civic accountability',
-    icon: ShieldCheck,
+    icon: Compass,
     preferredPosition: 'top',
     highlightPadding: { x: 12, y: 12 },
     spotlightRadius: 22
@@ -770,11 +769,11 @@ export function PageTourButton({
         playClick();
         window.dispatchEvent(new CustomEvent(PAGE_TOUR_EVENT, { detail: { pageKey: targetKey } }));
       }}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--color-brand-accent)]/50 hover:bg-[var(--color-brand-accent)]/10 hover:text-[var(--color-brand-accent)] transition-all duration-200 cursor-pointer select-none shadow-2xs group ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--text-main)]/5 hover:text-[var(--text-main)] transition-colors duration-200 cursor-pointer select-none shadow-2xs group ${className}`}
       aria-label={`Start ${label}`}
       title={`Start ${label} interactive tour`}
     >
-      <Compass size={13} className="text-[var(--color-brand-accent)] transition-transform duration-300 group-hover:rotate-45 shrink-0" />
+      <Compass size={14} className="text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-all duration-300 group-hover:rotate-45 shrink-0" />
       <span className="whitespace-nowrap">{label}</span>
     </button>
   );

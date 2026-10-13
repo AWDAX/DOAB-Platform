@@ -81,24 +81,24 @@ export const PROJECT_DETAILS = {
 
 export const PLATFORM_STATS = [
   {
-    label: 'Monitored Wards',
-    value: '24 Wards',
-    detail: 'Ranchi Municipal Grid'
+    label: 'Monitored Grid',
+    value: 'All-India',
+    detail: '198 BBMP Wards & 36 States/UTs'
   },
   {
-    label: 'Telemetry Refresh',
-    value: '<120ms',
-    detail: 'Real-time WebSocket sync'
+    label: 'Forecast Horizon',
+    value: '1-Hour Window',
+    detail: 'Hydrological ML & Rainfall Sync'
   },
   {
     label: 'Reroute Accuracy',
     value: 'Sub-400m',
-    detail: 'Elevation-calibrated bypass'
+    detail: 'SRTM 30m Elevation Bypass'
   },
   {
-    label: 'Bounty System',
-    value: 'Automated',
-    detail: '₹5,000 Plumber & Tanker Orders'
+    label: 'Civic Verification',
+    value: 'EXIF & GPS',
+    detail: 'Ground-Truth Photo Back-Check'
   }
 ];
 

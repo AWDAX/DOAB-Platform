@@ -118,14 +118,17 @@ export default function MapLibreView({
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    // 1. SAHNIRMAAN Macro Danger Cluster Halos
+    // 1. SAHNIRMAAN Macro Danger Cluster Halos (Matching 2D Lite Double-Outline + Calibrated Alpha Fill)
     const clusterSourceId = 'cluster-halos-source';
     const clusterFillId = 'cluster-halos-fill';
     const clusterLineId = 'cluster-halos-line';
+    const clusterOuterRingSourceId = 'cluster-outer-ring-source';
+    const clusterOuterRingLineId = 'cluster-outer-ring-line';
+    const legacyExtrusionId = 'risk-clusters-3d-elevation';
 
-    if (map.getLayer(clusterFillId)) map.removeLayer(clusterFillId);
-    if (map.getLayer(clusterLineId)) map.removeLayer(clusterLineId);
-    if (map.getSource(clusterSourceId)) map.removeSource(clusterSourceId);
+    try {
+      if (map.getLayer(legacyExtrusionId)) map.removeLayer(legacyExtrusionId);
+    } catch (_) {}
 
     if (showHeatLayer && clusters && clusters.length > 0) {
       // Render up to 64 macro danger clusters in 3D WebGL mode
@@ -137,7 +140,10 @@ export default function MapLibreView({
         ? [...topClusters, selectedClusterObj]
         : topClusters;
 
-      const clusterFeatures = renderedClusters.map((cluster, idx) => {
+      const clusterFeatures: any[] = [];
+      const outerRingFeatures: any[] = [];
+
+      renderedClusters.forEach((cluster, idx) => {
         const radiusM = Math.max(cluster.clusterRadiusKm * 500, 1600);
         const circleCoords = createGeoJSONCircle([cluster.lng, cluster.lat], radiusM);
         const isSelected = selectedClusterKey != null && (
@@ -145,55 +151,121 @@ export default function MapLibreView({
           `${cluster.ward}-${idx}` === selectedClusterKey ||
           (cluster.ward && selectedClusterKey.startsWith(cluster.ward))
         );
-        let color = '#0284C7';
-        if (cluster.highestSeverity === 'Critical') color = '#E11D48';
-        else if (cluster.highestSeverity === 'High') color = '#D97706';
-        else if (cluster.highestSeverity === 'Medium') color = '#0284C7';
-        else if (cluster.highestSeverity === 'Low') color = '#64748B';
-        return {
+        let color = '#475569';
+        if (cluster.highestSeverity === 'Critical') color = '#BE123C';
+        else if (cluster.highestSeverity === 'High') color = '#B45309';
+        else if (cluster.highestSeverity === 'Medium') color = '#475569';
+        else if (cluster.highestSeverity === 'Low') color = '#0F766E';
+
+        const isFeeble = selectedClusterKey != null && !isSelected;
+        clusterFeatures.push({
           type: 'Feature' as const,
           id: idx,
           properties: {
             color,
             severity: cluster.highestSeverity,
-            opacity: isSelected ? 0.35 : 0.20,
-            lineWidth: isSelected ? 3.5 : 2.2
+            opacity: isSelected ? 0.34 : isFeeble ? 0.045 : 0.08,
+            lineWidth: isSelected ? 3.5 : isFeeble ? 1.3 : 1.8,
+            lineOpacity: isSelected ? 1.0 : isFeeble ? 0.45 : 0.88,
           },
           geometry: {
             type: 'Polygon' as const,
             coordinates: [circleCoords]
           }
-        };
-      });
+        });
 
-      map.addSource(clusterSourceId, {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: clusterFeatures
+        // Double outline outer ring for selected cluster (matches 2D Lite view)
+        if (isSelected) {
+          const outerCoords = createGeoJSONCircle([cluster.lng, cluster.lat], radiusM * 1.15);
+          outerRingFeatures.push({
+            type: 'Feature' as const,
+            id: `outer-${idx}`,
+            properties: { color },
+            geometry: {
+              type: 'Polygon' as const,
+              coordinates: [outerCoords]
+            }
+          });
         }
       });
 
-      map.addLayer({
-        id: clusterFillId,
-        type: 'fill',
-        source: clusterSourceId,
-        paint: {
-          'fill-color': ['get', 'color'],
-          'fill-opacity': ['get', 'opacity']
-        }
-      });
+      const clusterGeoJson: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: clusterFeatures
+      };
 
-      map.addLayer({
-        id: clusterLineId,
-        type: 'line',
-        source: clusterSourceId,
-        paint: {
-          'line-color': ['get', 'color'],
-          'line-width': ['get', 'lineWidth'],
-          'line-dasharray': [4, 2]
-        }
-      });
+      const existingClusterSource = map.getSource(clusterSourceId) as maplibregl.GeoJSONSource | undefined;
+      if (existingClusterSource && typeof existingClusterSource.setData === 'function') {
+        existingClusterSource.setData(clusterGeoJson);
+      } else {
+        map.addSource(clusterSourceId, {
+          type: 'geojson',
+          data: clusterGeoJson
+        });
+      }
+
+      if (!map.getLayer(clusterFillId)) {
+        map.addLayer({
+          id: clusterFillId,
+          type: 'fill',
+          source: clusterSourceId,
+          paint: {
+            'fill-color': ['get', 'color'],
+            'fill-opacity': ['get', 'opacity'],
+            'fill-antialias': true
+          }
+        });
+      }
+
+      if (!map.getLayer(clusterLineId)) {
+        map.addLayer({
+          id: clusterLineId,
+          type: 'line',
+          source: clusterSourceId,
+          paint: {
+            'line-color': ['get', 'color'],
+            'line-width': ['get', 'lineWidth'],
+            'line-opacity': ['get', 'lineOpacity']
+          }
+        });
+      }
+
+      const outerGeoJson: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: outerRingFeatures
+      };
+
+      const existingOuterSource = map.getSource(clusterOuterRingSourceId) as maplibregl.GeoJSONSource | undefined;
+      if (existingOuterSource && typeof existingOuterSource.setData === 'function') {
+        existingOuterSource.setData(outerGeoJson);
+      } else {
+        map.addSource(clusterOuterRingSourceId, {
+          type: 'geojson',
+          data: outerGeoJson
+        });
+      }
+
+      if (!map.getLayer(clusterOuterRingLineId)) {
+        map.addLayer({
+          id: clusterOuterRingLineId,
+          type: 'line',
+          source: clusterOuterRingSourceId,
+          paint: {
+            'line-color': ['get', 'color'],
+            'line-width': 2,
+            'line-dasharray': [2, 3],
+            'line-opacity': 0.85
+          }
+        });
+      }
+    } else {
+      try {
+        if (map.getLayer(clusterFillId)) map.removeLayer(clusterFillId);
+        if (map.getLayer(clusterLineId)) map.removeLayer(clusterLineId);
+        if (map.getSource(clusterSourceId)) map.removeSource(clusterSourceId);
+        if (map.getLayer(clusterOuterRingLineId)) map.removeLayer(clusterOuterRingLineId);
+        if (map.getSource(clusterOuterRingSourceId)) map.removeSource(clusterOuterRingSourceId);
+      } catch (_) {}
     }
 
     // 2. Focused Risk Halo for Currently Inspected Incident
@@ -201,14 +273,16 @@ export default function MapLibreView({
     const selectedHaloFillId = 'selected-incident-halo-fill';
     const selectedHaloLineId = 'selected-incident-halo-line';
 
-    if (map.getLayer(selectedHaloFillId)) map.removeLayer(selectedHaloFillId);
-    if (map.getLayer(selectedHaloLineId)) map.removeLayer(selectedHaloLineId);
-    if (map.getSource(selectedHaloSourceId)) map.removeSource(selectedHaloSourceId);
+    try {
+      if (map.getLayer(selectedHaloFillId)) map.removeLayer(selectedHaloFillId);
+      if (map.getLayer(selectedHaloLineId)) map.removeLayer(selectedHaloLineId);
+      if (map.getSource(selectedHaloSourceId)) map.removeSource(selectedHaloSourceId);
+    } catch (_) {}
 
     if (showHeatLayer && selectedIncident) {
       const radiusM = selectedIncident.severity === 'Critical' ? 480 : selectedIncident.severity === 'High' ? 320 : 180;
       const haloCoords = createGeoJSONCircle([selectedIncident.lng, selectedIncident.lat], radiusM);
-      const color = selectedIncident.severity === 'Critical' ? '#E11D48' : selectedIncident.severity === 'High' ? '#D97706' : '#0284C7';
+      const color = selectedIncident.severity === 'Critical' ? '#BE123C' : selectedIncident.severity === 'High' ? '#B45309' : '#475569';
 
       map.addSource(selectedHaloSourceId, {
         type: 'geojson',
@@ -248,11 +322,13 @@ export default function MapLibreView({
     const proximitySourceId = 'proximity-vector-source';
     const proximityLayerId = 'proximity-vector-layer';
 
-    if (map.getLayer(proximityLayerId)) map.removeLayer(proximityLayerId);
-    if (map.getSource(proximitySourceId)) map.removeSource(proximitySourceId);
+    try {
+      if (map.getLayer(proximityLayerId)) map.removeLayer(proximityLayerId);
+      if (map.getSource(proximitySourceId)) map.removeSource(proximitySourceId);
+    } catch (_) {}
 
     if (userLocation && selectedIncident) {
-      const color = selectedIncident.severity === 'Critical' ? '#E11D48' : '#D97706';
+      const color = selectedIncident.severity === 'Critical' ? '#BE123C' : '#B45309';
       map.addSource(proximitySourceId, {
         type: 'geojson',
         data: {
@@ -285,8 +361,10 @@ export default function MapLibreView({
     const routeSourceId = 'active-route-source';
     const routeLayerId = 'active-route-layer';
 
-    if (map.getLayer(routeLayerId)) map.removeLayer(routeLayerId);
-    if (map.getSource(routeSourceId)) map.removeSource(routeSourceId);
+    try {
+      if (map.getLayer(routeLayerId)) map.removeLayer(routeLayerId);
+      if (map.getSource(routeSourceId)) map.removeSource(routeSourceId);
+    } catch (_) {}
 
     if (activeRouteGeometry && activeRouteGeometry.length > 1) {
       const coordinates = activeRouteGeometry.map(pt => [pt[1], pt[0]]);
@@ -311,7 +389,7 @@ export default function MapLibreView({
           'line-cap': 'round'
         },
         paint: {
-          'line-color': envMode === 'flood' ? '#0ea5e9' : '#f59e0b',
+          'line-color': isDarkMode ? '#f8fafc' : '#171717',
           'line-width': 4,
           'line-dasharray': [2, 1]
         }
@@ -328,7 +406,7 @@ export default function MapLibreView({
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
-    // Add user marker if available
+    // Add user marker if available (Always classic blue GPS orb)
     if (userLocation) {
       const userEl = document.createElement('div');
       userEl.className = 'w-8 h-8 flex items-center justify-center relative cursor-pointer';
@@ -336,7 +414,7 @@ export default function MapLibreView({
       userEl.style.pointerEvents = 'auto';
       userEl.innerHTML = `
         <span class="absolute inset-0 rounded-full bg-sky-500/35 animate-ping"></span>
-        <span class="absolute -inset-1 rounded-full bg-sky-400/20"></span>
+        <span class="absolute -inset-1 rounded-full bg-sky-500/15"></span>
         <div class="w-4 h-4 rounded-full bg-sky-500 border-2 border-white shadow-lg flex items-center justify-center relative z-10">
           <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
         </div>
@@ -347,7 +425,7 @@ export default function MapLibreView({
         offset: 18, 
         closeButton: false 
       }).setHTML(`
-        <div style="padding: 6px 10px; font-family: monospace; font-size: 11px; border-radius: 10px; background: #0f172a; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 14px rgba(0,0,0,0.35);">
+        <div style="padding: 6px 10px; font-family: monospace; font-size: 11px; border-radius: 10px; background: #0f172a; color: #ffffff; border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 4px 14px rgba(0,0,0,0.35);">
           <div style="font-weight: bold; display: flex; align-items: center; gap: 6px; color: #38bdf8;">
             <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#38bdf8;"></span>
             Your Real Live GPS Location
@@ -369,15 +447,15 @@ export default function MapLibreView({
     // Render all filtered incidents (up to 600) without artificial 150 clipping
     incidents.forEach(incident => {
       const isSelected = selectedIncident?.id === incident.id;
-      let dotColor = '#0284c7'; // Medium (Sky Blue) default
+      let dotColor = '#475569'; // Medium (Muted Steel Slate) default
       if (incident.severity === 'Critical') {
-        dotColor = '#e11d48'; // Critical (Rose Red)
+        dotColor = '#BE123C'; // Critical (Deep Garnet Rose)
       } else if (incident.severity === 'High') {
-        dotColor = '#d97706'; // High (Amber Orange)
+        dotColor = '#B45309'; // High (Warm Copper Amber)
       } else if (incident.severity === 'Medium') {
-        dotColor = '#0284c7'; // Medium / Moderate (Sky Blue)
+        dotColor = '#475569'; // Medium / Moderate (Slate)
       } else if (incident.severity === 'Low') {
-        dotColor = '#64748b'; // Low / Normal (Slate Gray)
+        dotColor = '#0F766E'; // Low / Safe (Muted Teal)
       }
 
       const el = document.createElement('div');
@@ -511,8 +589,24 @@ export default function MapLibreView({
     }
   }, [styleConfig, isDarkMode]);
 
+  const prevCenterZoomRef = useRef<{ lat: number; lng: number; zoom: number }>({
+    lat: center[0],
+    lng: center[1],
+    zoom,
+  });
+
   // Update center & zoom if changed from outside with cinematic flight
   useEffect(() => {
+    const prev = prevCenterZoomRef.current;
+    const hasChanged =
+      prev.lat !== center[0] ||
+      prev.lng !== center[1] ||
+      prev.zoom !== zoom;
+
+    prevCenterZoomRef.current = { lat: center[0], lng: center[1], zoom };
+
+    if (!hasChanged) return;
+
     if (mapRef.current) {
       mapRef.current.flyTo({
         center: [center[1], center[0]],
@@ -687,7 +781,7 @@ export default function MapLibreView({
               onPointerCancel={handleZPointerUp}
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-grab active:cursor-grabbing select-none relative group ${
                 isDraggingZ
-                  ? 'bg-cyan-500 text-slate-950 shadow-lg ring-2 ring-cyan-400 scale-105'
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-lg ring-2 ring-neutral-500 scale-105'
                   : 'text-[var(--text-main)] hover:bg-[var(--text-main)]/10'
               }`}
               aria-label="Hold and drag to rotate 3D camera around Z-axis"
@@ -706,17 +800,17 @@ export default function MapLibreView({
                   strokeLinejoin="round"
                 >
                   {/* Isometric 3D Cube with Central Z-Axis */}
-                  <path d="M12 2.5 L19.5 6.8 L12 11 L4.5 6.8 Z" className={isDraggingZ ? "fill-slate-950/20" : "fill-current/10"} />
+                  <path d="M12 2.5 L19.5 6.8 L12 11 L4.5 6.8 Z" className={isDraggingZ ? "fill-current/20" : "fill-current/10"} />
                   <path d="M4.5 6.8 L4.5 15.5 L12 19.8 L12 11" />
                   <path d="M19.5 6.8 L19.5 15.5 L12 19.8" />
                   {/* Orbital curved rotation arrow around Z axis */}
-                  <path d="M2.5 11 A9.5 5 0 0 0 21.5 11" strokeDasharray="2 1.5" strokeWidth="1.3" className={isDraggingZ ? "text-slate-950" : "text-cyan-500"} />
+                  <path d="M2.5 11 A9.5 5 0 0 0 21.5 11" strokeDasharray="2 1.5" strokeWidth="1.3" className="text-current" />
                 </svg>
               </div>
 
               {/* Mini "3D" indicator badge on button */}
               <span className={`absolute -bottom-0.5 -right-0.5 text-[7px] font-mono font-black px-1 rounded-sm leading-tight ${
-                isDraggingZ ? 'bg-slate-950 text-cyan-400' : 'bg-[var(--bg-main)] text-[var(--color-brand-accent)] border border-[var(--border-color)]'
+                isDraggingZ ? 'bg-white text-neutral-950 dark:bg-neutral-950 dark:text-white' : 'bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)]'
               }`}>
                 3D
               </span>
@@ -725,10 +819,10 @@ export default function MapLibreView({
 
           {/* Live Rotation HUD while dragging */}
           {isDraggingZ && (
-            <div className="absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap px-2.5 py-1 rounded-xl bg-slate-900/95 text-cyan-400 border border-cyan-500/40 text-[10px] font-mono font-bold shadow-xl flex items-center gap-1.5 backdrop-blur-md pointer-events-none z-30">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping inline-block" />
+            <div className="absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap px-2.5 py-1 rounded-xl bg-neutral-950/95 text-white border border-white/20 text-[10px] font-mono font-bold shadow-xl flex items-center gap-1.5 backdrop-blur-md pointer-events-none z-30">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block" />
               <span>Z-Orbit: {bearing}°</span>
-              <span className="text-slate-600">•</span>
+              <span className="text-neutral-500">•</span>
               <span>Tilt: {pitch}°</span>
             </div>
           )}

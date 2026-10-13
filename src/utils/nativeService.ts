@@ -32,7 +32,7 @@ export const NativeService = {
   },
 
   // High-priority emergency local notification
-  sendEmergencyNotification: async (title: string, body: string) => {
+  sendEmergencyNotification: async (title: string, body: string, soundFileName: string = 'sos_buzzer.wav') => {
     try {
       if (Capacitor.isNativePlatform()) {
         const perm = await LocalNotifications.requestPermissions();
@@ -44,9 +44,9 @@ export const NativeService = {
                 title: title || '🚨 CRITICAL SOS ALERT',
                 body: body || 'Emergency beacon triggered. Sending live telemetry.',
                 schedule: { at: new Date(Date.now() + 100) },
-                sound: 'beep.wav',
+                sound: soundFileName,
                 actionTypeId: '',
-                extra: { isSos: true }
+                extra: { isSos: soundFileName.includes('sos') }
               }
             ]
           });

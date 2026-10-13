@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Compass, ArrowLeft, ShieldAlert, Sparkles } from 'lucide-react';
+import { Compass, ArrowLeft, Sparkles } from 'lucide-react';
 import { playClick } from '../utils/soundFx';
 
 interface NotFoundPageProps {
@@ -31,7 +31,7 @@ export default function NotFoundPage({ envMode = 'flood' }: NotFoundPageProps) {
       <div className="relative z-10 max-w-lg w-full bg-[var(--bg-card)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-3xl p-8 sm:p-10 shadow-2xl text-center">
         {/* Status Header Chip */}
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-brand-accent)]/10 border border-[var(--color-brand-accent)]/25 text-[var(--color-brand-accent)] text-xs font-mono font-medium tracking-wider mb-6">
-          <ShieldAlert className="w-3.5 h-3.5 animate-pulse" />
+          <Compass className="w-3.5 h-3.5 animate-pulse" />
           <span>CIVIC GRID // ERROR 404</span>
         </div>
 

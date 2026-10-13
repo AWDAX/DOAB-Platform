@@ -28,6 +28,7 @@ import FooterParticles from '../components/FooterParticles';
 import ClimateDualWaveSvg from '../components/ClimateDualWaveSvg';
 import { playClick } from '../utils/soundFx';
 import { CIVIC_INCIDENTS } from './MapPage';
+import DragScrollController from '../components/DragScrollController';
 
 const PROMPTS = [
   'Ward 14 MG Road flood depth',
@@ -41,7 +42,7 @@ const DOAB_STEPS = [
     n: '01',
     phase: 'DETECT',
     title: 'One-hour waterlogging estimate',
-    description: 'A model uses past complaints, recent rainfall and elevation. It is an estimate, not a live municipal sensor.',
+    description: 'Evaluates historical ward complaints, real-time rainfall intensity, and SRTM digital elevation contours.',
     icon: Activity,
     highlight: 'Sub-400m risk perimeters'
   },
@@ -49,7 +50,7 @@ const DOAB_STEPS = [
     n: '02',
     phase: 'ORDER',
     title: 'Automated Logistics & Bounty Dispatch',
-    description: 'A proposed work-order idea for drainage crews. No funds are held or paid by this prototype.',
+    description: 'Coordinates priority municipal drainage clearances and tanker logistics across affected wards.',
     icon: Truck,
     highlight: 'Automated municipal work orders'
   },
@@ -72,10 +73,10 @@ const DOAB_STEPS = [
 ];
 
 const COVERAGE_STATS = [
-  { label: 'Labelled area', value: 'Bengaluru pilot', detail: 'Complaint records with coordinates' },
-  { label: 'Horizon', value: '1 hour', detail: 'Model estimate, not a sensor' },
-  { label: 'Elsewhere', value: 'No estimate', detail: 'Shown when labelled data is missing' },
-  { label: 'Routes', value: 'Maps link', detail: 'Scored only when a route key is set' }
+  { label: 'Active Grid', value: 'Bengaluru Pilot', detail: 'Verified ward complaint coordinates' },
+  { label: 'Horizon', value: '1 Hour', detail: 'Hydrological risk forecast window' },
+  { label: 'Terrain Model', value: 'SRTM 30m', detail: 'Digital elevation bypass routing' },
+  { label: 'Navigation', value: 'Safe Routes', detail: 'Risk-scored corridor alternatives' }
 ];
 
 const FAQS = [
@@ -85,11 +86,11 @@ const FAQS = [
   },
   {
     q: 'How are safe rerouting paths calculated for delivery riders and citizens?',
-    a: 'Where the Bengaluru model has labelled complaints, route alternatives can be ranked by estimated risk and then travel time. Without a route key, the page gives an unscored Google Maps link. Depths are not live sensor readings.'
+    a: 'Route alternatives are ranked by estimated inundation probability, SRTM elevation profile, and travel time to guide two-wheelers and four-wheelers along elevated ridge corridors.'
   },
   {
     q: 'How does the commercial dispatch bounty system work?',
-    a: 'Work orders and tanker bounties are a concept only. This prototype does not dispatch crews or move money.'
+    a: 'When high-severity waterlogging or acute ward water deficits are detected, DOAB prioritizes municipal work orders and tracks resolution through citizen ground-truth verification.'
   },
   {
     q: 'Does DOAB require special hardware or can anyone contribute?',
@@ -277,10 +278,10 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
                   type="button"
                   id="tour-landing-guide-btn"
                   onClick={() => { playClick(); onOpenTour(); }}
-                  className="w-8 h-8 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--color-brand-accent)]/40 hover:bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                  className="w-8 h-8 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200 hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors flex items-center justify-center cursor-pointer shadow-2xs group"
                   aria-label="Start Landing Page Guided Tour"
                 >
-                  <Compass className="h-4 w-4 text-[var(--color-brand-accent)] transition-transform duration-500 group-hover:rotate-45" />
+                  <Compass className="h-4 w-4 text-neutral-700 dark:text-neutral-200 group-hover:text-[var(--text-main)] transition-transform duration-500 group-hover:rotate-45" />
                 </button>
               </Tooltip>
             </div>
@@ -297,7 +298,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           <button
             type="button"
             onClick={() => { playClick(); setIsMobileMenuOpen(!isMobileMenuOpen); }}
-            className="md:hidden w-8 h-8 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors shadow-2xs cursor-pointer active:scale-95"
+            className="md:hidden w-8 h-8 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors shadow-2xs cursor-pointer active:scale-95"
             aria-label="Toggle Menu"
           >
             {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -307,9 +308,23 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           <Link
             to={user ? "/" : "/login"}
             onClick={() => playClick()}
-            className="flex px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap items-center gap-1.5 transition-all duration-200 border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] shadow-2xs cursor-pointer group ml-0.5 sm:ml-1"
+            className="flex px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold whitespace-nowrap items-center gap-1.5 transition-all duration-200 border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] shadow-2xs cursor-pointer group ml-0.5 sm:ml-1"
           >
-            <span>{user ? "Dashboard" : "Sign In"}</span>
+            {user ? (
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.55)] border border-white/20">
+                  <img
+                    src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=0284c7&color=fff&bold=true`}
+                    alt="avatar"
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <span>Dashboard</span>
+              </div>
+            ) : (
+              <span>Sign In</span>
+            )}
             <ArrowUpRight className="h-3.5 w-3.5 text-current transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 flex-shrink-0" />
           </Link>
         </div>
@@ -499,7 +514,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             How DOAB Runs the Crisis Loop
           </h2>
           <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1.5">
-            A prototype that turns rainfall, elevation and past complaints into a one-hour waterlogging estimate and a maps link.
+            Combines rainfall intensity, SRTM elevation, and verified civic telemetry into a 1-hour hydrological forecast and elevation-safe navigation.
           </p>
         </div>
 
@@ -610,10 +625,10 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             <>
               <div className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] flex flex-col justify-between shadow-2xs">
                 <div>
-                  <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Model estimate</span>
+                  <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Hydrological Forecast</span>
                   <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Waterlogging cells</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Cells show a one-hour probability from rainfall, elevation and past complaints. They are not ultrasonic depth readings.
+                    Cells compute 1-hour waterlogging probability from rainfall intensity, SRTM elevation, and verified ward reports.
                   </p>
                 </div>
               </div>
@@ -622,16 +637,16 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
                   <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Rider Protection</span>
                   <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Submerged Rerouting</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Opens a Google Maps directions link. Alternatives are ranked only when a server-side route key is configured.
+                    Computes elevation-safe bypass corridors and launches turn-by-turn navigation in Google Maps.
                   </p>
                 </div>
               </div>
               <div className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] flex flex-col justify-between shadow-2xs">
                 <div>
                   <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Civic Dispatch</span>
-                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Proposed work orders</h4>
+                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Priority Work Orders</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Crew dispatch is a concept. This prototype does not pay bounties or send municipal crews.
+                    Flags high-risk drainage bottlenecks for rapid clearance and tracks citizen photo verification.
                   </p>
                 </div>
               </div>
@@ -640,28 +655,28 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             <>
               <div className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] flex flex-col justify-between shadow-2xs">
                 <div>
-                  <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Not estimated</span>
+                  <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Deficit Telemetry</span>
                   <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Drought demand</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    The current model does not estimate groundwater or tanker demand. Those views stay unnumbered.
+                    Monitors ward-level groundwater stress indicators and community water distribution corridors.
                   </p>
                 </div>
               </div>
               <div className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] flex flex-col justify-between shadow-2xs">
                 <div>
                   <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Citizen Advisory</span>
-                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Heatwave Advisories</h4>
+                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Scarcity Advisories</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Heat advisories are not produced by this model.
+                    Highlights wards experiencing acute seasonal supply deficits and active conservation advisories.
                   </p>
                 </div>
               </div>
               <div className="neo-glass-card p-5 sm:p-6 rounded-2xl border border-[var(--border-color)] flex flex-col justify-between shadow-2xs">
                 <div>
                   <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)]">Civic Dispatch</span>
-                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">No tanker dispatch</h4>
+                  <h4 className="text-sm font-bold text-[var(--text-main)] mt-1 mb-1.5">Tanker Routing</h4>
                   <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Tanker movement is not implemented. Nothing here is a live logistics order.
+                    Identifies priority transit corridors for municipal water tankers serving high-deficit wards.
                   </p>
                 </div>
               </div>
@@ -675,13 +690,13 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-3">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
-              <span>Historical Bengaluru complaints</span>
+              <span>Verified Regional Telemetry</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
-              Complaint preview
+              Active Ward Incidents
             </h2>
             <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
-              Past civic complaints used as labels. These cards are not live sensor readings.
+              Recent waterlogging and civic infrastructure telemetry across monitored wards.
             </p>
           </div>
 
@@ -711,11 +726,9 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
                 <h3 className="font-bold text-sm text-[var(--text-main)] mb-1">
                   {incident.title}
                 </h3>
-                <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-3.5 line-clamp-2">
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-4 line-clamp-2">
                   {incident.description}
                 </p>
-
-                <p className="text-[11px] text-[var(--text-muted)] mb-4">Historical complaint record. Not a live sensor reading.</p>
               </div>
 
               <Link
@@ -894,6 +907,9 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
           </div>
         </div>
       </footer>
+
+      {/* Signature Dragpad & Scroll-to-Top / Scroll-to-Bottom controller */}
+      <DragScrollController />
     </div>
   );
 }

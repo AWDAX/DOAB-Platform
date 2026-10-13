@@ -80,38 +80,139 @@ export function playCardSwiped() {
   } catch (err) {}
 }
 
-export function playAlertAlarm() {
+/**
+ * High-urgency pulsing / buzzing emergency alarm for SOS & Life-Threatening Hazards.
+ * Features a dual-frequency square/sawtooth warble with aggressive tremolo buzzer.
+ */
+export function playEmergencyBuzzingAlarm(durationMs: number = 3200) {
   if (!isSoundEnabled() || typeof window === 'undefined') return;
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const startTime = ctx.currentTime;
+    const stopTime = startTime + durationMs / 1000;
+
+    // Dual-tone buzzer: 920Hz and 780Hz square waves with rapid modulation
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc1.type = 'sawtooth';
+    osc2.type = 'square';
+
+    // Warbling Siren Pitch modulation
+    osc1.frequency.setValueAtTime(880, startTime);
+    osc2.frequency.setValueAtTime(640, startTime);
+
+    // Rapid alternating buzzer pulse (every 180ms)
+    for (let t = startTime; t < stopTime; t += 0.36) {
+      osc1.frequency.setValueAtTime(960, t);
+      osc2.frequency.setValueAtTime(720, t);
+      osc1.frequency.setValueAtTime(640, t + 0.18);
+      osc2.frequency.setValueAtTime(480, t + 0.18);
+    }
+
+    // Buzzing amplitude envelope with hard staccato chops
+    gainNode.gain.setValueAtTime(0.35, startTime);
+    for (let t = startTime; t < stopTime; t += 0.18) {
+      gainNode.gain.setValueAtTime(0.35, t);
+      gainNode.gain.setValueAtTime(0.02, t + 0.14);
+    }
+    gainNode.gain.exponentialRampToValueAtTime(0.001, stopTime);
+
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc1.start(startTime);
+    osc2.start(startTime);
+    osc1.stop(stopTime);
+    osc2.stop(stopTime);
+  } catch (err) {
+    console.warn('Emergency buzzer sound error:', err);
+  }
+}
+
+/**
+ * Standard Civic Notification Alert chime:
+ * A modern, 2-note ascending marimba/crystal chime (G5 -> C6).
+ */
+export function playCivicNotificationChime() {
+  if (!isSoundEnabled() || typeof window === 'undefined') return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     const now = ctx.currentTime;
-    
-    // First high beep
+
+    // Note 1: G5 (784 Hz)
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
-    osc1.type = 'triangle';
-    osc1.frequency.setValueAtTime(880, now); // A5
-    gain1.gain.setValueAtTime(0.18, now);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(783.99, now);
+    gain1.gain.setValueAtTime(0.24, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
     osc1.connect(gain1);
     gain1.connect(ctx.destination);
     osc1.start(now);
-    osc1.stop(now + 0.15);
+    osc1.stop(now + 0.22);
 
-    // Second higher urgency beep
+    // Note 2: C6 (1046.5 Hz)
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
-    osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(1174.66, now + 0.16); // D6
-    gain2.gain.setValueAtTime(0.22, now + 0.16);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1046.50, now + 0.12);
+    gain2.gain.setValueAtTime(0.26, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
     osc2.connect(gain2);
     gain2.connect(ctx.destination);
-    osc2.start(now + 0.16);
-    osc2.stop(now + 0.38);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.42);
   } catch (err) {}
+}
+
+/**
+ * Gentle, reassuring arrival accomplishment chime (E5 -> G#5 -> B5 major triad).
+ */
+export function playArrivalSuccessChime() {
+  if (!isSoundEnabled() || typeof window === 'undefined') return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const now = ctx.currentTime;
+    const chord = [659.25, 830.61, 987.77, 1318.51]; // E5, G#5, B5, E6
+    chord.forEach((freq, idx) => {
+      const t = now + idx * 0.08;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.20, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.45);
+    });
+  } catch (err) {}
+}
+
+export function playAlertAlarm() {
+  playEmergencyBuzzingAlarm(2400);
 }
 
 /**

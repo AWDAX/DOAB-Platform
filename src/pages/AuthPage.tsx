@@ -5,6 +5,7 @@ import { signInWithGoogle, signInWithFirebaseEmail, createFirebaseAccount, onDOA
 import { getAccountProfile, setAccountProfile } from '../hooks/useUserSettings';
 import BrandLogo from '../components/BrandLogo';
 import MinimalBrandHeader from '../components/MinimalBrandHeader';
+import { Capacitor } from '@capacitor/core';
 
 interface AuthPageProps {
   isDarkMode?: boolean;
@@ -127,6 +128,49 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
+
+  const handleGoogleBtnClick = async () => {
+    // If native mobile, open account selection sheet
+    if (Capacitor.isNativePlatform()) {
+      setIsGoogleModalOpen(true);
+      return;
+    }
+
+    // On Desktop Browser: trigger authentic Google Sign-In with Account Selection
+    setError(null);
+    setGoogleLoading(true);
+    setAccountProfile({
+      role: selectedRole,
+      vendorId: selectedRole === 'delivery' ? vendorId.trim() : ''
+    });
+    try {
+      localStorage.setItem('doab_user_role', selectedRole);
+      if (selectedRole === 'delivery' && vendorId.trim()) {
+        localStorage.setItem('doab_vendor_id', vendorId.trim());
+      }
+    } catch {}
+
+    const result = await signInWithGoogle(null);
+    if (result.error) {
+      setError(result.error);
+    } else if (result.user) {
+      try {
+        localStorage.setItem(
+          'doab_last_google_account',
+          JSON.stringify({
+            email: result.user.email,
+            fullName: result.user.displayName || result.user.email?.split('@')[0] || 'Operator',
+            photoURL: result.user.photoURL
+          })
+        );
+      } catch {}
+      if (!isNavigatingRef.current) {
+        isNavigatingRef.current = true;
+        navigate('/', { replace: true });
+      }
+    }
+    setGoogleLoading(false);
+  };
 
   const handleGoogleAccountPick = async (account: { email: string; name?: string; photoURL?: string }) => {
     setIsGoogleModalOpen(false);
@@ -371,7 +415,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
           {/* Unified Height-Constant Google OAuth Button */}
           <button
             type="button"
-            onClick={() => setIsGoogleModalOpen(true)}
+            onClick={handleGoogleBtnClick}
             disabled={loading || googleLoading}
             className="w-full h-11.5 sm:h-12 mb-5 sm:mb-6 flex items-center justify-between px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-tight border border-neutral-300/90 dark:border-white/10 bg-neutral-100/90 dark:bg-white/[0.05] hover:bg-neutral-200/80 dark:hover:bg-white/[0.08] text-neutral-950 dark:text-white transition-all duration-200 shadow-xs active:scale-[0.99] disabled:opacity-50 cursor-pointer group font-sans"
           >
@@ -406,7 +450,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
               </span>
             ) : (
               <span className="mono-badge text-[10px] text-neutral-900 dark:text-neutral-100 bg-neutral-200/90 dark:bg-white/10 border border-neutral-300 dark:border-white/20 px-2.5 py-0.5 rounded-full hidden sm:inline shrink-0 font-bold">
-                Google Dialog
+                1-Click OAuth
               </span>
             )}
           </button>
@@ -496,8 +540,8 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
           BY Contrarians
         </Link>
       </footer>
-      {/* Google In-App Account Picker Dialog (Native Feel, Zero Play Services crash) */}
-      {isGoogleModalOpen && (
+      {/* Google In-App Account Picker Dialog (Native Android Only) */}
+      {Capacitor.isNativePlatform() && isGoogleModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-sm rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl p-5 relative overflow-hidden">
             <button
@@ -534,8 +578,11 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
                 className="w-full p-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--border-color)]/30 flex items-center justify-between text-left transition-colors cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold flex items-center justify-center text-xs shrink-0">
-                    G
+                  <div className="relative shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold flex items-center justify-center text-xs shrink-0 ring-2 ring-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.55)]">
+                      G
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 border border-[var(--bg-card)]" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-[var(--text-main)] truncate">
