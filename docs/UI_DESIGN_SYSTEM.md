@@ -91,8 +91,8 @@ All destructive action buttons (`Delete route`, `Clear All sessions`, `Confirm d
 
 **Application pattern** (Tailwind v4 `bg-[image:var(...)]`):
 ```tsx
-className="... text-white bg-[image:var(--danger-btn-gradient,...)]
-  hover:bg-[image:var(--danger-btn-hover-gradient,...)]
+className="... text-white bg-[image:var(--danger-btn-gradient)]
+  hover:bg-[image:var(--danger-btn-hover-gradient)]
   hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] transition-all shadow-xs"
 ```
 
