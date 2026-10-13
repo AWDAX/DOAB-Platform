@@ -41,9 +41,12 @@ Do NOT invent alternative architectures or revert to unverified scrapers. Follow
 - Replaced all toyish `Shield` / `ShieldCheck` / `ShieldAlert` SVGs across `BestRoutesPage.tsx`, `NotificationPage.tsx`, `Navbar.tsx` (Recent Alerts drawer), `LandingPage.tsx`, `ProfilePage.tsx`, `PermissionsModal.tsx`, and `EmergencyDangerBroadcast.tsx` with precision civic engineering icons (`CheckCircle2`, `AlertTriangle`, `Radio`, `Activity`, `Radar`, `Navigation2`, `Compass`).
 - Standardized severity colors to the calibrated executive palette: Deep Garnet Rose (`#BE123C`) for Critical, Warm Copper Amber (`#B45309`) for High, Muted Steel Slate (`#475569`) for Medium, and Deep Forest Teal (`#0F766E`) for Low/Safe.
 
-### 4. Framer Motion Sliding Pill Toolbars & Sidebar Hotkeys
+### 4. Framer Motion Sliding Pill Toolbars, Collapsible Panels & Sidebar Hotkeys
 - **Desktop Sidebar (`GlobalSidebar.tsx`, `KeyboardShortcutsModal.tsx`):** Added a vertical sliding active background pill (`layoutId="desktopSidebarVerticalPill"`) for desktop views (`hidden md:flex`) and added `Ctrl + [` (collapse sidebar) and `Ctrl + ]` (expand sidebar) keyboard shortcuts.
-- **All Alerts Filter Toolbar (`NotificationPage.tsx`):** Replaced border/layout shifts with a zero-shift sliding background pill (`layoutId="alertsFilterActivePill"`) that stays contained within mobile screens without horizontal scrollbars.
+- **Live Risk Monitor Tabs (`MapPage.tsx`):** Segmented switcher between `Search`, `Forecast`, `Clusters`, and `Hazard` now features a Framer Motion shared-layout sliding background pill (`layoutId="liveRiskActiveTabPill"` with critically-damped spring `stiffness: 420, damping: 34`). Labels are truncated and elevated to `relative z-10` for zero layout shift.
+- **Live Risk Inspector Collapsible Transition (`MapPage.tsx`):** Wrapped the expandable telemetry panel `{!isMobileCollapsed && ...}` in `<AnimatePresence initial={false}>` + `<motion.div>` with a smooth, subtle height and opacity transition (`duration: 0.22, ease: [0.16, 1, 0.3, 1]`), eliminating harsh abrupt cutoffs.
+- **Flying Outside Pill Root Cause Diagnosis & Prevention (`docs/UI_DESIGN_SYSTEM.md`):** Diagnosed and documented why shared-layout pills can fly in from top-left `(0, 0)` or cross-viewports (unscoped `layoutId` collision across routes/components, unmounted rect caching during layout stabilization, or unconstrained parent containers). Enforced unique domain-prefixed layout IDs (`liveRiskActiveTabPill`, `desktopSidebarVerticalPill`, `alertsSeveritySlidingPill`, `landingModePill`) with strict z-indexing (`absolute inset-0 -z-10 pointer-events-none`).
+- **All Alerts Filter Toolbar (`NotificationPage.tsx`):** Zero-shift sliding background pill (`layoutId="alertsSeveritySlidingPill"`) that stays contained within mobile screens without horizontal scrollbars.
 - **Map & Assistant Switchers (`MapPage.tsx`, `AssistantPage.tsx`):** Enlarged touch targets and added smooth sliding background pills for `2D Lite / 3D GPU` and Assistant modes.
 
 ### 5. Map Camera Session Persistence & Cluster Selection Dimming (`MapPage.tsx`, `MapLibreView.tsx`)
@@ -55,6 +58,20 @@ Do NOT invent alternative architectures or revert to unverified scrapers. Follow
 - **Map Page Mobile (`MapPage.tsx`):** Concise `Live Risk` label on mobile (`top-1.5` on mobile, `sm:top-4` on desktop) and shifted right-side floating map controls down (`top-[4.5rem]`) below the `Live Risk` bar.
 - **Assistant Page Mobile (`AssistantPage.tsx`):** Hidden the header title/subtitle (`DOAB Operational Assistant / Dual-Climate Telemetry & Verified Emergency Routing`), left AI Orb, and Fullscreen/Expand button on mobile and touch-screen views.
 - **Routes, Profile & Team Pages (`BestRoutesPage.tsx`, `ProfilePage.tsx`, `TeamPage.tsx`):** Prevented button/subtitle wrapping (`whitespace-nowrap`), aligned Safe Computed Path action buttons, removed all mock disclaimers in favor of actionable retry fallbacks, and updated Team Page telemetry metrics to nationwide coverage (`20+ States`).
+
+### 7. Map Page: AWS Location Autocomplete Fix, LocateFixed GPS Button & X Clear Waypoints (`MapPage.tsx`)
+- **AWS Location Autocomplete Fix:** Removed the incident pool iteration from `localCivicPlacesIndex` that was surfacing 600+ civic complaint titles (e.g. "Leaking pipeline", "Overflow (Uttar Pradesh)") in the origin/destination search autocomplete. The index now contains only 21 `ALL_REGIONS` geographic entries. `fetchHybridPlaceSuggestions` tries the raw query via AWS Location first, appends `, India` only on zero results.
+- **LocateFixed Embedded GPS Button:** Removed old text-button "Use Current Location" above the origin input and replaced with a small `LocateFixed` icon button embedded directly inside the Waypoint A chip, with a `Tooltip` (no text label). Waypoint A card converted from `<button>` to `<div>` since it now contains interactive children.
+- **X Clear Buttons on Waypoint A & B:** Added conditional X clear buttons inside both the Origin (Waypoint A) and Destination (Waypoint B) cards. Each appears only when the respective waypoint is set, uses `e.stopPropagation()`, and clears the coords + address + suggestions. Style: transparent at rest, premium red gradient glow on hover. Waypoint B card also converted from `<button>` to `<div>` for the same reason.
+- **Removed Error Fallback Banner (`NotificationPage.tsx`):** Deleted the `{status === 'error' && ...}` block showing "Live forecast service temporarily unreachable / Retry Sync".
+
+### 8. Premium Danger Button Gradient System (`src/index.css`, multiple pages)
+- **CSS Variables Added:** Added `--danger-btn-gradient` and `--danger-btn-hover-gradient` to all 4 theme blocks (`:root`, `.dark`, `.theme-drought`, `.dark.theme-drought`) in `src/index.css` — Deep Maroon → Rose Crimson (`#4C0519 → #881337 → #BE123C`) for flood themes; Deep Carmine → Burnt Clay (`#450A0A → #7F1D1D → #991B1B`) for drought themes, matching the terracotta palette.
+- **Applied to all destructive buttons:**
+  - `ConfirmationModal.tsx` — `isDanger` confirm button (was `bg-rose-600`)
+  - `BestRoutesPage.tsx` — table row delete button + mobile card delete button (were ghost rose hover icons)
+  - `AssistantPage.tsx` — "Clear All" sessions button + session-item delete icon
+  - All buttons now: solid gradient at rest, lighter gradient + `hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)]` crimson glow on hover.
 
 ---
 

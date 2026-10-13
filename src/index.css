@@ -28,6 +28,8 @@
     --danger-border: rgba(190, 18, 60, 0.22);
     --danger-bg-hover: rgba(190, 18, 60, 0.12);
     --danger-border-hover: rgba(190, 18, 60, 0.38);
+    --danger-btn-gradient: linear-gradient(180deg, #4C0519 0%, #881337 50%, #BE123C 100%);
+    --danger-btn-hover-gradient: linear-gradient(180deg, #881337 0%, #BE123C 50%, #E11D48 100%);
   }
 
   .dark {
@@ -43,6 +45,8 @@
     --danger-border: rgba(251, 113, 133, 0.25);
     --danger-bg-hover: rgba(251, 113, 133, 0.16);
     --danger-border-hover: rgba(251, 113, 133, 0.42);
+    --danger-btn-gradient: linear-gradient(180deg, #4C0519 0%, #881337 50%, #BE123C 100%);
+    --danger-btn-hover-gradient: linear-gradient(180deg, #881337 0%, #BE123C 50%, #E11D48 100%);
   }
 
   .theme-drought {
@@ -61,6 +65,8 @@
     --danger-border: rgba(153, 27, 27, 0.22);
     --danger-bg-hover: rgba(153, 27, 27, 0.12);
     --danger-border-hover: rgba(153, 27, 27, 0.38);
+    --danger-btn-gradient: linear-gradient(180deg, #450A0A 0%, #7F1D1D 50%, #991B1B 100%);
+    --danger-btn-hover-gradient: linear-gradient(180deg, #7F1D1D 0%, #991B1B 50%, #B91C1C 100%);
   }
 
   .dark .theme-drought, .theme-drought.dark, .dark.theme-drought, html.theme-drought.dark, html.dark.theme-drought {
@@ -76,6 +82,8 @@
     --danger-border: rgba(248, 113, 113, 0.25);
     --danger-bg-hover: rgba(248, 113, 113, 0.16);
     --danger-border-hover: rgba(248, 113, 113, 0.42);
+    --danger-btn-gradient: linear-gradient(180deg, #450A0A 0%, #7F1D1D 50%, #991B1B 100%);
+    --danger-btn-hover-gradient: linear-gradient(180deg, #7F1D1D 0%, #991B1B 50%, #B91C1C 100%);
   }
 
   html {

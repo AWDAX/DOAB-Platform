@@ -80,6 +80,28 @@ Never use neon or toyish primary colors for severity levels. Always use the cali
 - **Medium / Moderate**: Muted Steel Slate (`#475569` / `slate-700` light, `slate-300` dark)
 - **Low / Safe**: Deep Forest Teal (`#0F766E` / `teal-700` light, `teal-300` dark)
 
+### 3.3 Premium Danger Button Gradient System (`src/index.css`)
+All destructive action buttons (`Delete route`, `Clear All sessions`, `Confirm danger action`) use a centralized CSS variable pair analogous to the existing navy primary gradient:
+- **Flood Mode (Light + Dark Themes)**:
+  - `--danger-btn-gradient`: `linear-gradient(180deg, #4C0519 0%, #881337 50%, #BE123C 100%)` (Deep Maroon → Rose Crimson 3-stop vertical specular gradient)
+  - `--danger-btn-hover-gradient`: `linear-gradient(180deg, #881337 0%, #BE123C 50%, #E11D48 100%)`
+- **Drought Mode (Light + Dark Themes)**:
+  - `--danger-btn-gradient`: `linear-gradient(180deg, #450A0A 0%, #7F1D1D 50%, #991B1B 100%)` (Deep Charcoal Carmine → Burnt Clay 3-stop gradient matching the warm drought palette)
+  - `--danger-btn-hover-gradient`: `linear-gradient(180deg, #7F1D1D 0%, #991B1B 50%, #B91C1C 100%)`
+
+**Application pattern** (Tailwind v4 `bg-[image:var(...)]`):
+```tsx
+className="... text-white bg-[image:var(--danger-btn-gradient,...)]
+  hover:bg-[image:var(--danger-btn-hover-gradient,...)]
+  hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] transition-all shadow-xs"
+```
+
+**Scope of application** (all destructive action buttons across the platform):
+- `ConfirmationModal.tsx` — `isDanger` confirm button
+- `BestRoutesPage.tsx` — table row delete button + mobile card delete button
+- `AssistantPage.tsx` — "Clear All" sessions button + session-item delete icon
+- `MapPage.tsx` — Waypoint A / Waypoint B X clear buttons (hover only, transparent at rest)
+
 ---
 
 ## 🧩 4. Component Standards & Interactive Craft
@@ -102,9 +124,51 @@ Never use neon or toyish primary colors for severity levels. Always use the cali
 - Use semantic precision icons: `CheckCircle2` (verified low-risk corridor), `AlertTriangle` (critical hazard), `Radio` (high-severity broadcast), `Activity` (moderate telemetry), `Radar`, `Navigation2`, and `Compass`.
 
 ### 4.4 Shared-Layout Sliding Pill Toolbars (Zero Layout Shift)
-- **All Alerts Filter Bar (`NotificationPage.tsx`)**: Uses a single container (`overflow-x-hidden`) with `layoutId="alertsFilterActivePill"` and fixed font weights so switching between `All Alerts`, `Critical`, `High`, and `Medium` never shifts toolbar width or triggers horizontal scrollbars on mobile.
+- **All Alerts Filter Bar (`NotificationPage.tsx`)**: Uses a single container (`overflow-x-hidden`) with `layoutId="alertsSeveritySlidingPill"` and fixed font weights so switching between `All Alerts`, `Critical`, `High`, and `Medium` never shifts toolbar width or triggers horizontal scrollbars on mobile.
+- **Live Risk Monitor Tabs (`MapPage.tsx`)**: Segmented switcher between `Search`, `Forecast`, `Clusters`, and `Hazard` utilizes a Framer Motion shared-layout sliding pill (`layoutId="liveRiskActiveTabPill"` with `transition={{ type: 'spring', stiffness: 420, damping: 34 }}`). Content sits at `relative z-10` with truncated labels to guarantee zero layout shift.
 - **Map Rendering Engine Switcher (`MapPage.tsx`)**: Enlarged `2D Lite` and `3D GPU` pill buttons (`px-3 py-1.5 text-[11px]`) for effortless touch switching.
-- **DOAB Assistant Mode Switcher (`AssistantPage.tsx`)**: Uses `layoutId="assistantModePill"` with enlarged touch targets (`px-3 py-1.5 sm:px-3.5 sm:py-2`).
+- **Desktop Sidebar Navigation (`GlobalSidebar.tsx`)**: Vertical sliding pill with `layoutId="desktopSidebarVerticalPill"`.
+- **Dual Climate Mode Selector (`LandingPage.tsx`)**: Shared pill toggle between `Monsoon (Flood)` and `Scarcity (Drought)` with `layoutId="landingModePill"`.
+
+### 4.5 Framer Motion "Flying Outside Pill" Defect: Root Cause & Resolution
+When implementing Framer Motion shared layout sliding backgrounds (`layoutId="myPill"`), buttons or tabs can occasionally exhibit a defect where the background pill appears to "fly in from outside" the screen (usually top-left `(0, 0)`) or jump jarringly across components.
+
+#### Root Causes:
+1. **Unscoped / Shared `layoutId` Collision Across Views**:
+   If two distinct components or viewports (e.g. mobile vs. desktop navigation bars, or tab switchers across different routes) accidentally share the identical `layoutId` string without `<LayoutGroup id="...">` scoping, Framer Motion's global layout coordinator attempts to morph between the unmounted DOM rect of one component and the newly mounted rect of another.
+2. **Conditional Unmounting Inside AnimatePresence Without Layout Isolation**:
+   When a parent panel collapses or unmounts, Framer Motion caches the element's bounding client rect. If re-rendered before layout geometry stabilizes, it defaults the initial coordinate matrix to `(0, 0)` at the top-left of the viewport, causing an awkward fly-in flightpath.
+3. **Missing `relative` Positioning or Unconstrained Parent Container**:
+   If the container holding the pill lacks `relative` positioning, the `absolute inset-0` background pill computes its position relative to the nearest positioned ancestor (often the entire page viewport or body).
+
+#### Standard Architecture & Prevention Checklist:
+1. **Always Unique & Scoped `layoutId` Strings**:
+   Each sliding pill toolbar in DOAB must possess a distinct, domain-prefixed identifier:
+   - Sidebar: `desktopSidebarVerticalPill`
+   - Alerts Filter: `alertsSeveritySlidingPill`
+   - Live Risk Inspector Tabs: `liveRiskActiveTabPill`
+   - Landing Modes: `landingModePill`
+2. **Strict Z-Index Layering**:
+   The pill element must always carry `absolute inset-0 rounded-* bg-[var(--text-main)] -z-10 pointer-events-none`, and the button text/icons must be wrapped in `relative z-10` to guarantee text remains crisp and clickable without interfering with pointer events.
+3. **Subtle Spring Physics**:
+   Use a critically-damped spring configuration (`stiffness: 420, damping: 34`) to eliminate overshoot oscillations and keep motion subtle, immediate, and native-feeling.
+4. **Collapsible Panel Transitions with `AnimatePresence`**:
+   Collapsible panels (such as the `Live Risk Monitor` inspector in `MapPage.tsx`) must wrap conditional blocks with `<AnimatePresence initial={false}>` and `<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="overflow-hidden">` to ensure smooth expanding and collapsing without layout jarring or content clipping.
+
+### 4.6 Waypoint Card Architecture: Interactive Children in Clickable Containers (`MapPage.tsx`)
+When a clickable card/chip needs to contain interactive children (e.g. an X clear button or GPS locate button), the outer card **must be converted from `<button>` to `<div>`** since nesting `<button>` inside `<button>` is invalid HTML and causes undefined behavior:
+- **Waypoint A (Origin) card**: Converted to `<div onClick={() => setPathPickingTarget('origin')}>`. Contains two nested interactive buttons: the `LocateFixed` GPS locate button and the conditional X clear button (visible only when `pathOrigin` is set).
+- **Waypoint B (Destination) card**: Converted to `<div onClick={() => setPathPickingTarget('destination')}>`. Contains the conditional X clear button (visible only when `pathDest` is set).
+- **`e.stopPropagation()` is mandatory** on all inner buttons to prevent the outer `<div>` `onClick` from firing when the user clicks the GPS/X buttons.
+- **X clear button style**: Transparent at rest (`text-[var(--text-muted)]`), transitions to premium red gradient on hover (`hover:bg-[image:var(--danger-btn-gradient,...)]`) with a subtle glow shadow. Size `h-3 w-3` icon in `p-1` padding.
+
+### 4.7 AWS Location Service Autocomplete: Preventing Incident Title Pollution (`MapPage.tsx`)
+The `localCivicPlacesIndex` useMemo previously iterated over all `allIncidentsPool` items (600+ incident problem reports like "Leaking pipeline — Konena Agrahara") and inserted their `problem_summary` as searchable titles. This caused origin/destination autocomplete to surface civic complaint titles instead of real geocoded locations.
+
+**Fix applied:**
+- Removed the incident pool iteration entirely from `localCivicPlacesIndex`. The index now contains only the 21 `ALL_REGIONS` state/city geographic entries.
+- The `fetchHybridPlaceSuggestions` function tries the raw query first via AWS Location Service (`doab-place-index`, `ap-southeast-2`), then appends `, India` and retries only if zero results are returned — never polluting with incident titles.
+- **AWS Identity Pool**: `ap-southeast-2:ff8ccdf5-4e7a-45c8-861d-51221d0ea28d` (`VITE_AWS_COGNITO_IDENTITY_POOL_ID` in `.env`).
 
 ---
 
