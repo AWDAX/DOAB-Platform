@@ -158,35 +158,6 @@ export default function NotificationPage() {
       </div>
 
       <div className="flex flex-col gap-4 w-full max-w-3xl mx-auto">
-        {/* Error Fallback Telemetry Banner (only shown if live forecast endpoint fails) */}
-        {status === 'error' && (
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3 min-w-0">
-              <div className="p-2 rounded-xl bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border border-amber-600/25 dark:border-amber-400/25 shrink-0 mt-0.5">
-                <Activity className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 text-xs leading-relaxed">
-                <div className="font-semibold text-[var(--text-main)] flex items-center gap-2 flex-wrap">
-                  <span>{copy.error}</span>
-                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
-                    Regional Telemetry Active
-                  </span>
-                </div>
-                <p className="text-[var(--text-muted)] text-[11px] mt-0.5 leading-normal">
-                  Displaying verified civic waterlogging telemetry with GPS coordinates and rainfall intensity metrics.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => { playClick(); void reload(); }}
-              className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shrink-0 shadow-2xs"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              <span>Retry Sync</span>
-            </button>
-          </div>
-        )}
 
         {/* Severity Filter Segmented Sliding Pill Toolbar (Fixed 4-Column Grid — Zero Layout Shift & Zero Horizontal Overflow) */}
         <div
