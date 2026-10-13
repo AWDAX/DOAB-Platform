@@ -13,6 +13,7 @@ import { playClick } from '../utils/soundFx';
 import type { TelemetryIncident } from '../data/waterloggingIncidents';
 
 export interface MapLibreCluster {
+  id?: string;
   lat: number;
   lng: number;
   clusterRadiusKm: number;
@@ -74,6 +75,7 @@ export default function MapLibreView({
   const [bearing, setBearing] = useState<number>(-17.6);
   const [pitch, setPitch] = useState<number>(45);
   const [isDraggingZ, setIsDraggingZ] = useState<boolean>(false);
+  const [isCameraFlying, setIsCameraFlying] = useState<boolean>(false);
   const dragStartRef = useRef<{
     x: number;
     y: number;
@@ -134,9 +136,9 @@ export default function MapLibreView({
       // Render up to 64 macro danger clusters in 3D WebGL mode
       const topClusters = clusters.slice(0, 64);
       const selectedClusterObj = selectedClusterKey
-        ? clusters.find((c, idx) => c.ward === selectedClusterKey || `${c.ward}-${idx}` === selectedClusterKey || (c.ward && selectedClusterKey.startsWith(c.ward)))
+        ? clusters.find((c, idx) => (c.id && c.id === selectedClusterKey) || `${c.ward}-${idx}` === selectedClusterKey)
         : null;
-      const renderedClusters = selectedClusterObj && !topClusters.some((c) => c.ward === selectedClusterObj.ward)
+      const renderedClusters = selectedClusterObj && !topClusters.some((c) => (c.id && selectedClusterObj.id && c.id === selectedClusterObj.id))
         ? [...topClusters, selectedClusterObj]
         : topClusters;
 
@@ -146,10 +148,10 @@ export default function MapLibreView({
       renderedClusters.forEach((cluster, idx) => {
         const radiusM = Math.max(cluster.clusterRadiusKm * 500, 1600);
         const circleCoords = createGeoJSONCircle([cluster.lng, cluster.lat], radiusM);
+        const clusterId = cluster.id || `${cluster.ward}-${idx}`;
         const isSelected = selectedClusterKey != null && (
-          cluster.ward === selectedClusterKey || 
-          `${cluster.ward}-${idx}` === selectedClusterKey ||
-          (cluster.ward && selectedClusterKey.startsWith(cluster.ward))
+          selectedClusterKey === clusterId || 
+          selectedClusterKey === `${cluster.ward}-${idx}`
         );
         let color = '#475569';
         if (cluster.highestSeverity === 'Critical') color = '#BE123C';
@@ -302,7 +304,8 @@ export default function MapLibreView({
         source: selectedHaloSourceId,
         paint: {
           'fill-color': color,
-          'fill-opacity': 0.16
+          'fill-opacity': isCameraFlying ? 0 : 0.16,
+          'fill-opacity-transition': { duration: 400, delay: 0 }
         }
       });
 
@@ -313,7 +316,9 @@ export default function MapLibreView({
         paint: {
           'line-color': color,
           'line-width': 2,
-          'line-dasharray': [2, 2]
+          'line-dasharray': [2, 2],
+          'line-opacity': isCameraFlying ? 0 : 1,
+          'line-opacity-transition': { duration: 400, delay: 0 }
         }
       });
     }
@@ -352,7 +357,8 @@ export default function MapLibreView({
           'line-color': color,
           'line-width': 2,
           'line-dasharray': [3, 2],
-          'line-opacity': 0.75
+          'line-opacity': isCameraFlying ? 0 : 0.75,
+          'line-opacity-transition': { duration: 400, delay: 0 }
         }
       });
     }
@@ -607,8 +613,10 @@ export default function MapLibreView({
 
     if (!hasChanged) return;
 
-    if (mapRef.current) {
-      mapRef.current.flyTo({
+    const map = mapRef.current;
+    if (map) {
+      setIsCameraFlying(true);
+      map.flyTo({
         center: [center[1], center[0]],
         zoom: zoom,
         duration: 2000,
@@ -616,8 +624,40 @@ export default function MapLibreView({
         curve: 1.42,
         speed: 1.2
       });
+
+      const handleMoveEnd = () => {
+        setIsCameraFlying(false);
+      };
+
+      map.once('moveend', handleMoveEnd);
+
+      const timer = setTimeout(() => {
+        map.off('moveend', handleMoveEnd);
+        setIsCameraFlying(false);
+      }, 2100);
+
+      return () => {
+        clearTimeout(timer);
+      };
     }
   }, [center[0], center[1], zoom]);
+
+  // Smoothly bloom halo layers when camera finishes flight
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || isCameraFlying) return;
+    try {
+      if (map.getLayer('selected-incident-halo-fill')) {
+        map.setPaintProperty('selected-incident-halo-fill', 'fill-opacity', 0.16);
+      }
+      if (map.getLayer('selected-incident-halo-line')) {
+        map.setPaintProperty('selected-incident-halo-line', 'line-opacity', 1);
+      }
+      if (map.getLayer('proximity-vector-layer')) {
+        map.setPaintProperty('proximity-vector-layer', 'line-opacity', 0.75);
+      }
+    } catch (_) {}
+  }, [isCameraFlying]);
 
   // Sync vector layers when relevant dependencies change
   useEffect(() => {
@@ -630,7 +670,7 @@ export default function MapLibreView({
       map.once('styledata', syncLayers);
       map.once('load', syncLayers);
     }
-  }, [clusters, showHeatLayer, selectedClusterKey, selectedIncident, userLocation, activeRouteGeometry, envMode]);
+  }, [clusters, showHeatLayer, selectedClusterKey, selectedIncident, userLocation, activeRouteGeometry, envMode, isCameraFlying]);
 
   // Sync markers when incidents or selections change
   useEffect(() => {

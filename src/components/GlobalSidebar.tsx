@@ -10,7 +10,14 @@ import Tooltip from './Tooltip';
 export default function GlobalSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    try {
+      const saved = localStorage.getItem('doab_sidebar_expanded');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   const [user, setUser] = useState<any>(() => {
     try {
       const raw = localStorage.getItem('doab_demo_user_v1');
@@ -95,7 +102,7 @@ export default function GlobalSidebar() {
     },
     { 
       id: 'assistant', 
-      path: '/assistant',
+      path: '/assistant', 
       icon: AIOrbIcon, 
       label: 'DOAB Assistant', 
       hasUnread: hasUnreadAi,
@@ -107,6 +114,33 @@ export default function GlobalSidebar() {
     { id: 'profile', path: '/profile', icon: User, label: 'Profile', shortcut: '5' },
     { id: 'team', path: '/team', icon: Users2, label: 'Meet Contrarians', shortcut: '6' },
   ];
+
+  const [isCollapsing, setIsCollapsing] = useState(false);
+
+  const handleCollapse = () => {
+    if (isCollapsing || !isExpanded) return;
+    playClick();
+    setIsCollapsing(true);
+    setTimeout(() => {
+      setIsExpanded(false);
+      try {
+        localStorage.setItem('doab_sidebar_expanded', 'false');
+        window.dispatchEvent(new CustomEvent('doab:sidebar-toggle', { detail: { expanded: false } }));
+      } catch {}
+      setTimeout(() => {
+        setIsCollapsing(false);
+      }, 300);
+    }, 100);
+  };
+
+  const handleExpand = () => {
+    playClick();
+    setIsExpanded(true);
+    try {
+      localStorage.setItem('doab_sidebar_expanded', 'true');
+      window.dispatchEvent(new CustomEvent('doab:sidebar-toggle', { detail: { expanded: true } }));
+    } catch {}
+  };
 
   const renderLink = (item: any) => {
     const isActive = location.pathname === item.path;
@@ -156,15 +190,17 @@ export default function GlobalSidebar() {
             : 'w-full justify-between px-3 py-2'
         } ${
           isActive
-            ? 'text-[var(--bg-card)]'
+            ? (isCollapsing ? 'text-[var(--text-main)]' : 'text-[var(--bg-card)]')
             : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5'
         }`}
       >
         {isActive && (
           <motion.div
-            layoutId="desktopSidebarVerticalPill"
+            layoutId={isCollapsing ? undefined : "desktopSidebarVerticalPill"}
             transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-            className="absolute inset-0 rounded-xl bg-[var(--text-main)] shadow-xs z-0 pointer-events-none"
+            className={`absolute inset-0 rounded-xl bg-[var(--text-main)] shadow-xs z-0 pointer-events-none transition-opacity duration-150 ${
+              isCollapsing ? 'opacity-0' : 'opacity-100'
+            }`}
           />
         )}
         <div className={`relative z-10 flex items-center gap-3 min-w-0 ${!isExpanded ? 'justify-center w-full' : ''}`}>
@@ -224,22 +260,16 @@ export default function GlobalSidebar() {
 
       if ((e.ctrlKey || e.metaKey) && e.key === '[') {
         e.preventDefault();
-        setIsExpanded((prev) => {
-          if (prev) playClick();
-          return false;
-        });
+        handleCollapse();
       } else if ((e.ctrlKey || e.metaKey) && e.key === ']') {
         e.preventDefault();
-        setIsExpanded((prev) => {
-          if (!prev) playClick();
-          return true;
-        });
+        handleExpand();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isExpanded, isCollapsing]);
 
   return (
     <aside 
@@ -272,7 +302,7 @@ export default function GlobalSidebar() {
               <Tooltip content="Collapse Sidebar" shortcut="Ctrl+[" position="bottom">
                 <button
                   type="button"
-                  onClick={() => { playClick(); setIsExpanded(false); }}
+                  onClick={handleCollapse}
                   className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
                   aria-label="Collapse Sidebar"
                 >
@@ -300,7 +330,7 @@ export default function GlobalSidebar() {
             <Tooltip content="Expand Sidebar" shortcut="Ctrl+]" position="right" className="w-full flex justify-center">
               <button
                 type="button"
-                onClick={() => { playClick(); setIsExpanded(true); }}
+                onClick={handleExpand}
                 className="w-10 h-10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors flex items-center justify-center cursor-pointer mx-auto"
                 aria-label="Expand Sidebar"
               >

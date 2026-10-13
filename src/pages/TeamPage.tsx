@@ -153,7 +153,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }:
     <div className="min-h-screen flex flex-col font-sans transition-colors duration-300 relative bg-[var(--bg-main)] text-[var(--text-main)] overflow-x-clip selection:bg-[var(--color-brand-accent)] selection:text-white">
       {/* Monumental Background Watermark */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center select-none z-0 overflow-hidden">
-        <span className="text-[18vw] font-black tracking-tighter text-[var(--text-main)]/[0.03] leading-none font-mono">
+        <span className="text-[18vw] font-black tracking-tighter text-slate-900/[0.04] dark:text-white/[0.09] leading-none font-mono">
           DOAB CREW
         </span>
       </div>

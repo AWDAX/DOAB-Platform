@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 import { playClick } from '../utils/soundFx';
@@ -27,14 +28,18 @@ export default function ConfirmationModal({
 
   const isDanger = variant === 'danger';
 
-  return (
+  const modalContent = (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      <div 
+        className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/65 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+        onClick={onCancel}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
+          onClick={(e) => e.stopPropagation()}
           className="relative w-full max-w-sm rounded-2xl p-5 border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl space-y-4"
           role="dialog"
           aria-modal="true"
@@ -91,9 +96,9 @@ export default function ConfirmationModal({
                 playClick();
                 onConfirm();
               }}
-              className={`px-4 py-1.5 rounded-xl text-white text-xs font-bold transition-all shadow-xs cursor-pointer ${
+              className={`px-4 py-1.5 rounded-xl text-white text-xs font-bold transition-all cursor-pointer ${
                 isDanger
-                  ? 'bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:bg-[image:var(--danger-btn-hover-gradient,linear-gradient(180deg,#881337_0%,#BE123C_50%,#E11D48_100%))] hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] active:scale-95'
+                  ? 'bg-rose-600 hover:bg-rose-700 active:scale-95'
                   : 'bg-[var(--color-brand-accent)] hover:opacity-90 active:scale-95'
               }`}
             >
@@ -104,4 +109,6 @@ export default function ConfirmationModal({
       </div>
     </AnimatePresence>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 }

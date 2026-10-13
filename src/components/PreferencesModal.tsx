@@ -238,7 +238,7 @@ export default function PreferencesModal({
                         toggleEnvMode();
                       }
                     }}
-                    className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer select-none relative group h-28 ${
+                    className={`p-3 sm:p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2 sm:gap-0 transition-all cursor-pointer select-none relative group h-auto sm:h-28 ${
                       envMode === 'flood'
                         ? 'bg-sky-500/10 border-sky-500/40 text-sky-950 dark:text-sky-100 shadow-sm ring-1 ring-sky-500/30'
                         : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--text-muted)]/30'
@@ -258,7 +258,7 @@ export default function PreferencesModal({
                         <div className="text-[9px] font-mono text-[var(--text-muted)]">Aqua / Porcelain</div>
                       </div>
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)] leading-tight">
+                    <div className="hidden sm:block text-[10px] text-[var(--text-muted)] leading-tight">
                       Monsoon inundation, ward waterlog & high-elevation reroutes
                     </div>
                   </button>
@@ -272,7 +272,7 @@ export default function PreferencesModal({
                         toggleEnvMode();
                       }
                     }}
-                    className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer select-none relative group h-28 ${
+                    className={`p-3 sm:p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2 sm:gap-0 transition-all cursor-pointer select-none relative group h-auto sm:h-28 ${
                       envMode === 'drought'
                         ? 'bg-amber-500/10 border-amber-500/40 text-amber-950 dark:text-amber-100 shadow-sm ring-1 ring-amber-500/30'
                         : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--text-muted)]/30'
@@ -292,7 +292,7 @@ export default function PreferencesModal({
                         <div className="text-[9px] font-mono text-[var(--text-muted)]">Amber / Baked Earth</div>
                       </div>
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)] leading-tight">
+                    <div className="hidden sm:block text-[10px] text-[var(--text-muted)] leading-tight">
                       Groundwater deficits, dry wards & emergency tanker dispatches
                     </div>
                   </button>

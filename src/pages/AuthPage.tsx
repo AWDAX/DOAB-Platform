@@ -129,14 +129,20 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
 
+  // 1-Click Fast Login with previously logged in account (or prompt if no account)
   const handleGoogleBtnClick = async () => {
     // If native mobile, open account selection sheet
     if (Capacitor.isNativePlatform()) {
+      if (mode === 'login' && lastGoogleAccount) {
+        // Fast direct login as last account on native
+        await handleGoogleAccountPick(lastGoogleAccount);
+        return;
+      }
       setIsGoogleModalOpen(true);
       return;
     }
 
-    // On Desktop Browser: trigger authentic Google Sign-In with Account Selection
+    // On Desktop Browser: If previous account exists in login mode, log in straight with that account!
     setError(null);
     setGoogleLoading(true);
     setAccountProfile({
@@ -150,6 +156,50 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
       }
     } catch {}
 
+    const loginHint = mode === 'login' && lastGoogleAccount?.email ? lastGoogleAccount.email : null;
+    const result = await signInWithGoogle(loginHint, lastGoogleAccount || undefined);
+    if (result.error) {
+      setError(result.error);
+    } else if (result.user) {
+      try {
+        localStorage.setItem(
+          'doab_last_google_account',
+          JSON.stringify({
+            email: result.user.email,
+            fullName: result.user.displayName || result.user.email?.split('@')[0] || 'Operator',
+            photoURL: result.user.photoURL
+          })
+        );
+      } catch {}
+      if (!isNavigatingRef.current) {
+        isNavigatingRef.current = true;
+        navigate('/', { replace: true });
+      }
+    }
+    setGoogleLoading(false);
+  };
+
+  // Explicit Choose Another Account: ALWAYS opens the Google / Firebase Account Chooser
+  const handleGoogleChooseAnotherAccount = async () => {
+    if (Capacitor.isNativePlatform()) {
+      setIsGoogleModalOpen(true);
+      return;
+    }
+
+    setError(null);
+    setGoogleLoading(true);
+    setAccountProfile({
+      role: selectedRole,
+      vendorId: selectedRole === 'delivery' ? vendorId.trim() : ''
+    });
+    try {
+      localStorage.setItem('doab_user_role', selectedRole);
+      if (selectedRole === 'delivery' && vendorId.trim()) {
+        localStorage.setItem('doab_vendor_id', vendorId.trim());
+      }
+    } catch {}
+
+    // Passing null forces prompt: 'select_account', opening the Firebase / Google account chooser
     const result = await signInWithGoogle(null);
     if (result.error) {
       setError(result.error);
@@ -282,7 +332,7 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
 
       {/* Large Background Watermark */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center select-none z-0 overflow-hidden">
-        <span className="text-[22vw] font-black tracking-tighter text-slate-900/[0.03] dark:text-white/[0.03] leading-none font-mono">
+        <span className="text-[22vw] font-black tracking-tighter text-slate-900/[0.04] dark:text-white/[0.09] leading-none font-mono">
           DOAB
         </span>
       </div>
@@ -417,20 +467,22 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
             type="button"
             onClick={handleGoogleBtnClick}
             disabled={loading || googleLoading}
-            className="w-full h-11.5 sm:h-12 mb-5 sm:mb-6 flex items-center justify-between px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-tight border border-neutral-300/90 dark:border-white/10 bg-neutral-100/90 dark:bg-white/[0.05] hover:bg-neutral-200/80 dark:hover:bg-white/[0.08] text-neutral-950 dark:text-white transition-all duration-200 shadow-xs active:scale-[0.99] disabled:opacity-50 cursor-pointer group font-sans"
+            className="w-full h-12 sm:h-12.5 mb-5 sm:mb-6 flex items-center justify-between px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-tight border border-neutral-300/90 dark:border-white/10 bg-neutral-100/90 dark:bg-white/[0.05] hover:bg-neutral-200/80 dark:hover:bg-white/[0.08] text-neutral-950 dark:text-white transition-all duration-200 shadow-xs active:scale-[0.99] disabled:opacity-50 cursor-pointer group font-sans"
           >
             <div className="flex items-center gap-3 min-w-0">
               {googleLoading ? (
-                <div className="w-4 h-4 border-2 border-neutral-600 dark:border-neutral-400 border-t-transparent rounded-full animate-spin shrink-0" />
-              ) : mode === 'login' && lastGoogleAccount?.photoURL ? (
-                <img
-                  src={lastGoogleAccount.photoURL}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-neutral-300 dark:border-white/15 shadow-2xs"
-                />
+                <div className="w-5 h-5 border-2 border-neutral-600 dark:border-neutral-400 border-t-transparent rounded-full animate-spin shrink-0" />
+              ) : mode === 'login' && lastGoogleAccount ? (
+                <div className="relative shrink-0 flex items-center justify-center">
+                  <img
+                    src={lastGoogleAccount.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(lastGoogleAccount.fullName || 'User')}&background=0284c7&color=fff&bold=true`}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full object-cover shrink-0 border-2 border-neutral-300 dark:border-white/20 shadow-xs ring-1 ring-amber-400/50"
+                  />
+                </div>
               ) : (
-                <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
@@ -454,6 +506,21 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
               </span>
             )}
           </button>
+
+          {/* Explicit Option to Switch Google Accounts */}
+          {mode === 'login' && lastGoogleAccount && (
+            <div className="-mt-3 mb-5 sm:mb-6 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={handleGoogleChooseAnotherAccount}
+                disabled={loading || googleLoading}
+                className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer hover:underline inline-flex items-center gap-1 font-sans disabled:opacity-50"
+              >
+                <span>Sign in with another Google account</span>
+                <ArrowRight size={12} className="stroke-[2.5]" />
+              </button>
+            </div>
+          )}
 
           <div className="relative flex items-center justify-center my-5 sm:my-6">
             <div className="border-t border-neutral-200/80 dark:border-white/10 w-full" />
@@ -579,9 +646,18 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="relative shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold flex items-center justify-center text-xs shrink-0 ring-2 ring-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.55)]">
-                      G
-                    </div>
+                    {lastGoogleAccount?.photoURL ? (
+                      <img
+                        src={lastGoogleAccount.photoURL}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover shrink-0 border-2 border-neutral-300 dark:border-white/20 ring-2 ring-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.55)]"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold flex items-center justify-center text-sm shrink-0 ring-2 ring-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.55)]">
+                        {lastGoogleAccount?.fullName?.charAt(0).toUpperCase() || 'G'}
+                      </div>
+                    )}
                     <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 border border-[var(--bg-card)]" />
                   </div>
                   <div className="min-w-0">

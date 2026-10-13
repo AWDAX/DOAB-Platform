@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { 
   Send, Mic, MicOff, Plus, Clock, Download, Copy, Check, 
   Volume2, VolumeX, Maximize2, Minimize2, Trash2, Search,
-  ChevronRight, X, MessageSquarePlus
+  ChevronRight, X, MessageSquarePlus, Truck
 } from 'lucide-react';
 import AIOrbFace from '../components/AIOrbFace';
 import { FormattedChatText } from '../components/FormattedChatText';
@@ -18,6 +18,13 @@ const ROTATING_SUGGESTIONS = [
   { label: 'Ward Tanker Supply Status', query: 'Are there any emergency water tanker allocations scheduled for my ward today?' },
   { label: 'Silk Board Inundation Risk', query: 'Is Silk Board junction clear or is there waterlogging on the service road?' },
   { label: 'Drainage Overflow Alert', query: 'Nearest stormwater nallah overflow status and rainfall forecast for my area.' }
+];
+
+const DELIVERY_SUGGESTIONS = [
+  { label: 'Rider Powertrain Clearance (<8.2cm)', query: 'Kya delivery corridor mein water depth 8.2cm powertrain limit se kam hai?' },
+  { label: 'SLA vs Flood Detour Check', query: 'Safest flood-free route with minimal delivery SLA delay and zero parcel damage?' },
+  { label: 'Underpass Submerged Alert', query: 'Which low-lying underpasses on my dispatch route are currently submerged?' },
+  { label: 'Order Waterproofing Risk', query: 'Current rainfall intensity and splash risk for two-wheeler dispatch delivery.' }
 ];
 
 export default function AssistantPage() {
@@ -46,6 +53,25 @@ export default function AssistantPage() {
   } = useDOABChat();
 
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Role-adaptive Commercial Fleet context
+  const [userRole, setUserRole] = useState<string>(() => localStorage.getItem('doab_user_role') || 'citizen');
+  const [vendorId, setVendorId] = useState<string>(() => localStorage.getItem('doab_vendor_id') || 'SWIGGY-BLR-9021');
+
+  useEffect(() => {
+    const handleSync = () => {
+      setUserRole(localStorage.getItem('doab_user_role') || 'citizen');
+      setVendorId(localStorage.getItem('doab_vendor_id') || 'SWIGGY-BLR-9021');
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('doab_auth_changed', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('doab_auth_changed', handleSync);
+    };
+  }, []);
+
+  const activeSuggestions = userRole === 'delivery' ? DELIVERY_SUGGESTIONS : ROTATING_SUGGESTIONS;
 
   // Handle ?q= query parameter from global search bar
   useEffect(() => {
@@ -284,11 +310,19 @@ export default function AssistantPage() {
             </div>
           </div>
           <div className={`min-w-0 ${isFullScreen ? 'text-center' : ''}`}>
-            <h1 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)] truncate">
-              DOAB Operational Assistant
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)] truncate">
+                DOAB Operational Assistant
+              </h1>
+              {userRole === 'delivery' && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] shadow-2xs shrink-0">
+                  <Truck className="w-3 h-3 text-[var(--color-brand-accent)] shrink-0" />
+                  <span className="font-mono text-[10px]">Fleet • {vendorId}</span>
+                </span>
+              )}
+            </div>
             <p className="text-[11px] font-mono text-[var(--text-muted)] truncate">
-              Dual-Climate Telemetry & Verified Emergency Routing
+              {userRole === 'delivery' ? 'Commercial Courier Dispatch & Rider Powertrain Safeguard' : 'Dual-Climate Telemetry & Verified Emergency Routing'}
             </p>
           </div>
         </div>
@@ -371,19 +405,6 @@ export default function AssistantPage() {
                 <span>Mission & Consultation History</span>
               </span>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    playClick();
-                    setIsHistoryOpen(false);
-                    newChat();
-                    setTimeout(() => inputRef.current?.focus(), 80);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] text-xs font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none whitespace-nowrap"
-                >
-                  <Plus size={14} />
-                  <span>New Session</span>
-                </button>
                 {sessions.length > 1 && (
                   <button
                     type="button"
@@ -391,7 +412,7 @@ export default function AssistantPage() {
                       playClick();
                       setIsClearAllConfirmOpen(true);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-white bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:bg-[image:var(--danger-btn-hover-gradient,linear-gradient(180deg,#881337_0%,#BE123C_50%,#E11D48_100%))] hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] active:scale-98 transition-all cursor-pointer select-none whitespace-nowrap shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 active:scale-98 transition-colors cursor-pointer select-none whitespace-nowrap"
                     title="Clear consultation history"
                   >
                     <Trash2 size={14} />
@@ -455,7 +476,7 @@ export default function AssistantPage() {
                       playClick();
                       setSessionToDelete({ id: session.id, title: session.title || 'Civic Inundation Query' });
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-white bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:bg-[image:var(--danger-btn-hover-gradient,linear-gradient(180deg,#881337_0%,#BE123C_50%,#E11D48_100%))] hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] transition-all cursor-pointer shadow-xs"
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                     title="Delete this consultation session"
                   >
                     <Trash2 size={13} />
@@ -479,14 +500,16 @@ export default function AssistantPage() {
                 <AIOrbFace size={92} state={orbState} className="relative z-10 transition-transform group-hover:scale-105" />
               </div>
               <h3 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)]">
-                How can DOAB help you navigate or dispatch today?
+                {userRole === 'delivery' ? `Fleet Dispatch Copilot • ${vendorId}` : 'How can DOAB help you navigate or dispatch today?'}
               </h3>
               <p className="text-xs text-[var(--text-muted)] max-w-md mt-1.5 leading-relaxed">
-                Our dual-climate engine computes live low-lying waterlog corridors, high-ground ridgeline safe paths, and drought tanker telemetry.
+                {userRole === 'delivery' 
+                  ? 'Real-time rider SLA calculations, submerged exhaust (<8.2cm) warnings, and zero-parcel-inundation corridor guidance.'
+                  : 'Our dual-climate engine computes live low-lying waterlog corridors, high-ground ridgeline safe paths, and drought tanker telemetry.'}
               </p>
               
               <div className="mt-6 flex flex-col sm:flex-row flex-wrap justify-center gap-2 max-w-lg w-full">
-                {ROTATING_SUGGESTIONS.map((item, i) => (
+                {activeSuggestions.map((item, i) => (
                   <button
                     key={i}
                     type="button"

@@ -97,12 +97,12 @@ export default function AIOrbFace({
       const deltaX = e.clientX - orbCenterX;
       const deltaY = e.clientY - orbCenterY;
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      const maxOffset = 5.5;
+      const maxOffset = size <= 32 ? 6 : 8.5;
 
       if (distance === 0) {
         setEyePos({ x: 0, y: 0 });
       } else {
-        const factor = Math.min(distance / 300, 1);
+        const factor = Math.min(distance / 200, 1);
         const normX = (deltaX / distance) * maxOffset * factor;
         const normY = (deltaY / distance) * maxOffset * factor;
         setEyePos({ x: normX, y: normY });
@@ -111,7 +111,7 @@ export default function AIOrbFace({
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [gaze, state]);
+  }, [gaze, state, size]);
 
   const isSmilingActive = state === 'smile' || state === 'happy' || isOccasionalSmile || isEventSmile;
 
@@ -207,7 +207,7 @@ export default function AIOrbFace({
       {/* 4. Expressive Face SVG Layer with Gaze Cursor Tracking */}
       <svg
         viewBox="0 0 100 100"
-        className={`w-full h-full relative z-10 transition-transform duration-200 ease-out ${size <= 32 ? 'p-0.5' : 'p-2'}`}
+        className={`w-full h-full relative z-10 transition-transform duration-100 ease-out ${size <= 32 ? 'p-0.5' : 'p-2'}`}
         style={{
           transform: `translate(${eyePos.x}px, ${eyePos.y}px)`
         }}
