@@ -1,7 +1,7 @@
 # DOAB: Future National Grid & Real-Time IMD Architecture Plan
 
 **Document Version:** 1.0.0  
-**Project:** DOAB (Dynamic Overland Aquifer & Bathymetry Flood Intelligence)  
+**Project:** DOAB (Detect → Order → Alert → Back-check)  
 **Date:** October 12, 2026  
 **Status:** Approved Architectural Roadmap (Future Plan & Hackathon Demo Blueprint)
 
