@@ -129,14 +129,20 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
 
+  // 1-Click Fast Login with previously logged in account (or prompt if no account)
   const handleGoogleBtnClick = async () => {
     // If native mobile, open account selection sheet
     if (Capacitor.isNativePlatform()) {
+      if (mode === 'login' && lastGoogleAccount) {
+        // Fast direct login as last account on native
+        await handleGoogleAccountPick(lastGoogleAccount);
+        return;
+      }
       setIsGoogleModalOpen(true);
       return;
     }
 
-    // On Desktop Browser: trigger authentic Google Sign-In with Account Selection
+    // On Desktop Browser: If previous account exists in login mode, log in straight with that account!
     setError(null);
     setGoogleLoading(true);
     setAccountProfile({
@@ -150,6 +156,50 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
       }
     } catch {}
 
+    const loginHint = mode === 'login' && lastGoogleAccount?.email ? lastGoogleAccount.email : null;
+    const result = await signInWithGoogle(loginHint, lastGoogleAccount || undefined);
+    if (result.error) {
+      setError(result.error);
+    } else if (result.user) {
+      try {
+        localStorage.setItem(
+          'doab_last_google_account',
+          JSON.stringify({
+            email: result.user.email,
+            fullName: result.user.displayName || result.user.email?.split('@')[0] || 'Operator',
+            photoURL: result.user.photoURL
+          })
+        );
+      } catch {}
+      if (!isNavigatingRef.current) {
+        isNavigatingRef.current = true;
+        navigate('/', { replace: true });
+      }
+    }
+    setGoogleLoading(false);
+  };
+
+  // Explicit Choose Another Account: ALWAYS opens the Google / Firebase Account Chooser
+  const handleGoogleChooseAnotherAccount = async () => {
+    if (Capacitor.isNativePlatform()) {
+      setIsGoogleModalOpen(true);
+      return;
+    }
+
+    setError(null);
+    setGoogleLoading(true);
+    setAccountProfile({
+      role: selectedRole,
+      vendorId: selectedRole === 'delivery' ? vendorId.trim() : ''
+    });
+    try {
+      localStorage.setItem('doab_user_role', selectedRole);
+      if (selectedRole === 'delivery' && vendorId.trim()) {
+        localStorage.setItem('doab_vendor_id', vendorId.trim());
+      }
+    } catch {}
+
+    // Passing null forces prompt: 'select_account', opening the Firebase / Google account chooser
     const result = await signInWithGoogle(null);
     if (result.error) {
       setError(result.error);
@@ -454,6 +504,21 @@ export default function AuthPage({ isDarkMode, toggleTheme, envMode, toggleEnvMo
               </span>
             )}
           </button>
+
+          {/* Explicit Option to Switch Google Accounts */}
+          {mode === 'login' && lastGoogleAccount && (
+            <div className="-mt-3 mb-5 sm:mb-6 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={handleGoogleChooseAnotherAccount}
+                disabled={loading || googleLoading}
+                className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer hover:underline inline-flex items-center gap-1 font-sans disabled:opacity-50"
+              >
+                <span>Sign in with another Google account</span>
+                <ArrowRight size={12} className="stroke-[2.5]" />
+              </button>
+            </div>
+          )}
 
           <div className="relative flex items-center justify-center my-5 sm:my-6">
             <div className="border-t border-neutral-200/80 dark:border-white/10 w-full" />

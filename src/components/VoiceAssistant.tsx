@@ -418,7 +418,7 @@ export default function VoiceAssistant() {
           id="tour-ai-copilot"
           drag
           dragMomentum={false}
-          dragElastic={0}
+          dragElastic={0.15}
           dragConstraints={orbConstraints}
           onDragStart={handleOrbDragStart}
           onDragEnd={handleOrbDragEnd}

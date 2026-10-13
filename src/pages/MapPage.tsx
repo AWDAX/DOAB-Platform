@@ -1898,7 +1898,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="overflow-hidden"
+                className={isStateDropdownOpen || alsSuggestions.length > 0 ? 'overflow-visible' : 'overflow-hidden'}
               >
                 <div className="p-3 flex flex-col gap-2.5">
                   
