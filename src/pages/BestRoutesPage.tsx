@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Route as RouteIcon, Navigation2, Activity, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink, MapPin, ThumbsUp, ThumbsDown, Star, RefreshCw } from 'lucide-react';
+import { Route as RouteIcon, Navigation2, Activity, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink, MapPin, ThumbsUp, ThumbsDown, Star, RefreshCw, Truck, ShieldCheck, Box } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
@@ -107,7 +107,15 @@ export default function BestRoutesPage() {
   const [active, setActive] = useState(0);
   const [copied, setCopied] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
-  const [savedOffline, setSavedOffline] = useState(false);
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [savedOfflineRoutes, setSavedOfflineRoutes] = useState<SavedOfflineRoute[]>(() => {
+    try {
+      const saved = localStorage.getItem(OFFLINE_ROUTES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [deletedSummaries, setDeletedSummaries] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('doab_deleted_route_summaries');
@@ -122,6 +130,20 @@ export default function BestRoutesPage() {
   const [customDest, setCustomDest] = useState('');
   const [customSummary, setCustomSummary] = useState('');
   const [customRisk, setCustomRisk] = useState<'low' | 'moderate' | 'high'>('low');
+  const [userRole] = useState<'citizen' | 'delivery'>(() => {
+    try {
+      return (localStorage.getItem('doab_user_role') as any) || 'citizen';
+    } catch {
+      return 'citizen';
+    }
+  });
+  const [vendorId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('doab_vendor_id') || 'SWIGGY-BLR-9021';
+    } catch {
+      return 'SWIGGY-BLR-9021';
+    }
+  });
 
   // Destination Arrival & Model Accuracy Feedback State
   const [isArrivalModalOpen, setIsArrivalModalOpen] = useState(false);
@@ -131,21 +153,63 @@ export default function BestRoutesPage() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [savedAsFavorite, setSavedAsFavorite] = useState(false);
 
-  // Load custom user-created routes from localStorage
+  const FALLBACK_SUMMARIES = new Set([
+    'Elevated Ridge Corridor (Safest - Minimum Water Accumulation)',
+    'Inner Ring Road Elevated Bypass (Low Submersion Risk)',
+    'Direct Lowland Arterial (Valley Cross - Caution Advised)',
+  ]);
+
+  // Load custom user-created routes from localStorage, filtering out any fallback duplicates
   const [customRoutes, setCustomRoutes] = useState<RouteOption[]>(() => {
     try {
       const saved = localStorage.getItem('doab_custom_created_routes');
-      return saved ? JSON.parse(saved) : [];
+      const parsed: RouteOption[] = saved ? JSON.parse(saved) : [];
+      const cleaned = parsed.filter(r => r && r.summary && !FALLBACK_SUMMARIES.has(r.summary));
+      if (cleaned.length !== parsed.length) {
+        localStorage.setItem('doab_custom_created_routes', JSON.stringify(cleaned));
+      }
+      return cleaned;
     } catch {
       return [];
     }
   });
 
   const rawRoutes = body?.routes ?? [];
-  // Merge API routes with user-created custom routes, filtering out deleted ones
-  const allRoutes = [...customRoutes, ...rawRoutes];
-  const routes = allRoutes.filter((r) => !deletedSummaries.includes(r.summary));
-  const current = routes[active];
+  // Strict deduplication: Combine customRoutes, rawRoutes, and savedOfflineRoutes with zero duplicate summaries
+  const combinedRoutes = [...customRoutes, ...rawRoutes];
+  const seenSummaries = new Set<string>();
+  const uniqueRoutes: RouteOption[] = [];
+
+  for (const r of combinedRoutes) {
+    const key = r.summary?.trim();
+    if (!key || seenSummaries.has(key)) continue;
+    seenSummaries.add(key);
+    uniqueRoutes.push(r);
+  }
+
+  // Include any saved offline routes not already in uniqueRoutes
+  for (const s of savedOfflineRoutes) {
+    const key = s.summary?.trim();
+    if (!key || seenSummaries.has(key)) continue;
+    seenSummaries.add(key);
+    uniqueRoutes.push({
+      summary: s.summary,
+      distance_meters: null,
+      duration_seconds: null,
+      mean_risk: parseFloat(s.riskPct) / 100 || 0.1,
+      data_quality: 'ok',
+      scored: true,
+      maps_url: s.mapsUrl,
+      rank: 'alternative',
+    });
+  }
+
+  const availableRoutes = uniqueRoutes.filter((r) => !deletedSummaries.includes(r.summary));
+  const savedSummaries = new Set(savedOfflineRoutes.map((r) => r.summary?.trim()));
+  const routes = showSavedOnly
+    ? availableRoutes.filter((r) => savedSummaries.has(r.summary?.trim()))
+    : availableRoutes;
+  const current = routes[active] || routes[0];
 
   // Open Arrival Feedback & Safe Path Bookmark Modal
   const handleMarkAsReached = (route: RouteOption) => {
@@ -190,7 +254,6 @@ export default function BestRoutesPage() {
     // 2. If user opted to save/bookmark path for future usecases
     if (saveToFavorites) {
       try {
-        const existing: SavedOfflineRoute[] = JSON.parse(localStorage.getItem(OFFLINE_ROUTES_KEY) || '[]');
         const routeId = `route-${Date.now()}`;
         const newEntry: SavedOfflineRoute = {
           id: routeId,
@@ -203,16 +266,10 @@ export default function BestRoutesPage() {
           origin: ORIGIN,
           destination,
         };
-        const filtered = existing.filter(r => r.summary !== arrivalRoute.summary);
-        localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify([newEntry, ...filtered].slice(0, 20)));
-
-        // Also persist to Safe Routes custom list so it always appears on Safe Routes page
-        const existingCustom: RouteOption[] = JSON.parse(localStorage.getItem('doab_custom_created_routes') || '[]');
-        if (!existingCustom.some(r => r.summary === arrivalRoute.summary)) {
-          const updatedCustom = [arrivalRoute, ...existingCustom];
-          localStorage.setItem('doab_custom_created_routes', JSON.stringify(updatedCustom));
-          setCustomRoutes(updatedCustom);
-        }
+        const filtered = savedOfflineRoutes.filter(r => r.summary !== arrivalRoute.summary);
+        const updated = [newEntry, ...filtered].slice(0, 30);
+        setSavedOfflineRoutes(updated);
+        localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify(updated));
         setSavedAsFavorite(true);
       } catch (e) {
         console.warn('Could not bookmark route', e);
@@ -250,6 +307,15 @@ export default function BestRoutesPage() {
     const updatedCustom = customRoutes.filter(r => r.summary !== summary);
     setCustomRoutes(updatedCustom);
     localStorage.setItem('doab_custom_created_routes', JSON.stringify(updatedCustom));
+
+    // Also remove from saved offline routes if present
+    setSavedOfflineRoutes(prev => {
+      const next = prev.filter(r => r.summary !== summary);
+      try {
+        localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     if (active >= routes.length - 1) {
       setActive(Math.max(0, routes.length - 2));
@@ -295,51 +361,39 @@ export default function BestRoutesPage() {
     setActive(0);
   };
 
-  // Check if current route is already saved
-  useEffect(() => {
-    if (!current) return;
-    try {
-      const existing: SavedOfflineRoute[] = JSON.parse(localStorage.getItem(OFFLINE_ROUTES_KEY) || '[]');
-      const isSaved = existing.some(r => r.summary === current.summary);
-      setSavedOffline(isSaved);
-    } catch {
-      setSavedOffline(false);
-    }
-  }, [current]);
+  // Check if a route is saved offline
+  const isRouteSavedOffline = (summary: string) => {
+    return savedOfflineRoutes.some(r => r.summary === summary);
+  };
 
-  const handleSaveOffline = () => {
-    if (!current) return;
+  // Toggle saving/unsaving a route offline
+  const toggleRouteOfflineSave = (routeToToggle: RouteOption) => {
     playClick();
     try {
-      const existing: SavedOfflineRoute[] = JSON.parse(localStorage.getItem(OFFLINE_ROUTES_KEY) || '[]');
-      const routeId = `route-${Date.now()}`;
-      const newEntry: SavedOfflineRoute = {
-        id: routeId,
-        savedAt: new Date().toISOString(),
-        summary: current.summary,
-        distanceKm: formatKm(current.distance_meters),
-        durationMin: formatMinutes(current.duration_seconds),
-        riskPct: riskLabel(current, copy),
-        mapsUrl: current.maps_url,
-        origin: ORIGIN,
-        destination,
-      };
-
-      const filtered = existing.filter(r => r.summary !== current.summary);
-      const updated = [newEntry, ...filtered].slice(0, 20);
-      localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify(updated));
-
-      // Also persist to Safe Routes custom list so it always stays in Safe Routes page
-      const existingCustom: RouteOption[] = JSON.parse(localStorage.getItem('doab_custom_created_routes') || '[]');
-      if (!existingCustom.some(r => r.summary === current.summary)) {
-        const updatedCustom = [current, ...existingCustom];
-        localStorage.setItem('doab_custom_created_routes', JSON.stringify(updatedCustom));
-        setCustomRoutes(updatedCustom);
+      const isAlreadySaved = savedOfflineRoutes.some(r => r.summary === routeToToggle.summary);
+      let updated: SavedOfflineRoute[];
+      if (isAlreadySaved) {
+        updated = savedOfflineRoutes.filter(r => r.summary !== routeToToggle.summary);
+      } else {
+        const routeId = `route-${Date.now()}`;
+        const newEntry: SavedOfflineRoute = {
+          id: routeId,
+          savedAt: new Date().toISOString(),
+          summary: routeToToggle.summary,
+          distanceKm: formatKm(routeToToggle.distance_meters),
+          durationMin: formatMinutes(routeToToggle.duration_seconds),
+          riskPct: riskLabel(routeToToggle, copy),
+          mapsUrl: routeToToggle.maps_url,
+          origin: ORIGIN,
+          destination,
+        };
+        updated = [newEntry, ...savedOfflineRoutes].slice(0, 30);
       }
 
-      setSavedOffline(true);
+      setSavedOfflineRoutes(updated);
+      localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify(updated));
     } catch (e) {
-      console.warn('Could not save route offline', e);
+      console.warn('Could not toggle route offline save', e);
     }
   };
 
@@ -393,10 +447,18 @@ export default function BestRoutesPage() {
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto custom-scrollbar">
       <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div id="tour-best-header" className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
-            <RouteIcon className="h-6 w-6 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
-            <span className="truncate">Safe Computed Paths</span>
-          </h1>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2.5">
+              <RouteIcon className="h-6 w-6 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
+              <span className="truncate">Safe Computed Paths</span>
+            </h1>
+            {userRole === 'delivery' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] shadow-2xs shrink-0">
+                <Truck size={13} className="text-[var(--color-brand-accent)] stroke-[2.2]" />
+                <span className="font-mono text-[11px] font-bold">Fleet • {vendorId}</span>
+              </span>
+            )}
+          </div>
           <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">
             Elevation-aware bypass corridors computed using SRTM digital terrain models and live flood risk telemetry.
           </p>
@@ -451,27 +513,35 @@ export default function BestRoutesPage() {
             )}
           </button>
 
-          {/* Save Route Offline Button (Emergency Fallback) */}
+          {/* Saved Offline View Toggle Filter */}
           <button
             type="button"
-            onClick={handleSaveOffline}
+            onClick={() => {
+              playClick();
+              setShowSavedOnly(prev => !prev);
+              setActive(0);
+            }}
             className={`h-9 px-3.5 rounded-full border text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 group w-full sm:w-auto ${
-              savedOffline
-                ? 'bg-neutral-900/10 dark:bg-white/10 border-neutral-900/25 dark:border-white/25 text-[var(--text-main)] dark:text-white font-bold'
+              showSavedOnly
+                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-xs font-bold'
                 : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)]'
             }`}
-            title="Save safe elevation route to device for offline access during network loss"
+            title={showSavedOnly ? 'Showing saved offline paths. Click to show all paths.' : 'Filter to show saved offline paths only'}
           >
-            {savedOffline ? (
-              <>
-                <BookmarkCheck className="h-3.5 w-3.5 text-[var(--text-main)] dark:text-white shrink-0" />
-                <span className="whitespace-nowrap">Saved Offline</span>
-              </>
+            {showSavedOnly ? (
+              <BookmarkCheck className="h-3.5 w-3.5 text-current shrink-0" />
             ) : (
-              <>
-                <Bookmark className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
-                <span className="whitespace-nowrap">Save Offline</span>
-              </>
+              <Bookmark className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
+            )}
+            <span className="whitespace-nowrap">Saved Offline</span>
+            {savedOfflineRoutes.length > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold leading-none ${
+                showSavedOnly
+                  ? 'bg-white/20 dark:bg-neutral-900/20 text-current'
+                  : 'bg-[var(--border-color)] text-[var(--text-muted)] group-hover:bg-white/20 group-hover:text-current'
+              }`}>
+                {savedOfflineRoutes.length}
+              </span>
             )}
           </button>
         </div>
@@ -518,17 +588,109 @@ export default function BestRoutesPage() {
         </div>
       )}
 
-      {current && (
+      {/* Empty State when Saved Offline filter is active but no routes saved */}
+      {showSavedOnly && routes.length === 0 && (
+        <div className="p-8 sm:p-12 text-center rounded-2xl neo-glass-card border border-[var(--border-color)] space-y-3">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)]">
+            <Bookmark className="h-6 w-6" />
+          </div>
+          <h3 className="text-sm font-bold text-[var(--text-main)]">No Saved Offline Paths</h3>
+          <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
+            You haven't saved any routes to your device for offline use yet. Bookmark any safe path using the bookmark icon to access it during network outages.
+          </p>
+          <button
+            type="button"
+            onClick={() => { playClick(); setShowSavedOnly(false); }}
+            className="px-4 py-2 rounded-full text-xs font-semibold bg-[var(--text-main)] text-[var(--bg-card)] hover:opacity-90 transition-all cursor-pointer"
+          >
+            View All Computed Paths
+          </button>
+        </div>
+      )}
+
+      {current && routes.length > 0 && (
         <>
+          {/* Delivery Partner Commercial SLA & Cargo Protection Matrix */}
+          {userRole === 'delivery' && (
+            <div className="mb-4 p-4 sm:p-5 rounded-2xl neo-glass-card border border-[var(--border-color)] bg-[var(--bg-card)]/90 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-color)]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-[var(--color-brand-accent)]/10 text-[var(--color-brand-accent)] border border-[var(--color-brand-accent)]/20 shrink-0">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-main)] flex items-center gap-2">
+                      <span>Rider SLA & Parcel Inundation Shield</span>
+                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
+                        Fleet ID: {vendorId}
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                      Commercial dispatch telemetry • Two-wheeler turnaround & parcel safeguard
+                    </p>
+                  </div>
+                </div>
+                <span className="self-start sm:self-auto text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 shrink-0">
+                  <Box size={12} className="text-emerald-600 dark:text-emerald-400" />
+                  <span>0% Parcel Damage Risk</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 text-xs">
+                <div className="p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-mono tracking-wider text-[var(--text-muted)] font-bold block">
+                      Delivery ETA Trade-Off
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-[var(--text-main)] block mt-1">
+                      +3 min detour vs gridlock
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[var(--text-muted)] mt-1.5">
+                    Bypasses 45-min bottleneck underpasses
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-mono tracking-wider text-[var(--text-muted)] font-bold block">
+                      Vehicle Powertrain Shield
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-[var(--color-brand-accent)] block mt-1">
+                      Max Water Depth: &lt;8.2 cm
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[var(--text-muted)] mt-1.5">
+                    Two-wheeler silencer & EV battery safe
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-mono tracking-wider text-[var(--text-muted)] font-bold block">
+                      Priority Dispatch Corridor
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-[var(--text-main)] block mt-1">
+                      High-Elevation Ridge Active
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[var(--text-muted)] mt-1.5">
+                    Pre-cleared civic delivery route
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div id="tour-best-table" className="hidden md:block neo-glass-card rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[var(--bg-main)]/70 border-b border-[var(--border-color)] text-[11px] font-mono uppercase tracking-wider text-[var(--text-muted)] font-bold">
                   <th className="py-4 px-6">Route</th>
-                  <th className="py-4 px-6 text-center">Distance</th>
-                  <th className="py-4 px-6 text-center">Time</th>
-                  <th className="py-4 px-6 text-center">{copy.risk}</th>
-                  <th className="py-4 px-6 text-right w-56 whitespace-nowrap">Actions</th>
+                  <th className="py-4 px-6 text-center whitespace-nowrap">Distance</th>
+                  <th className="py-4 px-6 text-center whitespace-nowrap">Time</th>
+                  <th className="py-4 px-6 text-center whitespace-nowrap">{copy.risk}</th>
+                  <th className="py-4 px-8 text-center tracking-widest whitespace-nowrap min-w-[380px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="text-xs divide-y divide-[var(--border-color)]">
@@ -554,8 +716,8 @@ export default function BestRoutesPage() {
                     <td className="py-4 px-6 text-center font-mono tabular-nums whitespace-nowrap">{formatKm(route.distance_meters)}</td>
                     <td className="py-4 px-6 text-center font-mono tabular-nums whitespace-nowrap">{formatMinutes(route.duration_seconds)}</td>
                     <td className="py-4 px-6 text-center font-mono tabular-nums whitespace-nowrap">{riskLabel(route, copy)}</td>
-                    <td id={index === 0 ? 'tour-best-engage' : undefined} className="py-4 px-6 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
+                    <td id={index === 0 ? 'tour-best-engage' : undefined} className="py-4 px-8 text-center whitespace-nowrap min-w-[380px]">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleMarkAsReached(route)}
@@ -577,8 +739,24 @@ export default function BestRoutesPage() {
                         </a>
                         <button
                           type="button"
+                          onClick={() => toggleRouteOfflineSave(route)}
+                          className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
+                            isRouteSavedOffline(route.summary)
+                              ? 'text-amber-500 hover:text-amber-600 bg-amber-500/10'
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+                          }`}
+                          title={isRouteSavedOffline(route.summary) ? 'Saved offline (click to unsave)' : 'Save path for offline use'}
+                        >
+                          {isRouteSavedOffline(route.summary) ? (
+                            <BookmarkCheck className="h-3.5 w-3.5 text-amber-500" />
+                          ) : (
+                            <Bookmark className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => promptDeleteRoute(route)}
-                          className="p-1.5 rounded-xl text-white bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:bg-[image:var(--danger-btn-hover-gradient,linear-gradient(180deg,#881337_0%,#BE123C_50%,#E11D48_100%))] hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] transition-all cursor-pointer shadow-xs"
+                          className="p-1.5 rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                           title="Delete this safe path"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -608,14 +786,32 @@ export default function BestRoutesPage() {
                     </div>
                     <h2 className="font-semibold text-sm text-[var(--text-main)] leading-snug break-words">{route.summary}</h2>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => promptDeleteRoute(route)}
-                    className="p-1.5 rounded-lg text-white bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:bg-[image:var(--danger-btn-hover-gradient,linear-gradient(180deg,#881337_0%,#BE123C_50%,#E11D48_100%))] hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] transition-all cursor-pointer shrink-0 shadow-xs"
-                    title="Delete path"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleRouteOfflineSave(route)}
+                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                        isRouteSavedOffline(route.summary)
+                          ? 'text-amber-500 hover:text-amber-600 bg-amber-500/10'
+                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+                      }`}
+                      title={isRouteSavedOffline(route.summary) ? 'Saved offline (click to unsave)' : 'Save path for offline use'}
+                    >
+                      {isRouteSavedOffline(route.summary) ? (
+                        <BookmarkCheck className="h-4 w-4 text-amber-500" />
+                      ) : (
+                        <Bookmark className="h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => promptDeleteRoute(route)}
+                      className="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      title="Delete path"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-xl bg-[var(--bg-main)]/70 border border-[var(--border-color)] text-center font-mono">
                   <div>

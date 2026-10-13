@@ -45,7 +45,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  LocateFixed
+  LocateFixed,
+  Truck
 } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
@@ -226,10 +227,25 @@ function MapInteractiveClickHandler({
 }
 
 // Map Viewport Controller for Smooth Recenter and Immediate Tile Invalidation
-function MapViewController({ center, zoom }: { center: [number, number]; zoom: number }) {
+function MapViewController({
+  center,
+  zoom,
+  onFlightStart,
+  onFlightEnd,
+}: {
+  center: [number, number];
+  zoom: number;
+  onFlightStart?: () => void;
+  onFlightEnd?: () => void;
+}) {
   const map = useMap();
   const prevCenterRef = useRef<[number, number]>(center);
   const prevZoomRef = useRef<number>(zoom);
+  const flightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onFlightStartRef = useRef(onFlightStart);
+  const onFlightEndRef = useRef(onFlightEnd);
+  onFlightStartRef.current = onFlightStart;
+  onFlightEndRef.current = onFlightEnd;
 
   useEffect(() => {
     const hasChanged =
@@ -244,20 +260,45 @@ function MapViewController({ center, zoom }: { center: [number, number]; zoom: n
       try {
         map.invalidateSize();
       } catch (e) {}
+      onFlightEndRef.current?.();
       return;
     }
 
     try {
       map.invalidateSize();
+      onFlightStartRef.current?.();
+
+      if (flightTimerRef.current) {
+        clearTimeout(flightTimerRef.current);
+      }
+
       // Smooth cinematic flyTo transition across coordinate changes
       map.flyTo(center, zoom, {
         duration: 1.8,
         easeLinearity: 0.25,
         noMoveStart: true,
       });
+
+      const handleMoveEnd = () => {
+        onFlightEndRef.current?.();
+      };
+
+      map.once('moveend', handleMoveEnd);
+
+      // Failsafe timer (1900ms) in case moveend is interrupted or skipped
+      flightTimerRef.current = setTimeout(() => {
+        map.off('moveend', handleMoveEnd);
+        onFlightEndRef.current?.();
+      }, 1900);
     } catch (e) {
-      /* ignore */
+      onFlightEndRef.current?.();
     }
+
+    return () => {
+      if (flightTimerRef.current) {
+        clearTimeout(flightTimerRef.current);
+      }
+    };
   }, [center, zoom, map]);
 
   useEffect(() => {
@@ -359,6 +400,23 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [stateSearchQuery, setStateSearchQuery] = useState('');
   const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
   const stateComboboxRef = useRef<HTMLDivElement>(null);
+
+  // Delivery Partner / Commercial Fleet mode context
+  const [userRole, setUserRole] = useState<string>(() => localStorage.getItem('doab_user_role') || 'citizen');
+  const [vendorId, setVendorId] = useState<string>(() => localStorage.getItem('doab_vendor_id') || 'SWIGGY-BLR-9021');
+
+  useEffect(() => {
+    const handleRoleSync = () => {
+      setUserRole(localStorage.getItem('doab_user_role') || 'citizen');
+      setVendorId(localStorage.getItem('doab_vendor_id') || 'SWIGGY-BLR-9021');
+    };
+    window.addEventListener('storage', handleRoleSync);
+    window.addEventListener('doab_auth_changed', handleRoleSync);
+    return () => {
+      window.removeEventListener('storage', handleRoleSync);
+      window.removeEventListener('doab_auth_changed', handleRoleSync);
+    };
+  }, []);
 
   const handleToggleMultiStateMode = () => {
     playClick();
@@ -474,6 +532,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(null);
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
   const [clusterSortBy] = useState<'proximity' | 'severity'>('proximity');
+  const [isMapFlying, setIsMapFlying] = useState(false);
 
   // Default Coordinates: National All-India Overview Center
   const defaultCenter: [number, number] = DEFAULT_NATIONAL_CENTER;
@@ -1224,8 +1283,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         ? haversineKm(userCoords[0], userCoords[1], centerLat, centerLng)
         : null;
 
+      const clusterId = `${c.ward}::${c.category}::${centerLat.toFixed(4)}_${centerLng.toFixed(4)}`;
       return {
         ...c,
+        id: clusterId,
         lat: centerLat,
         lng: centerLng,
         clusterRadiusKm: maxDist > 0 ? Math.max(maxDist, 1.2) : 2.5,
@@ -1503,7 +1564,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                             setPathOriginAddress('');
                             setOriginSuggestions([]);
                           }}
-                          className="p-1 rounded-lg text-[var(--text-muted)] hover:text-white hover:bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:shadow-[0_4px_10px_rgba(190,18,60,0.35)] transition-all cursor-pointer shrink-0 flex items-center justify-center"
+                          className="p-1 rounded-lg text-[var(--text-muted)] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
                           aria-label="Clear Origin Point"
                         >
                           <X className="h-3 w-3" />
@@ -1569,7 +1630,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                             setPathDestAddress('');
                             setDestSuggestions([]);
                           }}
-                          className="p-1 rounded-lg text-[var(--text-muted)] hover:text-white hover:bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:shadow-[0_4px_10px_rgba(190,18,60,0.35)] transition-all cursor-pointer shrink-0 flex items-center justify-center"
+                          className="p-1 rounded-lg text-[var(--text-muted)] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
                           aria-label="Clear Destination Point"
                         >
                           <X className="h-3 w-3" />
@@ -1809,6 +1870,16 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 <span className="sm:hidden">Live Risk</span>
                 <span className="hidden sm:inline">Live Risk Monitor</span>
               </span>
+              {userRole === 'delivery' && (
+                <span 
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] shadow-2xs shrink-0" 
+                  title={`Fleet Mode Active: ${vendorId}`}
+                >
+                  <Truck className="w-3 h-3 text-[var(--color-brand-accent)] shrink-0" />
+                  <span className="hidden sm:inline font-mono text-[10px]">{vendorId}</span>
+                  <span className="sm:hidden font-mono text-[10px]">Fleet</span>
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
               {/* Dual Engine Sliding Pill Bar (Professional Apple/Mapbox Standard — Enlarged Touch Targets) */}
@@ -2394,16 +2465,17 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   {/* Micro Table of Hotspot Clusters */}
                   <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto custom-scrollbar pr-0.5">
                     {recurringClusters.slice(0, 25).map((cluster, cIdx) => {
-                      const isSelected = selectedClusterKey === cluster.ward;
+                      const clusterId = (cluster as any).id || `${cluster.ward}-${cIdx}`;
+                      const isSelected = selectedClusterKey === clusterId;
                       const isCrit = cluster.highestSeverity === 'Critical';
                       const isHigh = cluster.highestSeverity === 'High';
                       return (
                         <div
-                          key={`cluster-row-${cluster.ward}-${cIdx}`}
+                          key={`cluster-row-${clusterId}`}
                           onClick={() => {
                             playClick();
                             setShowHeatLayer(true);
-                            setSelectedClusterKey(cluster.ward);
+                            setSelectedClusterKey(selectedClusterKey === clusterId ? null : clusterId);
                             setMapCenter([cluster.lat, cluster.lng]);
                             setMapZoom(13);
                           }}
@@ -2886,9 +2958,24 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 maxZoom={18}
               />
 
-              <MapViewController center={mapCenter} zoom={mapZoom} />
+              <MapViewController
+                center={mapCenter}
+                zoom={mapZoom}
+                onFlightStart={() => setIsMapFlying(true)}
+                onFlightEnd={() => setIsMapFlying(false)}
+              />
 
-              {boundaries && (
+              {/* 
+                ADMINISTRATIVE BOUNDARY OVERLAY (FUTURE EXTENSION):
+                Hidden for now: When real administrative district/ward boundary polygons (e.g. GAUL 2024 / BBMP ward polygons)
+                are loaded via `gaul2024_india.geojson`, re-enable this GeoJSON layer conditionally:
+                `{boundaries && boundaries.source !== 'pilot_bbox' && ( <GeoJSON ... /> )}`
+                
+                Note: In development and default local runs, the prediction API falls back to returning the raw ML corridor
+                bounding box `PILOT_BBOX` (12.60°–13.30° N, 77.30°–77.90° E), which rendered an unsightly raw vertical rectangle
+                outline over Bengaluru. To maintain a clean, seamless basemap view, pilot box fallback rendering is hidden.
+              */}
+              {boundaries && boundaries.source !== 'pilot_bbox' && false && (
                 <GeoJSON
                   data={boundaries as never}
                   style={() => ({ color: '#64748b', weight: 1, fillOpacity: 0.04 })}
@@ -2958,17 +3045,17 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     : cluster.highestSeverity === 'Medium'
                       ? '#475569'
                       : '#0F766E';
+                const clusterId = (cluster as any).id || `${cluster.ward}-${cIdx}`;
                 const hasAnySelectedCluster = selectedClusterKey != null;
                 const isSelected = hasAnySelectedCluster && (
-                  cluster.ward === selectedClusterKey ||
-                  `${cluster.ward}-${cIdx}` === selectedClusterKey ||
-                  (cluster.ward && selectedClusterKey.startsWith(cluster.ward))
+                  selectedClusterKey === clusterId ||
+                  selectedClusterKey === `${cluster.ward}-${cIdx}`
                 );
                 const isFeeble = hasAnySelectedCluster && !isSelected;
                 return (
                   <React.Fragment key={`cluster-halo-${cluster.ward}-${cIdx}`}>
                     {/* Outer pulsating beacon ring for selected cluster */}
-                    {isSelected && (
+                    {isSelected && !isMapFlying && (
                       <Circle
                         center={[cluster.lat, cluster.lng]}
                         radius={Math.max(cluster.clusterRadiusKm * 500, 1600) * 1.15}
@@ -2978,6 +3065,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           fillOpacity: 0.08,
                           weight: 1.5,
                           dashArray: '4, 6',
+                          className: 'focused-risk-halo-bloom',
                         }}
                       />
                     )}
@@ -2998,8 +3086,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 );
               })}
 
-              {/* Focused Risk Halo: Rendered for the currently inspected incident */}
-              {showHeatLayer && selectedIncident && (
+              {/* Focused Risk Halo: Rendered for the currently inspected incident (Wait-to-Bloom eliminates mid-flight 32x scale) */}
+              {showHeatLayer && selectedIncident && !isMapFlying && (
                 <Circle
                   center={[selectedIncident.lat, selectedIncident.lng]}
                   radius={selectedIncident.severity === 'Critical' ? 480 : selectedIncident.severity === 'High' ? 320 : 180}
@@ -3009,12 +3097,13 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     fillOpacity: 0.16,
                     weight: 2,
                     dashArray: '4, 4',
+                    className: 'focused-risk-halo-bloom',
                   }}
                 />
               )}
 
               {/* SAHNIRMAAN Spatial Proximity Vector from User GPS to Inspected Incident */}
-              {hasRealLocation && selectedIncident && (
+              {hasRealLocation && selectedIncident && !isMapFlying && (
                 <Polyline
                   positions={[
                     userCoords,
@@ -3025,6 +3114,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     weight: 2,
                     dashArray: '5, 8',
                     opacity: 0.75,
+                    className: 'focused-risk-halo-bloom',
                   }}
                 />
               )}

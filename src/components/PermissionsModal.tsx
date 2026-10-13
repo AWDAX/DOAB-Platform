@@ -172,7 +172,7 @@ export default function PermissionsModal({ isOpen, onClose }: PermissionsModalPr
           </div>
 
           <button
-            onClick={() => { playClick(); onClose(); }}
+            onClick={handleComplete}
             className="p-2 rounded-xl border border-[var(--border-color)] dark:border-white/10 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
             aria-label="Close Modal"
           >
@@ -231,19 +231,6 @@ export default function PermissionsModal({ isOpen, onClose }: PermissionsModalPr
               </div>
             );
           })}
-        </div>
-
-        {/* Footer Actions: Save & Close */}
-        <div className="mt-4 pt-3.5 border-t border-[var(--border-color)] dark:border-white/10 flex items-center justify-between">
-          <span className="text-[10px] font-mono text-[var(--text-muted)]">
-            Preferences saved automatically
-          </span>
-          <button
-            onClick={handleComplete}
-            className="px-5 py-2.5 bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 border border-neutral-950/20 dark:border-white/20 rounded-xl font-bold text-xs transition-colors cursor-pointer shadow-xs"
-          >
-            Done
-          </button>
         </div>
       </motion.div>
     </div>

@@ -190,43 +190,80 @@ export default function VoiceAssistant() {
   }, [messages, isThinking]);
 
   // Web Speech API STT
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-IN';
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          setInputVal(transcript);
-          sendMessage(transcript);
-        }
-        setIsListening(false);
-      };
-
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
-      recognitionRef.current = recognition;
-    }
-  }, [sendMessage]);
+  const baseSpeechTextRef = useRef('');
 
   const toggleListening = () => {
     playClick();
-    if (!recognitionRef.current) {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
       alert('Speech Recognition is not supported on this browser.');
       return;
     }
+
     if (isListening) {
-      recognitionRef.current.stop();
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (_) {}
+      }
       setIsListening(false);
-    } else {
-      recognitionRef.current.start();
-      setIsListening(true);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN';
+
+      // Capture currently typed/spoken text to append future speech seamlessly
+      const currentInput = inputVal.trim();
+      baseSpeechTextRef.current = currentInput ? currentInput + ' ' : '';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          const combined = baseSpeechTextRef.current + transcript;
+          setInputVal(combined);
+          setDraft(combined);
+          // Keep input view scrolled to the newest spoken words so text remains visible
+          if (inputRef.current) {
+            inputRef.current.scrollLeft = inputRef.current.scrollWidth;
+          }
+        }
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (_) {
+      setIsListening(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (_) {}
+      }
+    };
+  }, []);
 
   const handleSend = () => {
     if (!inputVal.trim()) return;
@@ -436,7 +473,7 @@ export default function VoiceAssistant() {
           aria-label="Open DOAB Assistant (Draggable)"
           title={isOrbGiggling ? "Hehe! (Giggling)" : "Open DOAB Assistant (Drag me around!)"}
         >
-          <AIOrbFace state={isOrbGiggling ? 'giggle' : 'idle'} size={56} className="w-full h-full pointer-events-none" />
+          <AIOrbFace state={isOrbGiggling ? 'giggle' : 'idle'} size={56} gaze={!isOpen} className="w-full h-full pointer-events-none" />
         </motion.button>
       )}
 
@@ -571,20 +608,6 @@ export default function VoiceAssistant() {
                         Missions
                       </span>
                       <div className="flex items-center gap-1">
-                        <button 
-                          onClick={() => {
-                            playClick();
-                            newChat();
-                            setIsHistoryOpen(false);
-                            setTimeout(() => inputRef.current?.focus(), 80);
-                          }} 
-                          className="px-2 py-1 rounded-full bg-[var(--text-main)] text-[var(--bg-card)] flex items-center gap-1 text-[11px] font-semibold hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs select-none"
-                          title="New Mission"
-                        >
-                          <Plus className="h-3 w-3" />
-                          <span>New</span>
-                        </button>
-
                         {sessions.length > 1 && (
                           <button
                             type="button"
@@ -655,7 +678,7 @@ export default function VoiceAssistant() {
                   <div className="flex flex-col items-center justify-center text-center py-6 px-4">
                     <div className="relative mb-3 group cursor-pointer" onClick={toggleListening}>
                       <div className="absolute inset-0 -m-3 rounded-full bg-[var(--color-brand-accent)]/20 blur-xl pointer-events-none transition-all group-hover:scale-120" />
-                      <AIOrbFace size={64} state={activeOrbState} className="relative z-10 transition-transform group-hover:scale-105" />
+                      <AIOrbFace size={64} state={activeOrbState} gaze={false} className="relative z-10 transition-transform group-hover:scale-105" />
                     </div>
                     <h4 className="text-sm font-bold tracking-tight text-[var(--text-main)]">
                       DOAB Civic Intelligence

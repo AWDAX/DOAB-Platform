@@ -73,6 +73,35 @@ Do NOT invent alternative architectures or revert to unverified scrapers. Follow
   - `AssistantPage.tsx` — "Clear All" sessions button + session-item delete icon
   - All buttons now: solid gradient at rest, lighter gradient + `hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)]` crimson glow on hover.
 
+### 9. Role-Adaptive Delivery Partner Experience & Commercial Fleet Shield Matrix
+- **Unified Route Architecture:** Eliminated code-bloating redundant routes (`/delivery/routes`) in favor of dynamic role-adaptive interfaces driven by `doab_user_role === 'delivery'`.
+- **Commercial Fleet Header Badges:** Added clean `Fleet • {vendorId}` badges to `BestRoutesPage.tsx`, `MapPage.tsx` (Live Risk Monitor dock), and `AssistantPage.tsx` adhering to theme tokens (`border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] shadow-2xs`).
+- **Rider SLA & Parcel Inundation Shield Matrix (`BestRoutesPage.tsx`):**
+  - Displays turn-by-turn dispatch calculations (+3 min detour vs gridlock, <8.2cm powertrain & exhaust ceiling, 0% parcel damage guarantee).
+  - Theme-harmonized using `neo-glass-card`, `--color-brand-accent`, and `--text-main` tokens for complete contrast compatibility across Flood & Drought themes.
+- **DOAB Assistant Dispatch Awareness (`useDOABChat.ts` & `AssistantPage.tsx`):**
+  - Injected courier telemetry guidelines into LLM system prompts and local deterministic sensor fallbacks.
+  - Replaced generic prompt chips with courier SLA and powertrain safety queries.
+
+### 10. Developer & Admin Auth Security Hardening & Automated CD Integration
+- **Zero-Hint Fallback Security (`src/lib/adminAuth.ts`):** Removed all hardcoded string literals and fallbacks (`|| 'admin'`, `|| 'admin@doab.gov.in'`) that leaked administrative defaults into compiled client bundles.
+- **Constant Generic Error Output:** Consolidated error reporting to `"Invalid admin username or password."` to eliminate configuration sniffing and credential enumeration.
+- **Automated GitHub Actions Deployment ([`.github/workflows/deploy-frontend.yml`](../.github/workflows/deploy-frontend.yml)):**
+  - Added `VITE_ADMIN_USERNAME`, `VITE_ADMIN_PASSWORD`, and `VITE_ADMIN_EMAIL` to the production build step.
+  - Injected all 3 admin credentials into GitHub Repository Secrets (`AWDAX/DOAB-Platform`) via the GitHub CLI without exposing secrets in logs.
+  - Automatic push-to-main trigger compiles, syncs to S3 bucket (`doab-frontend-970909364340`), and invalidates CloudFront distribution (`E20R65BKZ9U404`).
+
+### 11. Geospatial Wait-to-Bloom & Seamless Halo Transitions (Leaflet & MapLibre)
+- **Eliminated Mid-Flight 32× Vector Scaling Artifact:**
+  - Synchronous click actions previously mounted the real-world 180m–480m geographic SVG halo instantly while the map was still at low national overview zoom (Zoom 5/6).
+  - During camera `flyTo` (1.8s), Leaflet multiplied the vector layer container by the zoom ratio ($2^{(11-6)} = 32\times$), causing an oversized distorted circle during the flight that abruptly snapped into place when the camera landed.
+  - Implemented **Wait-to-Bloom**: The pin marker selection and pulse ring remain 100% instant for immediate user responsiveness. The vector risk halo `<Circle>`, cluster beacon rings, and spatial proximity polyline defer mounting until camera flight completes via `onFlightEnd` / `moveend`.
+- **Smooth 400ms CSS Blooming (`index.css`):**
+  - Added `@keyframes haloBloom` and `.focused-risk-halo-bloom` styling with `animation: haloBloom 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards` and `transition: opacity 0.4s ease-out`.
+  - Upon camera arrival, the halo smoothly transitions from `opacity: 0` to its target fill opacity (`0.16`) without jarring leaps.
+- **Dual-Engine Hardware Parity (`MapLibreView.tsx`):**
+  - Added `isCameraFlying` state tracking with MapLibre's `moveend` listener and `fill-opacity-transition: { duration: 400 }` / `line-opacity-transition: { duration: 400 }` paint rules so 3D GPU mode exhibits identical visual polish.
+
 ---
 
 ## Next Implementation Phases (From `FUTURE_NATIONAL_GRID_IMD_PLAN.md`)

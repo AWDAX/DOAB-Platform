@@ -27,10 +27,29 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => {
+    try {
+      const saved = localStorage.getItem('doab_sidebar_expanded');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const alertsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Sync sidebar toggle events so search bar remains visually centered over the active workspace
+  useEffect(() => {
+    const handleSidebarToggle = (e: any) => {
+      if (e.detail?.expanded !== undefined) {
+        setIsSidebarExpanded(e.detail.expanded);
+      }
+    };
+    window.addEventListener('doab:sidebar-toggle', handleSidebarToggle as EventListener);
+    return () => window.removeEventListener('doab:sidebar-toggle', handleSidebarToggle as EventListener);
+  }, []);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -217,7 +236,13 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
           </Link>
 
           {/* Desktop Interactive Search Bar */}
-          <div id="tour-search" ref={searchContainerRef} className="hidden md:flex flex-1 max-w-md mx-8 relative">
+          <div 
+            id="tour-search" 
+            ref={searchContainerRef} 
+            className={`hidden md:flex flex-1 max-w-md mx-8 relative transition-transform duration-300 ease-out ${
+              isSidebarExpanded ? 'md:translate-x-8 lg:translate-x-12' : 'translate-x-0'
+            }`}
+          >
             <div 
               onClick={() => inputRef.current?.focus()}
               className={`w-full bg-[var(--bg-card)] border rounded-xl px-3.5 py-1.5 flex items-center justify-between gap-2.5 text-xs shadow-2xs transition-all cursor-text ${
@@ -289,14 +314,14 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                           type="button"
                           onClick={() => handleSelect(item)}
                           onMouseEnter={() => setSelectedIndex(idx)}
-                          className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between gap-3 transition-colors cursor-pointer ${
+                          className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between gap-3 transition-all duration-200 ease-out cursor-pointer ${
                             isSelected 
                               ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs' 
                               : 'hover:bg-[var(--bg-main)] text-[var(--text-main)]'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={`p-1.5 rounded-lg shrink-0 ${
+                            <div className={`p-1.5 rounded-lg shrink-0 transition-all duration-200 ${
                               isSelected 
                                 ? 'bg-[var(--bg-card)]/15 text-current' 
                                 : 'bg-[var(--bg-main)] text-[var(--text-main)] dark:text-neutral-200'
@@ -304,8 +329,8 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                               <Icon className="h-4 w-4" />
                             </div>
                             <div className="flex flex-col min-w-0">
-                              <span className="text-xs font-bold truncate leading-tight">{item.title}</span>
-                              <span className={`text-[10px] truncate leading-tight mt-0.5 ${
+                              <span className="text-xs font-bold truncate leading-tight transition-colors duration-200">{item.title}</span>
+                              <span className={`text-[10px] truncate leading-tight mt-0.5 transition-colors duration-200 ${
                                 isSelected ? 'text-[var(--bg-card)]/80' : 'text-[var(--text-muted)]'
                               }`}>
                                 {item.subtitle}
@@ -313,7 +338,7 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                             </div>
                           </div>
 
-                          <span className={`text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded border shrink-0 ${
+                          <span className={`text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded border shrink-0 transition-all duration-200 ${
                             isSelected 
                               ? 'border-[var(--bg-card)]/30 bg-[var(--bg-card)]/10 text-current' 
                               : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)]'

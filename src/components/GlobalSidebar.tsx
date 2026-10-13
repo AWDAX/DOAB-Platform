@@ -10,7 +10,14 @@ import Tooltip from './Tooltip';
 export default function GlobalSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    try {
+      const saved = localStorage.getItem('doab_sidebar_expanded');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   const [user, setUser] = useState<any>(() => {
     try {
       const raw = localStorage.getItem('doab_demo_user_v1');
@@ -95,7 +102,7 @@ export default function GlobalSidebar() {
     },
     { 
       id: 'assistant', 
-      path: '/assistant',
+      path: '/assistant', 
       icon: AIOrbIcon, 
       label: 'DOAB Assistant', 
       hasUnread: hasUnreadAi,
@@ -116,6 +123,10 @@ export default function GlobalSidebar() {
     setIsCollapsing(true);
     setTimeout(() => {
       setIsExpanded(false);
+      try {
+        localStorage.setItem('doab_sidebar_expanded', 'false');
+        window.dispatchEvent(new CustomEvent('doab:sidebar-toggle', { detail: { expanded: false } }));
+      } catch {}
       setTimeout(() => {
         setIsCollapsing(false);
       }, 300);
@@ -125,6 +136,10 @@ export default function GlobalSidebar() {
   const handleExpand = () => {
     playClick();
     setIsExpanded(true);
+    try {
+      localStorage.setItem('doab_sidebar_expanded', 'true');
+      window.dispatchEvent(new CustomEvent('doab:sidebar-toggle', { detail: { expanded: true } }));
+    } catch {}
   };
 
   const renderLink = (item: any) => {

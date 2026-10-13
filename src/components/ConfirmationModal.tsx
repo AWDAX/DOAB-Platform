@@ -96,9 +96,9 @@ export default function ConfirmationModal({
                 playClick();
                 onConfirm();
               }}
-              className={`px-4 py-1.5 rounded-xl text-white text-xs font-bold transition-all shadow-xs cursor-pointer ${
+              className={`px-4 py-1.5 rounded-xl text-white text-xs font-bold transition-all cursor-pointer ${
                 isDanger
-                  ? 'bg-[image:var(--danger-btn-gradient,linear-gradient(180deg,#4C0519_0%,#881337_50%,#BE123C_100%))] hover:bg-[image:var(--danger-btn-hover-gradient,linear-gradient(180deg,#881337_0%,#BE123C_50%,#E11D48_100%))] hover:shadow-[0_4px_14px_rgba(190,18,60,0.45)] active:scale-95'
+                  ? 'bg-rose-600 hover:bg-rose-700 active:scale-95'
                   : 'bg-[var(--color-brand-accent)] hover:opacity-90 active:scale-95'
               }`}
             >

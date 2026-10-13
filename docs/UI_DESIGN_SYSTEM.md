@@ -231,4 +231,104 @@ The reserved scrollbar gutter track **must always match the background color of 
 2. **Overlapping Cluster Selection Dimming**:
    - When a macro risk cluster is selected (`selectedClusterKey != null`), all unselected clusters subtly dim (`fillOpacity: 0.045`, `lineOpacity: 0.45`, `weight: 1.3`) in both 2D Lite (Leaflet) and 3D GPU (MapLibre GL) views so the active cluster stands out clearly.
 
+---
+
+## 🚚 9. Role-Adaptive Commercial Fleet Experience (`userRole === 'delivery'`)
+
+### Problem
+Delivery riders and commercial fleet partners face unique operational vulnerabilities during extreme weather that standard citizen interfaces do not address:
+1. Fleet drivers risk water ingress damage to engine exhausts, EV batteries, and air filters at water levels as low as 8.2 cm.
+2. Riders face strict platform SLAs (on-time delivery vs. detour penalties) and customer parcel damage liability if waterproof packaging is breached.
+3. Building dedicated separate URL paths (e.g. `/delivery/map`, `/delivery/routes`) fragments navigation, duplicates bundle size, and creates maintenance overhead.
+
+### Solution Architecture
+Instead of maintaining brittle separate URL branches, DOAB implements industry-standard **Role-Adaptive Experiences** across unified civic URLs:
+1. **Commercial Fleet Header Badges (`BestRoutesPage.tsx`, `MapPage.tsx`, `AssistantPage.tsx`)**:
+   - Uses `border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] shadow-2xs` pill geometry with `Truck` icon tinted in `text-[var(--color-brand-accent)]`.
+   - Dynamically displays the courier partner identifier (e.g. `Fleet • SWIGGY-BLR-9021`).
+2. **Rider SLA & Parcel Inundation Shield Matrix (`BestRoutesPage.tsx`)**:
+   - Integrated directly into the computed elevation routes view when `doab_user_role === 'delivery'`.
+   - **Delivery ETA Trade-Off**: Quantifies detour delay vs. waterlog gridlock (`+3 min detour vs gridlock`).
+   - **Powertrain & Exhaust Safety**: Enforces the `<8.2cm` flood clearance ceiling to safeguard two-wheeler/EV exhaust systems, air intakes, and batteries from stall.
+   - **Parcel Integrity**: Features verified high-ground ridge routing with `0% Parcel Damage Risk` and dry compartment status.
+3. **DOAB Assistant Fleet Dispatch Awareness (`useDOABChat.ts` & `AssistantPage.tsx`)**:
+   - Adapts system prompts to courier dispatch constraints.
+   - Greets delivery riders with their active fleet vendor ID.
+   - Replaces generic civic suggestion chips with courier-specific prompts (*Rider Powertrain Clearance (<8.2cm)*, *SLA vs Flood Detour Check*, *Underpass Submerged Alert*, *Order Waterproofing Risk*).
+
+---
+
+## 🎨 10. Design Token Harmonization & Profile Button Symmetry
+
+### Problem
+1. **Theme Clash**: Hardcoded color definitions in commercial fleet components produced harsh color collisions in Drought theme.
+2. **Profile Page Button Height Asymmetry**: In `ProfilePage.tsx`, the `Profile Guide` button used different vertical height and padding from the `Sign Out` button (`h-9` vs `h-10` and mismatched border radii), resulting in a visually misaligned bottom action row.
+
+### Solution Architecture
+1. **Zero Hardcoded Accent Collisions**:
+   - All role-specific banners, cards, and badges inherit strictly from core CSS variables (`--color-brand-accent`, `--text-main`, `--text-muted`, `--border-color`, and `--bg-card`).
+   - **Flood Theme**: Badges and highlights tint softly with Sea Blue / Aqua without visual vibration.
+   - **Drought Theme**: Elements gracefully transition to the Golden Bronze / Baked Terracotta palette.
+2. **Profile Action Symmetry (`ProfilePage.tsx`)**:
+   - Harmonized both `Profile Guide` and `Sign Out` buttons to uniform `h-10` heights, `rounded-xl` geometry, `text-xs font-mono font-bold` typography, and matching flexbox alignment.
+3. **Glassmorphism Standard (`neo-glass-card`)**:
+   - Cards maintain uniform backdrop-filter blur and subtle borders (`border-[var(--border-color)]`), preventing visual fragmentation between citizen and commercial views.
+
+---
+
+## 🔐 11. Developer & Admin Auth Security Architecture (`adminAuth.ts` & CI/CD)
+
+### Problem
+1. Default string literals in logical OR expressions (`import.meta.env.VITE_ADMIN_USERNAME || 'admin'`) leaked fallback credentials into compiled production client bundles, allowing trivial reverse engineering of admin privileges.
+2. Descriptive error messages leaked account presence information.
+3. Manual environment variable configuration during deployment created credential drift between local development and hosted web apps.
+
+### Solution Architecture
+1. **Zero-Hint Fallback Security**:
+   - Stripped all hardcoded string literals and defaults (`|| 'admin'`, `|| 'admin@doab.gov.in'`).
+   - Client bundle inspection cannot discover default usernames, emails, or backdoor credentials.
+2. **Unified Error Responses**:
+   - Authentication errors consistently return `"Invalid admin username or password."` without disclosing whether an account exists or whether admin access is configured.
+3. **Automated Secret-Driven CD (`.github/workflows/deploy-frontend.yml`)**:
+   - Admin credentials (`VITE_ADMIN_USERNAME`, `VITE_ADMIN_PASSWORD`, `VITE_ADMIN_EMAIL`) are managed exclusively through GitHub Repository Secrets.
+   - Automatic push-to-main trigger injects secrets directly into Vite's production build step, syncing to S3 (`doab-frontend-970909364340`) and CloudFront (`E20R65BKZ9U404`).
+
+---
+
+## 🎯 12. Geospatial Wait-to-Bloom & Vector Flight Decoupling (`MapPage.tsx`, `MapLibreView.tsx`, `index.css`)
+
+### Problem & Optical Jerk Root Cause
+1. **The 32× Vector Distortion**: When a user clicked a reported incident pin from an overview perspective (e.g. Zoom 5 or 6), Leaflet immediately mounted the geographic `<Circle>` (with a real-world radius of 180m–480m) at the initial zoom level.
+2. **Mid-Flight SVG Transformation**: During the 1.8-second camera flight (`map.flyTo`), Leaflet scaled the vector SVG layer container using CSS 3D matrix transforms:
+   $$\text{Container Scale} = 2^{(11 - 6)} = 32\times \text{ magnification}$$
+   This caused the risk halo circle to appear hugely magnified and distorted across the country while the camera was in flight.
+3. **Arrival Snap**: Once the camera completed its landing at Zoom 11, Leaflet reset the CSS transform and repainted the SVG circle at the native Zoom 11 pixel radius, causing an abrupt visual "pop" or "jerk".
+
+### Solution Architecture: Wait-to-Bloom
+1. **Decoupled Selection Feedback**:
+   - The **Pin Marker Icon** updates instantly with selection halo, border, and beacon pulse for zero-latency user feedback.
+   - The **Geographic Halo `<Circle>` & Proximity Polyline** defer mounting until camera flight terminates via `onFlightEnd` / `moveend` (`!isMapFlying`).
+2. **Smooth 400ms CSS Blooming Animation (`index.css`)**:
+   - Added `@keyframes haloBloom` and `.focused-risk-halo-bloom`:
+     ```css
+     @keyframes haloBloom {
+       0% {
+         opacity: 0;
+       }
+       100% {
+         opacity: 1;
+       }
+     }
+
+     .focused-risk-halo-bloom {
+       opacity: 0;
+       animation: haloBloom 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+       transition: opacity 0.4s ease-out;
+       transform-origin: center;
+     }
+     ```
+   - On camera arrival, the halo smoothly blossoms from `opacity: 0` to its target fill opacity (`0.16`) over 400ms without visual snapping.
+3. **Dual-Engine Hardware Parity (`MapLibreView.tsx`)**:
+   - Implemented identically across both 2D Lite (`Leaflet`) and 3D GPU (`MapLibre GL`) rendering pipelines via `fill-opacity-transition: { duration: 400 }` and `line-opacity-transition: { duration: 400 }` paint rules.
+
 

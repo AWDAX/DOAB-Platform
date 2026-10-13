@@ -15,10 +15,11 @@ export interface AdminUser {
 const ADMIN_STORAGE_KEY = 'doab_authorized_admins_v1';
 const ADMIN_SESSION_KEY = 'doab_admin_session_v1';
 
-// Super admin credentials read from local environment (.env)
-const DEFAULT_SUPER_ADMIN_USER = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
-const DEFAULT_SUPER_ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || '';
-const DEFAULT_ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@doab.gov.in';
+// Super admin credentials read from environment (.env)
+// Strictly ZERO hardcoded defaults or fallback hints to prevent exploitation
+const DEFAULT_SUPER_ADMIN_USER = (import.meta.env.VITE_ADMIN_USERNAME || '').trim();
+const DEFAULT_SUPER_ADMIN_PASS = (import.meta.env.VITE_ADMIN_PASSWORD || '').trim();
+const DEFAULT_ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || '').trim();
 
 // Initialize list of authorized admins if not yet present
 export function getAuthorizedAdmins(): AdminUser[] {
@@ -27,14 +28,16 @@ export function getAuthorizedAdmins(): AdminUser[] {
     if (raw) return JSON.parse(raw);
   } catch {}
   
-  const initial: AdminUser[] = [
-    {
+  const initial: AdminUser[] = [];
+  if (DEFAULT_SUPER_ADMIN_USER) {
+    initial.push({
       username: DEFAULT_SUPER_ADMIN_USER,
-      email: DEFAULT_ADMIN_EMAIL,
+      email: DEFAULT_ADMIN_EMAIL || `${DEFAULT_SUPER_ADMIN_USER}@doab.ops`,
       role: 'super_admin',
       addedAt: new Date().toISOString(),
-    }
-  ];
+    });
+  }
+
   try {
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(initial));
   } catch {}
@@ -68,32 +71,31 @@ export function verifyAdminCredentials(username: string, pass: string): { succes
     return { success: false, error: 'Password must be at least 6 characters.' };
   }
 
+  // Check configured root super-admin credentials from environment
+  if (DEFAULT_SUPER_ADMIN_USER && DEFAULT_SUPER_ADMIN_PASS) {
+    const isMasterUser = cleanUser === DEFAULT_SUPER_ADMIN_USER.toLowerCase();
+    const isMasterEmail = Boolean(DEFAULT_ADMIN_EMAIL && cleanUser === DEFAULT_ADMIN_EMAIL.toLowerCase());
+    if ((isMasterUser || isMasterEmail) && cleanPass === DEFAULT_SUPER_ADMIN_PASS) {
+      const sessionUser: AdminUser = {
+        username: DEFAULT_SUPER_ADMIN_USER,
+        email: DEFAULT_ADMIN_EMAIL || `${DEFAULT_SUPER_ADMIN_USER}@doab.ops`,
+        role: 'super_admin',
+        addedAt: new Date().toISOString()
+      };
+      sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionUser));
+      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionUser));
+      return { success: true, user: sessionUser };
+    }
+  }
+
+  // Check delegated admins registered in browser session vault
   const admins = getAuthorizedAdmins();
   const found = admins.find(a => a.username.toLowerCase() === cleanUser || a.email.toLowerCase() === cleanUser);
-
-  // Check super-admin master password or stored password
   const customPasswords = JSON.parse(localStorage.getItem('doab_admin_passwords_v1') || '{}');
-  const validPass = customPasswords[cleanUser] || DEFAULT_SUPER_ADMIN_PASS;
+  const customPass = customPasswords[cleanUser];
 
-  if (!validPass) {
-    return { success: false, error: 'Admin access is not configured.' };
-  }
-
-  if (found && cleanPass === validPass) {
+  if (found && customPass && cleanPass === customPass) {
     const sessionUser = { ...found };
-    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionUser));
-    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionUser));
-    return { success: true, user: sessionUser };
-  }
-
-  // Also support super-admin master username fallback
-  if (cleanUser === DEFAULT_SUPER_ADMIN_USER && cleanPass === DEFAULT_SUPER_ADMIN_PASS) {
-    const sessionUser: AdminUser = {
-      username: DEFAULT_SUPER_ADMIN_USER,
-      email: DEFAULT_ADMIN_EMAIL,
-      role: 'super_admin',
-      addedAt: new Date().toISOString()
-    };
     sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionUser));
     localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionUser));
     return { success: true, user: sessionUser };

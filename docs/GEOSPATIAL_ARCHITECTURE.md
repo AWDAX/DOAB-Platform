@@ -71,6 +71,22 @@ Every pin, risk boundary, and route displayed on top of the basemap is computed 
 - **API:** Browser native `navigator.geolocation.getCurrentPosition()`.
 - **Function:** Triangulates device GPS / Wi-Fi cell data to place the user's real live beacon and compute live distance (`haversineKm`) to the nearest hazard node.
 
+#### 5. Administrative & Municipal Ward Boundaries (Future Extension & Roadmap)
+- **Service Endpoint:** `GET /boundaries` (`services/prediction-api/app/boundaries.py`)
+- **Preferred Data Source:** UN FAO GAUL 2024 / Survey of India district and BBMP ward boundary polygons (`gaul2024_india.geojson`).
+- **Current Architecture & Hiding Rationale:**
+  - In local development and lightweight deployments where the full GAUL polygon dataset is absent, the backend returns a fallback rectangular pilot corridor bounding box (`PILOT_BBOX`: `min_lat: 12.60, max_lat: 13.30, min_lng: 77.30, max_lng: 77.90`).
+  - Previously, this was rendered via a `<GeoJSON>` layer on the map, producing an unexplained vertical rectangle outline over Bengaluru.
+  - To maintain a clean, professional, and seamless basemap presentation, this raw bounding box outline is **hidden by default** in `src/pages/MapPage.tsx`.
+- **Future Integration Plan:**
+  - When official civic boundaries (e.g. BBMP 198 ward polygons or national administrative boundaries) are bundled, re-enable the layer conditionally:
+    ```tsx
+    {boundaries && boundaries.source !== 'pilot_bbox' && (
+      <GeoJSON data={boundaries as never} style={() => ({ color: '#64748b', weight: 1.2, fillOpacity: 0.05 })} />
+    )}
+    ```
+  - An optional layer toggle will also be integrated into the map's Layers & Filter slide-over drawer so operators can toggle ward outlines on/off at will.
+
 ---
 
 ## 3. How Leaflet (2D Lite) Uses This Data

@@ -87,9 +87,20 @@ function buildLocalizedLiveContext(): { promptContext: string; nearestIncidents:
     `- ${s.incident.ward}: "${s.incident.title}" (${s.distKm.toFixed(1)} km away, Depth: ${s.incident.waterDepthCm || 45}cm, Severity: ${s.incident.severity})`
   ).join('\n');
 
+  // Commercial Fleet / Delivery Partner Context
+  let roleContextText = '';
+  try {
+    const userRole = localStorage.getItem('doab_user_role') || 'citizen';
+    const vendorId = localStorage.getItem('doab_vendor_id') || 'SWIGGY-BLR-9021';
+    if (userRole === 'delivery') {
+      roleContextText = `\n[COMMERCIAL DISPATCH & FLEET MODE ACTIVE]\n- User Role: Commercial Delivery Partner / Fleet Courier\n- Active Dispatch ID: ${vendorId}\n- Operational Rule: Prioritize roads with water depth <8.2 cm to protect two-wheeler/EV powertrain, exhaust, and parcel cargo integrity. Balance delivery SLA against flood detour gridlock.\n`;
+    }
+  } catch {}
+
   const promptContext = `
 [REAL-TIME GEOSPATIAL & TELEMETRY CONTEXT]
 - User Current GPS Location: ${activeLat.toFixed(4)}° N, ${activeLng.toFixed(4)}° E ${userLocation ? '(Live Verified GPS)' : '(Default Bengaluru Central Station)'}
+${roleContextText}
 - Nearest Reported Waterlogging & Inundation Hazards (Ground-Truth Sensor Matrix):
 ${nearestSummary}
 ${customRoutesText}
@@ -179,13 +190,22 @@ export function getSessionDraft(sessionId: string): string {
 }
 
 export function createFreshMissionSession(customId?: string): ChatSession {
+  let isDelivery = false;
+  let vendorId = 'SWIGGY-BLR-9021';
+  try {
+    isDelivery = localStorage.getItem('doab_user_role') === 'delivery';
+    vendorId = localStorage.getItem('doab_vendor_id') || 'SWIGGY-BLR-9021';
+  } catch {}
+
   return {
     id: customId || `mission-${Date.now()}`,
-    title: 'New Mission',
+    title: isDelivery ? 'Fleet Mission' : 'New Mission',
     messages: [{
       id: `msg-${Date.now()}`,
       role: 'assistant',
-      content: 'Namaste! Main aapka DOAB Civic Copilot hoon. Live GPS aur municipal waterlogging sensor telemetry active hai. Aap kisi bhi raaste ka haal, underpass waterlogging, ya safest bypass route pooch sakte hain.',
+      content: isDelivery
+        ? `Namaste Rider Partner (${vendorId})! Commercial Fleet Dispatch Copilot active hai. Live waterlogging depth (<8.2cm powertrain limit), parcel waterproofing alerts, aur zero-inundation delivery route guidance ke liye pooch sakte hain.`
+        : 'Namaste! Main aapka DOAB Civic Copilot hoon. Live GPS aur municipal waterlogging sensor telemetry active hai. Aap kisi bhi raaste ka haal, underpass waterlogging, ya safest bypass route pooch sakte hain.',
       timestamp: Date.now()
     }],
     updatedAt: Date.now()
@@ -389,7 +409,8 @@ Operational Directives:
    - Specifically name known high-risk waterlogging bottlenecks to avoid (e.g. underpasses with >30cm water).
    - Recommend elevated corridors, ring roads, or flyovers. State distance and safety probability clearly.
 2. Keep instructions crisp, reassuring, and bulleted for fast reading during travel.
-3. Prioritize life safety: warn against driving two-wheelers or low-clearance hatchbacks through standing water over 30cm.`;
+3. Prioritize life safety: warn against driving two-wheelers or low-clearance hatchbacks through standing water over 30cm.
+4. If Commercial Fleet / Delivery Partner mode is active, strictly prioritize courier SLA trade-offs against flood risks, enforce the 8.2cm powertrain water-depth clearance ceiling to prevent two-wheeler engine/exhaust damage, and advise on dry parcel compartment protection.`;
 
     try {
       let assistantReply = '';
@@ -478,8 +499,15 @@ Operational Directives:
       if (!assistantReply) {
         const lower = userText.toLowerCase();
         const primaryHazard = nearestIncidents[0];
+        const isDeliveryRole = typeof window !== 'undefined' && localStorage.getItem('doab_user_role') === 'delivery';
+        const vendorIdTag = (typeof window !== 'undefined' && localStorage.getItem('doab_vendor_id')) || 'SWIGGY-BLR-9021';
 
-        if (lower.includes('route') || lower.includes('path') || lower.includes('reach') || lower.includes('go to') || lower.includes('rasta') || lower.includes('raasta')) {
+        if (isDeliveryRole && (lower.includes('route') || lower.includes('path') || lower.includes('reach') || lower.includes('go to') || lower.includes('rasta') || lower.includes('raasta') || lower.includes('order') || lower.includes('delivery'))) {
+          assistantReply = `Ji Rider Partner (${vendorIdTag}), aapke delivery dispatch route (${locString}) ke hisaab se:
+• **Powertrain & Silencer Warning:** ${primaryHazard ? `${primaryHazard.ward} (${primaryHazard.title})` : 'Low-lying junctions'} mein paani ${primaryHazard?.waterDepthCm || 65}cm hai. Two-wheeler/EV exhaust intake stall ho sakta hai. Yeh raasta avoid karein.
+• **Cargo Safe Bypass:** Elevated Corridor / Main Arterial Flyover pakdein. Max water depth <8.2cm rahegi aur aapka parcel damage risk 0% rahega.
+• **SLA Estimation:** Is safe detour se 3-4 min extra lag sakte hain lekin bike aur order dono 100% safe rahenge.`;
+        } else if (lower.includes('route') || lower.includes('path') || lower.includes('reach') || lower.includes('go to') || lower.includes('rasta') || lower.includes('raasta')) {
           assistantReply = `Ji, aapki live location (${locString}) ke hisaab se:
 • **Caution Point:** ${primaryHazard ? `${primaryHazard.ward} (${primaryHazard.title})` : 'Koramangala/MG Road underpasses'} mein ${primaryHazard?.waterDepthCm || 65}cm paani bhara hua hai. Low-clearance gaadi bilkul na le jaayein.
 • **Safe Recommended Path:** Flyover ya Ring Road elevated arterial bypass pakdein — yeh elevated hain aur yahan water accumulation 0% hai.
