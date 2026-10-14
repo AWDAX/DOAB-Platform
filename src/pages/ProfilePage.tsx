@@ -107,7 +107,7 @@ export default function ProfilePage() {
     setLoading(true);
     await firebaseSignOut();
     setLoading(false);
-    navigate('/', { replace: true });
+    navigate('/login', { replace: true });
   };
 
   return (

@@ -66,16 +66,20 @@ function getClient(): LocationClient | null {
 export async function geocodePlace(
   query: string,
   maxResults = 5,
+  biasPosition?: [number, number], // [lng, lat]
 ): Promise<GeocodedPlace[]> {
   const client = getClient();
   if (!client || !query.trim()) return [];
 
+  // Normalize common phonetic variations (e.g. Shardha -> Sharda)
+  const normalizedText = query.replace(/\bshardha\b/gi, 'Sharda').trim();
+
   const input: SearchPlaceIndexForTextCommandInput = {
     IndexName: PLACE_INDEX,
-    Text: query.trim(),
+    Text: normalizedText,
     MaxResults: maxResults,
-    // Bias to India's geographic center so India results rank above international
-    BiasPosition: [78.9629, 20.5937], // [lng, lat] — ALS uses [lng, lat] order
+    // Bias to reference location (origin / GPS / map center) so closest places rank #1, like Google Maps
+    BiasPosition: biasPosition || [78.9629, 20.5937], // [lng, lat] — ALS uses [lng, lat] order
     FilterCountries: ['IND'],
   };
 
@@ -106,7 +110,10 @@ export async function geocodePlace(
  * Single best-match geocode — returns the top result or null.
  * Used by MapPage search bar for instant pan-to-location.
  */
-export async function geocodeSingle(query: string): Promise<GeocodedPlace | null> {
-  const results = await geocodePlace(query, 1);
+export async function geocodeSingle(
+  query: string,
+  biasPosition?: [number, number]
+): Promise<GeocodedPlace | null> {
+  const results = await geocodePlace(query, 1, biasPosition);
   return results[0] ?? null;
 }

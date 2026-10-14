@@ -873,3 +873,43 @@ html.dark.theme-drought .leaflet-tile {
   transform-origin: center;
 }
 
+/* Custom Neo-Glass Leaflet Tooltips for Incidents & Geocoded Points */
+.leaflet-tooltip.custom-incident-tooltip,
+.leaflet-tooltip.custom-geocoded-tooltip {
+  background: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.35rem 0.5rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(12px) !important;
+  opacity: 1 !important;
+}
+
+.leaflet-tooltip.custom-incident-tooltip::before,
+.leaflet-tooltip.custom-geocoded-tooltip::before {
+  border-top-color: var(--border-color) !important;
+}
+
+/* MapLibre 3D Custom Incident & Waypoint Popups (Identical to 2D Neo-Glass Tooltips) */
+.maplibregl-popup.maplibre-custom-incident-popup {
+  z-index: 50 !important;
+  pointer-events: none !important;
+}
+
+.maplibregl-popup.maplibre-custom-incident-popup .maplibregl-popup-content {
+  background: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.35rem 0.5rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.maplibregl-popup.maplibre-custom-incident-popup .maplibregl-popup-tip {
+  border-top-color: var(--bg-card) !important;
+  border-bottom-color: var(--bg-card) !important;
+}
+
+

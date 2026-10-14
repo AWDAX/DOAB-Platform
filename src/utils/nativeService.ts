@@ -37,6 +37,23 @@ export const NativeService = {
       if (Capacitor.isNativePlatform()) {
         const perm = await LocalNotifications.requestPermissions();
         if (perm.display === 'granted') {
+          // Pre-register channel to match native Android USAGE_ALARM channel
+          try {
+            await LocalNotifications.createChannel({
+              id: 'emergency_sos_channel',
+              name: 'Critical Emergency & SOS Broadcasts',
+              description: 'Life-critical disaster alerts and flood emergency beacon alarms (Bypasses DND)',
+              importance: 5, // IMPORTANCE_HIGH (4) / IMPORTANCE_MAX (5)
+              visibility: 1, // VISIBILITY_PUBLIC
+              sound: soundFileName,
+              vibration: true,
+              lights: true,
+              lightColor: '#EF4444'
+            });
+          } catch (chanErr) {
+            console.warn('Channel creation error (may already exist in Android native):', chanErr);
+          }
+
           await LocalNotifications.schedule({
             notifications: [
               {
@@ -45,6 +62,7 @@ export const NativeService = {
                 body: body || 'Emergency beacon triggered. Sending live telemetry.',
                 schedule: { at: new Date(Date.now() + 100) },
                 sound: soundFileName,
+                channelId: 'emergency_sos_channel',
                 actionTypeId: '',
                 extra: { isSos: soundFileName.includes('sos') }
               }

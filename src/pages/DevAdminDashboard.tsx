@@ -351,10 +351,10 @@ export default function DevAdminDashboard() {
             </div>
 
             {/* Section 2: Direct Emergency SOS Push Notification Dispatcher */}
-            <div className="md:col-span-2 p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-red-500/30 dark:border-red-500/30 shadow-md space-y-4">
+            <div className="md:col-span-2 p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-md space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-red-600 text-white shadow-sm">
+                  <div className="p-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm">
                     <Radio className="h-4 w-4" />
                   </div>
                   <div>
@@ -364,7 +364,7 @@ export default function DevAdminDashboard() {
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/25 font-bold uppercase tracking-wider">
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20 font-bold uppercase tracking-wider">
                   HIGH PRIORITY SOS
                 </span>
               </div>
@@ -426,12 +426,12 @@ export default function DevAdminDashboard() {
                     isCritical: true,
                   });
 
-                  showToast('Dispatched Emergency SOS Alert to all active phones & devices.');
+                  showToast('Dispatched Instant Push Notification (SOS) to all active devices.');
                 }}
-                className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 font-sans"
               >
                 <Send className="h-4 w-4" />
-                <span>🚨 Dispatch Emergency SOS Push Alert</span>
+                <span>Dispatch Instant Push Notification (SOS)</span>
               </button>
             </div>
 

@@ -44,6 +44,7 @@ DOAB is an **independently built civic disaster resilience platform**. The team 
 - Asserting real-world operational deployments that are simulated in the prototype.
 - Impersonating real official handles or setting false institutional credentials.
 - Claiming live custody or movement of real commercial funds unless using an explicitly labeled sandbox mode.
+- Never use phrases claiming non-existent registries or partnerships, such as "+ Civic Registry" or "Government Civic Registry". Always use clean, authentic provider names like "Amazon Location Service".
 
 **Required for public/indexed surfaces:**
 - Frame prototype and concept modules accurately as an advanced resilience architecture and simulation engine.

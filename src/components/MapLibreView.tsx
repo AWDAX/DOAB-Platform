@@ -36,6 +36,9 @@ interface MapLibreViewProps {
   clusters?: MapLibreCluster[];
   showHeatLayer?: boolean;
   selectedClusterKey?: string | null;
+  onMapClick?: (lat: number, lng: number) => void;
+  pathOrigin?: [number, number] | null;
+  pathDest?: [number, number] | null;
 }
 
 // Generate accurate circle polygon coordinates in [lng, lat] for hardware-accelerated 3D WebGL rendering
@@ -66,11 +69,15 @@ export default function MapLibreView({
   activeRouteGeometry,
   clusters = [],
   showHeatLayer = false,
-  selectedClusterKey = null
+  selectedClusterKey = null,
+  onMapClick,
+  pathOrigin = null,
+  pathDest = null
 }: MapLibreViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
   const currentStyleModeRef = useRef<boolean>(isDarkMode);
   const [bearing, setBearing] = useState<number>(-17.6);
   const [pitch, setPitch] = useState<number>(45);
@@ -408,7 +415,11 @@ export default function MapLibreView({
     const map = mapRef.current;
     if (!map) return;
 
-    // Clean previous markers cleanly
+    // Clean previous markers and active hover popups cleanly
+    if (hoverPopupRef.current) {
+      hoverPopupRef.current.remove();
+      hoverPopupRef.current = null;
+    }
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
@@ -425,18 +436,18 @@ export default function MapLibreView({
           <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
         </div>
       `;
-      userEl.title = 'Your Live GPS Location';
 
       const userPopup = new maplibregl.Popup({ 
         offset: 18, 
-        closeButton: false 
+        closeButton: false,
+        className: 'maplibre-custom-incident-popup'
       }).setHTML(`
-        <div style="padding: 6px 10px; font-family: monospace; font-size: 11px; border-radius: 10px; background: #0f172a; color: #ffffff; border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 4px 14px rgba(0,0,0,0.35);">
-          <div style="font-weight: bold; display: flex; align-items: center; gap: 6px; color: #38bdf8;">
+        <div style="padding: 4px; display: flex; flex-direction: column; gap: 2px; min-width: 140px;">
+          <div style="font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 6px; color: #38bdf8;">
             <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#38bdf8;"></span>
-            Your Real Live GPS Location
+            Live GPS Location
           </div>
-          <div style="font-size: 10px; color: #94a3b8; margin-top: 3px;">
+          <div style="font-size: 9px; font-family: monospace; color: var(--text-muted, #94a3b8); margin-top: 2px;">
             ${userLocation.lat.toFixed(4)}° N, ${userLocation.lng.toFixed(4)}° E
           </div>
         </div>
@@ -449,8 +460,7 @@ export default function MapLibreView({
       markersRef.current.push(userMarker);
     }
 
-    // Add incident markers with clear visibility and click dispatching
-    // Render all filtered incidents (up to 600) without artificial 150 clipping
+    // Add incident markers with custom neo-glass tooltips matching 2D Lite view
     incidents.forEach(incident => {
       const isSelected = selectedIncident?.id === incident.id;
       let dotColor = '#475569'; // Medium (Muted Steel Slate) default
@@ -468,7 +478,6 @@ export default function MapLibreView({
       el.style.pointerEvents = 'auto';
       el.style.cursor = "url('/cursors/hand-pointer.svg') 10 2, pointer";
       el.style.zIndex = isSelected ? '30' : '10';
-      el.title = `${incident.title} (${incident.severity})`;
 
       if (isSelected) {
         el.className = 'relative flex items-center justify-center';
@@ -505,13 +514,46 @@ export default function MapLibreView({
         `;
       }
 
+      const popupHtml = `
+        <div style="padding: 2px; display: flex; flex-direction: column; gap: 3px; min-width: 130px; max-width: 200px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; padding-bottom: 3px; border-bottom: 1px solid var(--border-color);">
+            <span style="font-size: 9px; font-family: monospace; font-weight: bold; padding: 1px 4px; border-radius: 4px; ${
+              incident.severity === 'Critical' ? 'background: rgba(225, 29, 72, 0.15); color: #f43f5e;' :
+              incident.severity === 'High' ? 'background: rgba(217, 119, 6, 0.15); color: #f59e0b;' :
+              'background: rgba(100, 116, 139, 0.15); color: #94a3b8;'
+            }">
+              ${incident.severity}
+            </span>
+            <span style="font-size: 9px; font-family: monospace; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90px;">
+              ${incident.ward || ''}
+            </span>
+          </div>
+          <span style="font-weight: 600; font-size: 10.5px; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; line-height: 1.2;">
+            ${incident.title}
+          </span>
+          ${incident.waterDepthCm ? `<span style="font-size: 9px; font-family: monospace; color: var(--text-main); font-weight: bold;">~${incident.waterDepthCm}cm Water Depth</span>` : ''}
+        </div>
+      `;
+
+      const popup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: [0, -12],
+        className: 'maplibre-custom-incident-popup'
+      }).setHTML(popupHtml);
+
       el.addEventListener('mouseenter', () => {
+        if (hoverPopupRef.current) hoverPopupRef.current.remove();
+        popup.setLngLat([incident.lng, incident.lat]).addTo(map);
+        hoverPopupRef.current = popup;
         try {
           map.getCanvas().style.cursor = "url('/cursors/hand-pointer.svg') 10 2, pointer";
         } catch (_) {}
       });
 
       el.addEventListener('mouseleave', () => {
+        popup.remove();
+        if (hoverPopupRef.current === popup) hoverPopupRef.current = null;
         try {
           map.getCanvas().style.cursor = "url('/cursors/default_cursor.svg') 6 3, default";
         } catch (_) {}
@@ -519,6 +561,8 @@ export default function MapLibreView({
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
+        popup.remove();
+        if (hoverPopupRef.current === popup) hoverPopupRef.current = null;
         onSelectIncident(incident);
       });
 
@@ -528,6 +572,104 @@ export default function MapLibreView({
 
       markersRef.current.push(marker);
     });
+
+    // Add Waypoint A (Origin Pin) in 3D Map
+    if (pathOrigin) {
+      const originEl = document.createElement('div');
+      originEl.style.width = '28px';
+      originEl.style.height = '28px';
+      originEl.style.display = 'flex';
+      originEl.style.alignItems = 'center';
+      originEl.style.justifyContent = 'center';
+      originEl.style.zIndex = '35';
+      originEl.style.cursor = "url('/cursors/hand-pointer.svg') 10 2, pointer";
+      originEl.innerHTML = `
+        <div style="width:22px; height:22px; border-radius:8px; background:#171717; border:2px solid #ffffff; box-shadow:0 3px 10px rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:11px; font-weight:800; font-family:monospace;">
+          A
+        </div>
+      `;
+
+      const originPopup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: [0, -14],
+        className: 'maplibre-custom-incident-popup'
+      }).setHTML(`
+        <div style="padding: 2px; display: flex; flex-direction: column; gap: 2px; min-width: 120px;">
+          <div style="font-weight: 700; font-size: 11px; color: var(--text-main); display: flex; align-items: center; gap: 4px;">
+            <span style="display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:4px; background:#171717; color:#ffffff; font-size:9px; font-weight:800;">A</span>
+            Point A (Origin)
+          </div>
+          <div style="font-size: 9px; font-family: monospace; color: var(--text-muted);">
+            ${pathOrigin[0].toFixed(4)}° N, ${pathOrigin[1].toFixed(4)}° E
+          </div>
+        </div>
+      `);
+
+      originEl.addEventListener('mouseenter', () => {
+        if (hoverPopupRef.current) hoverPopupRef.current.remove();
+        originPopup.setLngLat([pathOrigin[1], pathOrigin[0]]).addTo(map);
+        hoverPopupRef.current = originPopup;
+      });
+      originEl.addEventListener('mouseleave', () => {
+        originPopup.remove();
+        if (hoverPopupRef.current === originPopup) hoverPopupRef.current = null;
+      });
+
+      const originMarker = new maplibregl.Marker({ element: originEl })
+        .setLngLat([pathOrigin[1], pathOrigin[0]])
+        .addTo(map);
+      markersRef.current.push(originMarker);
+    }
+
+    // Add Waypoint B (Destination Pin) in 3D Map
+    if (pathDest) {
+      const destEl = document.createElement('div');
+      destEl.style.width = '28px';
+      destEl.style.height = '28px';
+      destEl.style.display = 'flex';
+      destEl.style.alignItems = 'center';
+      destEl.style.justifyContent = 'center';
+      destEl.style.zIndex = '35';
+      destEl.style.cursor = "url('/cursors/hand-pointer.svg') 10 2, pointer";
+      destEl.innerHTML = `
+        <div style="width:22px; height:22px; border-radius:8px; background:#171717; border:2px solid #ffffff; box-shadow:0 3px 10px rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:11px; font-weight:800; font-family:monospace;">
+          B
+        </div>
+      `;
+
+      const destPopup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: [0, -14],
+        className: 'maplibre-custom-incident-popup'
+      }).setHTML(`
+        <div style="padding: 2px; display: flex; flex-direction: column; gap: 2px; min-width: 120px;">
+          <div style="font-weight: 700; font-size: 11px; color: var(--text-main); display: flex; align-items: center; gap: 4px;">
+            <span style="display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:4px; background:#171717; color:#ffffff; font-size:9px; font-weight:800;">B</span>
+            Point B (Destination)
+          </div>
+          <div style="font-size: 9px; font-family: monospace; color: var(--text-muted);">
+            ${pathDest[0].toFixed(4)}° N, ${pathDest[1].toFixed(4)}° E
+          </div>
+        </div>
+      `);
+
+      destEl.addEventListener('mouseenter', () => {
+        if (hoverPopupRef.current) hoverPopupRef.current.remove();
+        destPopup.setLngLat([pathDest[1], pathDest[0]]).addTo(map);
+        hoverPopupRef.current = destPopup;
+      });
+      destEl.addEventListener('mouseleave', () => {
+        destPopup.remove();
+        if (hoverPopupRef.current === destPopup) hoverPopupRef.current = null;
+      });
+
+      const destMarker = new maplibregl.Marker({ element: destEl })
+        .setLngLat([pathDest[1], pathDest[0]])
+        .addTo(map);
+      markersRef.current.push(destMarker);
+    }
   };
 
   // Map initialization
@@ -576,6 +718,24 @@ export default function MapLibreView({
       clearTimeout(r2);
       map.remove();
       mapRef.current = null;
+    };
+  }, []);
+
+  // Register interactive map click handler for waypoint picking
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const clickHandler = (e: maplibregl.MapMouseEvent) => {
+      if (onMapClickRef.current) {
+        onMapClickRef.current(e.lngLat.lat, e.lngLat.lng);
+      }
+    };
+    map.on('click', clickHandler);
+    return () => {
+      map.off('click', clickHandler);
     };
   }, []);
 
@@ -678,7 +838,7 @@ export default function MapLibreView({
     if (!map) return;
 
     syncMarkers();
-  }, [incidents, selectedIncident, envMode, userLocation]);
+  }, [incidents, selectedIncident, envMode, userLocation, pathOrigin, pathDest]);
 
   const handleZoomIn = () => {
     playClick();

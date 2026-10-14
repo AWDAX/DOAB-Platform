@@ -1,7 +1,7 @@
 # Developer Session State & Next Agent Execution Directive
 
 **Current Branch:** `frontend` (merged & synced with `main`)  
-**Last Updated:** October 13, 2026  
+**Last Updated:** October 14, 2026  
 **Primary Next Plan Documents:** 
 1. 🎯 **Immediate Present Plan:** [`docs/BACKEND_SERVING_AND_LAMBDA_ARCHITECTURE.md`](./BACKEND_SERVING_AND_LAMBDA_ARCHITECTURE.md) (RDS PostgreSQL Seeder, FastAPI Viewport Endpoint, AWS Lambda IMD Ingestion)
 2. 🗺️ **National Grid & Weather Roadmap:** [`docs/FUTURE_NATIONAL_GRID_IMD_PLAN.md`](./FUTURE_NATIONAL_GRID_IMD_PLAN.md) (Uber H3, 1,405 IMD Stations, Temporal Decay Half-Life)
@@ -23,6 +23,80 @@ Do NOT invent alternative architectures or revert to unverified scrapers. Follow
 - **Live Production App & Native APK:** Built, verified, and synced across all 4 `DOAB-APP.apk` deliverable locations.
 - **Data Parity:** ~450–600 stratified nationwide incident pins across 20+ states and 40 macro cluster halos are live on both localhost and production (`doab.sahnirmaan.live`).
 - **Routing Engine:** Offline SRTM digital elevation solver fallback active in `BestRoutesPage.tsx` providing ranked corridors (8.2%, 16.5%, 44.8% risk).
+- **Interactive Safe Path Creator:** Fully draggable, speech-enabled, OSRM/DEM-evaluated 3-tier corridor system with dual-surface evaluation loaders and instant in-memory route caching.
+
+---
+
+## 🚀 Completed Session: Live Interactive Risk Routing, Speech Recognition, Memory Caching & Draggable Architecture (October 14, 2026)
+
+### 1. Search Autocomplete Anti-Jitter & Stable Layout (`MapPage.tsx`)
+- **Problem:** Dynamic population of place suggestions caused unpredictable container expansion, rapid card shifting, and visual jitter while users typed.
+- **Solution:** Restructured the search flyout into a positioned dropdown with fixed vertical clamping (`max-h-48 overflow-y-auto`), backdrop blur, elevated `z-50` layering, and smooth entry animations, preventing layout displacement of the underlying controls.
+
+### 2. Multimodal Voice Landmark / Address Input (HTML5 SpeechRecognition) (`MapPage.tsx`, `VoiceAssistant.tsx`)
+- **Problem:** Typing vernacular landmark names or long addresses in emergency conditions or on mobile screens was slow and error-prone.
+- **Solution:** Integrated native HTML5 SpeechRecognition across:
+  - **Waypoint A (Origin)** search input.
+  - **Waypoint B (Safe Destination)** search input.
+  - **Live Risk Monitor** global search input.
+- **Ergonomics:** Added minimalist microphone action buttons (`Mic`), pulsing listening indicators (`isListeningTarget`), speech-to-text string normalization, and graceful toast fallbacks for unsupported browsers.
+
+### 3. Custom Path Naming & In-Place Route Editing (`MapPage.tsx`, `BestRoutesPage.tsx`)
+- **Problem:** Custom-created routes were automatically assigned rigid coordinate strings (e.g. `Safe Corridor to Map Point B (28.4825° N...)`), giving users no way to personalize routes or update names after saving.
+- **Solution:**
+  - Added an inline `Route Name` input inside the "Create Safe Elevation Path" panel with dynamic contextual placeholders based on parsed landmark labels (e.g. `Knowledge Park to Punjab` or `Safe Corridor to Sharda Hospital`).
+  - Added in-place route renaming directly inside `BestRoutesPage.tsx` with instant localStorage persistence across all saved route records.
+
+### 4. Incident Tooltip Color Harmonization & 3D MapLibre Support (`MapPage.tsx`, `MapLibreView.tsx`, `src/index.css`)
+- **Problem:** Incident marker tooltips used default blue text clashing with our theme tokens, and tooltips failed to display in the 3D MapLibre GPU terrain view.
+- **Solution:**
+  - Calibrated tooltip typography and borders to match `--color-brand-accent` / `--text-main`.
+  - Implemented custom HTML hover popups for 3D MapLibre with pointer-events pass-through and altitude offset calibration so incident cards render crisply in 3D perspective tilts.
+
+### 5. Amazon Location Service Suggestion Precision & Proximity Biasing (`MapPage.tsx`, `src/lib/amazonLocation.ts`)
+- **Problem:** Searching "Sharda Hospital" suggested "Knowledge Park" without displaying the landmark name, or surfaced identical place names from distant Indian states.
+- **Solution:**
+  - Overhauled suggestion label resolution: `place.label.split(',')[0].trim()` is prioritized as the primary title, while municipality and state are rendered as subtitles.
+  - Biased geocoding API queries using active GPS coordinates (or current map viewport center) so proximate landmarks appear first.
+
+### 6. Dropdown Outside-Click Dismissal & Keyboard Navigation (`MapPage.tsx`)
+- **Problem:** Search dropdowns remained open after place selection or outside clicks, cluttering the map.
+- **Solution:** Enforced click-outside listeners via React `useRef`, auto-collapsed suggestions on selection, and added keyboard <kbd>Enter</kbd> support to immediately select the top suggestion.
+
+### 7. Zero-Lag In-Memory Route Geometry Caching (`MapPage.tsx`)
+- **Problem:** Switching transit modes or re-evaluating the same origin/destination pair triggered redundant OSRM network requests and recalculations.
+- **Solution:** Implemented `routeGeometryCache` Map storing calculated road network geometries keyed by `${startLng},${startLat}->${endLng},${endLat}:${profile}`, delivering instant (<1ms) corridor switching.
+
+### 8. Draggable Map Panels with Framer Motion (`MapPage.tsx`)
+- **Problem:** Floating command panels obstructed map inspection on tablet and desktop screens.
+- **Solution:** Implemented gesture-based drag positioning with `dragControls` (`createPathDragControls`, `liveRiskDragControls`), visual `<GripHorizontal />` handles, and boundary containment (`dragConstraints={mapParentRef}`).
+
+### 9. Automatic Waypoint Deselection (`MapPage.tsx`)
+- **Problem:** Accidental map taps moved already-placed points A and B.
+- **Solution:** Once both waypoints are selected, map picking automatically locks (`setPathPickingTarget(null)`). Users must explicitly tap "Origin Point" or "Safe Destination" to reposition a point.
+
+### 10. Saved Route Tombstone Filtering Fix (`BestRoutesPage.tsx`, `MapPage.tsx`)
+- **Problem:** Custom coordinate-only routes were not appearing in Saved Routes because `doab_deleted_route_summaries` tombstoned generic route strings like `Safe Corridor`.
+- **Solution:** Generated unique collision-free route identifiers, un-tombstoned newly created routes, and guaranteed persistent display in `BestRoutesPage.tsx`.
+
+### 11. Live Risk Monitor Ergonomics & Direct Route Trigger (`MapPage.tsx`)
+- **Problem:** Live Risk Monitor header was cramped, and selecting a place required an extra "Compute Safe Path" button click.
+- **Solution:**
+  - Expanded panel width to `sm:w-[420px] md:w-[450px]` for ample breathing room.
+  - Removed redundant manual buttons.
+  - Selecting any search suggestion directly opens the Safe Elevation Path panel with Point B set and Point A defaulted to user location.
+
+### 12. Search Flyout Click Interception Root Cause & Fix (`MapPage.tsx`)
+- **Problem:** Clicking suggestions in Live Risk Monitor didn't trigger Create Safe Elevation Path.
+- **Root Cause:** The suggestions container was rendered outside `alsDropdownRef`. Document `mousedown` fired first, causing the click-outside handler to wipe `alsSuggestions` and unmount the button before `onClick` could execute.
+- **Solution:** Enclosed the suggestions dropdown inside `alsDropdownRef`, added `onMouseDown={(e) => e.preventDefault()}`, and added keyboard <kbd>Enter</kbd> support.
+
+### 13. Route Evaluation Lifecycle & Dual-Surface Progress Loaders (`MapPage.tsx`)
+- **Problem:** User requested not to show un-evaluated paths (Safest, Balanced, Direct), but rather to show an appropriate loader while evaluation runs.
+- **Solution:**
+  - Introduced `isEvaluatingRoutes` state. Gated candidate routes on the map and in the card with `!isEvaluatingRoutes`.
+  - Designed a sleek evaluation loader in the panel with a spinner, `DEM + AI` badge, telemetry assessment subtitle, and animated smooth progress bar.
+  - Added a floating map evaluation pill at the bottom of the viewport so users have clear visual feedback on both surfaces.
 
 ---
 

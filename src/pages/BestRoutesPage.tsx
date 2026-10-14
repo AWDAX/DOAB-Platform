@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Route as RouteIcon, Navigation2, Activity, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink, MapPin, ThumbsUp, ThumbsDown, Star, RefreshCw, Truck, ShieldCheck, Box } from 'lucide-react';
+import { Route as RouteIcon, Navigation2, Activity, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink, MapPin, ThumbsUp, ThumbsDown, Star, RefreshCw, Truck, ShieldCheck, Box, Pencil } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
@@ -143,12 +143,23 @@ export default function BestRoutesPage() {
   const [deletedSummaries, setDeletedSummaries] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('doab_deleted_route_summaries');
-      return saved ? JSON.parse(saved) : [];
+      const parsed: string[] = saved ? JSON.parse(saved) : [];
+      // Clean up tombstones: If a route is actively in custom created routes, it should never be masked as deleted!
+      const customSaved = localStorage.getItem('doab_custom_created_routes');
+      const customParsed: RouteOption[] = customSaved ? JSON.parse(customSaved) : [];
+      const customSet = new Set(customParsed.map(r => r.summary?.trim()));
+      const cleaned = parsed.filter(s => !customSet.has(s.trim()));
+      if (cleaned.length !== parsed.length) {
+        localStorage.setItem('doab_deleted_route_summaries', JSON.stringify(cleaned));
+      }
+      return cleaned;
     } catch {
       return [];
     }
   });
   const [routePendingDelete, setRoutePendingDelete] = useState<{ summary: string } | null>(null);
+  const [routePendingRename, setRoutePendingRename] = useState<RouteOption | null>(null);
+  const [newRenameValue, setNewRenameValue] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [customOrigin, setCustomOrigin] = useState('');
   const [customDest, setCustomDest] = useState('');
@@ -229,7 +240,11 @@ export default function BestRoutesPage() {
   }
 
   const availableRoutes = uniqueRoutes.filter((r) => !deletedSummaries.includes(r.summary));
-  const savedSummaries = new Set(savedOfflineRoutes.map((r) => r.summary?.trim()));
+  const customSummaries = new Set(customRoutes.map((r) => r.summary?.trim()));
+  const savedSummaries = new Set([
+    ...savedOfflineRoutes.map((r) => r.summary?.trim()),
+    ...customSummaries,
+  ]);
   const routes = showSavedOnly
     ? availableRoutes.filter((r) => savedSummaries.has(r.summary?.trim()))
     : availableRoutes;
@@ -366,6 +381,36 @@ export default function BestRoutesPage() {
     setRoutePendingDelete(null);
   };
 
+  // Handler to rename a route in customRoutes & savedOfflineRoutes
+  const handleRenameRoute = (oldSummary: string, newSummary: string) => {
+    const trimmed = newSummary.trim();
+    if (!trimmed || oldSummary === trimmed) {
+      setRoutePendingRename(null);
+      return;
+    }
+    playClick();
+
+    // 1. Update custom routes
+    const updatedCustom = customRoutes.map((r) =>
+      r.summary === oldSummary ? { ...r, summary: trimmed } : r
+    );
+    setCustomRoutes(updatedCustom);
+    localStorage.setItem('doab_custom_created_routes', JSON.stringify(updatedCustom));
+
+    // 2. Update offline saved routes
+    setSavedOfflineRoutes((prev) => {
+      const next = prev.map((r) =>
+        r.summary === oldSummary ? { ...r, summary: trimmed } : r
+      );
+      try {
+        localStorage.setItem(OFFLINE_ROUTES_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    setRoutePendingRename(null);
+  };
+
   // Handler to create a custom safe computed path
   const handleCreateCustomPath = (e: React.FormEvent) => {
     e.preventDefault();
@@ -395,6 +440,15 @@ export default function BestRoutesPage() {
     const updated = [newRoute, ...customRoutes];
     setCustomRoutes(updated);
     localStorage.setItem('doab_custom_created_routes', JSON.stringify(updated));
+
+    // Also un-delete if it was previously marked deleted
+    setDeletedSummaries((prev) => {
+      const next = prev.filter((s) => s !== newRoute.summary);
+      try {
+        localStorage.setItem('doab_deleted_route_summaries', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     // Reset form
     setCustomOrigin('');
@@ -810,6 +864,19 @@ export default function BestRoutesPage() {
                         </button>
                         <button
                           type="button"
+                          onClick={() => {
+                            playClick();
+                            setRoutePendingRename(route);
+                            setNewRenameValue(route.summary);
+                          }}
+                          className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                          title="Rename safe route"
+                          aria-label="Rename safe route"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => promptDeleteRoute(route)}
                           className="p-1.5 rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                           title="Delete this safe path"
@@ -869,6 +936,19 @@ export default function BestRoutesPage() {
                       ) : (
                         <Share2 className="h-4 w-4" />
                       )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        setRoutePendingRename(route);
+                        setNewRenameValue(route.summary);
+                      }}
+                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                      title="Rename safe route"
+                      aria-label="Rename safe route"
+                    >
+                      <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
@@ -1209,6 +1289,71 @@ export default function BestRoutesPage() {
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* ── Route Rename Modal ── */}
+      {routePendingRename && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl w-full max-w-md p-5 sm:p-6 shadow-2xl space-y-4">
+            <div className="flex items-start justify-between border-b border-[var(--border-color)] pb-3.5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-neutral-500/10 border border-[var(--border-color)] text-[var(--text-main)] flex items-center justify-center shrink-0">
+                  <Pencil className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-[var(--text-main)]">Rename Safe Route</h3>
+                  <p className="text-xs text-[var(--text-muted)]">Give this evacuation corridor a custom identifiable label</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRoutePendingRename(null)}
+                className="p-1.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleRenameRoute(routePendingRename.summary, newRenameValue);
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="text-xs font-mono font-semibold text-[var(--text-muted)] block mb-1.5">
+                  Route Custom Name
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={newRenameValue}
+                  onChange={(e) => setNewRenameValue(e.target.value)}
+                  placeholder="e.g. Home to Sector 4 High Ground"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-sm text-[var(--text-main)] focus:outline-hidden focus:border-[var(--text-main)] transition-colors"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-[var(--border-color)]">
+                <button
+                  type="button"
+                  onClick={() => setRoutePendingRename(null)}
+                  className="px-4 py-2 rounded-xl border border-[var(--border-color)] text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newRenameValue.trim()}
+                  className="px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-xs font-bold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                >
+                  Save Name
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

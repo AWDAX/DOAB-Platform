@@ -442,15 +442,17 @@ export default function VoiceAssistant() {
   const activeOrbState = isListening ? 'listening' : isThinking ? 'thinking' : 'idle';
   const currentSuggestion = ROTATING_SUGGESTIONS[suggestionIdx];
 
+  const searchParams = new URLSearchParams(location.search);
+  const isCreatePathMode = searchParams.get('mode') === 'create_path';
   const isOnAssistantPage = location.pathname === '/assistant';
-  const isOnMapPage = location.pathname === '/';
+  const isOnMapPage = location.pathname === '/' || location.pathname === '/map' || location.pathname.startsWith('/map');
   const isAuthOrLanding = location.pathname === '/login' || location.pathname === '/landing' || location.pathname === '/team';
-  const shouldHideOrb = isOnAssistantPage || isOnMapPage || isAuthOrLanding || isOpen;
+  const shouldHideOrb = isOnAssistantPage || isOnMapPage || isCreatePathMode || isAuthOrLanding || isOpen;
 
   return (
     <>
       {/* Touch & Desktop Draggable Floating Action Button (AI Orb FAB) */}
-      {!isOnAssistantPage && !isAuthOrLanding && (
+      {!isOnAssistantPage && !isAuthOrLanding && !isOnMapPage && !isCreatePathMode && (
         <motion.button 
           id="tour-ai-copilot"
           drag
