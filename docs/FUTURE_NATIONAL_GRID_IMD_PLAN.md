@@ -1,9 +1,13 @@
 # DOAB: Future National Grid & Real-Time IMD Architecture Plan
 
-**Document Version:** 1.0.0  
+**Document Version:** 1.1.0  
 **Project:** DOAB (Detect → Order → Alert → Back-check)  
-**Date:** October 12, 2026  
-**Status:** Approved Architectural Roadmap (Future Plan & Hackathon Demo Blueprint)
+**Date:** October 15, 2026  
+**Status:** In Active Production (Phase 1 Implemented & Deployed; Phase 2-5 Grid Roadmap)
+
+> [!NOTE]
+> **Implementation Milestone (October 15, 2026):**
+> Phase 1 (IMD Real-Time REST Client, KD-Tree nearest station resolution across 1,405 stations, 24h rainfall cycle parsing, Doppler radar nowcasts, and 7-day NWP outlook drawer) is fully implemented and live in `services/prediction-api/app/imd.py`, `src/data/stationRegistry.ts`, and `src/pages/MapPage.tsx`.
 
 ---
 
