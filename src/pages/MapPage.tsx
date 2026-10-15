@@ -884,12 +884,19 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const defaultCenter: [number, number] = DEFAULT_NATIONAL_CENTER;
   const [userCoords, setUserCoords] = useState<[number, number]>(() => mapSessionState.userCoords);
   const [hasRealLocation, setHasRealLocation] = useState<boolean>(() => mapSessionState.hasRealLocation);
+  const [isLocating, setIsLocating] = useState(false);
+  const [isViewingMyLocation, setIsViewingMyLocation] = useState<boolean>(() => mapSessionState.isViewingMyLocation);
 
   const [mapCenter, setMapCenter] = useState<[number, number]>(() => mapSessionState.mapCenter);
   const [mapZoom, setMapZoom] = useState<number>(() => mapSessionState.mapZoom);
 
   const forecastCoords = useMemo(() => {
-    // If a specific state is chosen in the combobox or multi-select, use that state's geographic center for regional telemetry
+    // 1. If user explicitly tapped "Locate Me" or is tracking live position, prioritize GPS
+    if (isViewingMyLocation && hasRealLocation) {
+      return { lat: userCoords[0], lng: userCoords[1] };
+    }
+
+    // 2. If a specific state is chosen in the combobox or multi-select, use that state's geographic center for regional telemetry
     const activeStateVal = isMultiStateMode && selectedStates.length > 0 
       ? selectedStates[selectedStates.length - 1] 
       : selectedState;
@@ -900,22 +907,28 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         return { lat: reg.center[0], lng: reg.center[1] };
       }
     }
+
+    // 3. If in All-India mode and present live location is available, use user's GPS coordinates
     if (hasRealLocation && (userCoords[0] !== DEFAULT_NATIONAL_CENTER[0] || userCoords[1] !== DEFAULT_NATIONAL_CENTER[1])) {
       return { lat: userCoords[0], lng: userCoords[1] };
     }
-    // If map is focused on a specific city or region:
+
+    // 4. If map is focused on a specific city or region:
     if (Math.abs(mapCenter[0] - DEFAULT_NATIONAL_CENTER[0]) > 0.4 || Math.abs(mapCenter[1] - DEFAULT_NATIONAL_CENTER[1]) > 0.4) {
       return { lat: mapCenter[0], lng: mapCenter[1] };
     }
     return null;
-  }, [selectedState, isMultiStateMode, selectedStates, hasRealLocation, userCoords, mapCenter]);
+  }, [isViewingMyLocation, selectedState, isMultiStateMode, selectedStates, hasRealLocation, userCoords, mapCenter]);
 
   const activeStateParam = useMemo(() => {
+    if (isViewingMyLocation && hasRealLocation) {
+      return undefined;
+    }
     if (isMultiStateMode && selectedStates.length > 0) {
       return selectedStates[selectedStates.length - 1];
     }
     return selectedState !== 'all' ? selectedState : undefined;
-  }, [isMultiStateMode, selectedStates, selectedState]);
+  }, [isViewingMyLocation, hasRealLocation, isMultiStateMode, selectedStates, selectedState]);
 
   const { forecast, incidents: apiIncidents, boundaries, imdTelemetry, status, usingDemo, reload } = useForecast({
     state: activeStateParam,
@@ -1097,8 +1110,6 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     return matched.slice(0, isNative ? 60 : 600);
   }, [severityFilter, deferredDestination, incidentSource, selectedState, isMultiStateMode, selectedStates, envMode]);
 
-  const [isLocating, setIsLocating] = useState(false);
-  const [isViewingMyLocation, setIsViewingMyLocation] = useState<boolean>(() => mapSessionState.isViewingMyLocation);
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Sync map viewport and location state into session memory so switching pages never resets or re-triggers initial zoom

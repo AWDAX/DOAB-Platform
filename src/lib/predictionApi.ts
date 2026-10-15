@@ -106,12 +106,35 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function fetchForecast(signal?: AbortSignal): Promise<ForecastResponse> {
+export interface ForecastQueryOptions {
+  min_lat?: number;
+  max_lat?: number;
+  min_lng?: number;
+  max_lng?: number;
+  coords?: { lat: number; lng: number } | null;
+}
+
+export function fetchForecast(optionsOrSignal?: ForecastQueryOptions | AbortSignal, maybeSignal?: AbortSignal): Promise<ForecastResponse> {
+  const signal = optionsOrSignal instanceof AbortSignal ? optionsOrSignal : maybeSignal;
+  const options = optionsOrSignal instanceof AbortSignal ? undefined : optionsOrSignal;
+
+  let min_lat = options?.min_lat;
+  let max_lat = options?.max_lat;
+  let min_lng = options?.min_lng;
+  let max_lng = options?.max_lng;
+
+  if (min_lat === undefined && options?.coords) {
+    min_lat = Number((options.coords.lat - 0.35).toFixed(2));
+    max_lat = Number((options.coords.lat + 0.35).toFixed(2));
+    min_lng = Number((options.coords.lng - 0.30).toFixed(2));
+    max_lng = Number((options.coords.lng + 0.30).toFixed(2));
+  }
+
   const params = new URLSearchParams({
-    min_lat: '12.60',
-    max_lat: '13.30',
-    min_lng: '77.30',
-    max_lng: '77.90',
+    min_lat: String(min_lat ?? '12.60'),
+    max_lat: String(max_lat ?? '13.30'),
+    min_lng: String(min_lng ?? '77.30'),
+    max_lng: String(max_lng ?? '77.90'),
   });
   return getJson<ForecastResponse>(`/forecast?${params.toString()}`, signal);
 }
