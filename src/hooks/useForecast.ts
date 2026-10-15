@@ -10,6 +10,7 @@ import {
   type HistoricalIncident,
   type ImdTelemetry,
 } from '../lib/predictionApi';
+import { resolveImdStationId } from '../data/stationRegistry';
 
 export type ForecastStatus = 'loading' | 'ready' | 'empty' | 'error' | 'insufficient';
 
@@ -53,7 +54,12 @@ const FALLBACK_INCIDENTS: HistoricalIncident[] = [
   { id: 'fb-12', lat: 12.9890, lng: 77.6975, time: '2024-09-05T07:10:00', category: 'Mahadevapura Ring Road Railway Culvert', source: 'calibrated_pilot_hotspots', kind: 'historical_complaint' },
 ];
 
-export function useForecast() {
+export interface UseForecastOptions {
+  state?: string;
+  coords?: { lat: number; lng: number } | null;
+}
+
+export function useForecast(options?: UseForecastOptions) {
   const [forecast, setForecast] = useState<ForecastResponse | null>(null);
   const [incidents, setIncidents] = useState<HistoricalIncident[]>(FALLBACK_INCIDENTS);
   const [boundaries, setBoundaries] = useState<BoundaryCollection | null>(FALLBACK_BOUNDARIES);
@@ -61,14 +67,28 @@ export function useForecast() {
   const [status, setStatus] = useState<ForecastStatus>('loading');
   const [usingDemo, setUsingDemo] = useState(false);
 
+  const stateParam = options?.state;
+  const latParam = options?.coords?.lat;
+  const lngParam = options?.coords?.lng;
+
   const reload = useCallback(async (signal?: AbortSignal) => {
     setStatus('loading');
     try {
+      const resolvedStationId = resolveImdStationId(
+        stateParam,
+        latParam !== undefined && lngParam !== undefined ? { lat: latParam, lng: lngParam } : null
+      );
+
       const [forecastRes, incidentsRes, boundariesRes, imdRes] = await Promise.allSettled([
         fetchForecast(signal),
         fetchIncidents(signal),
         fetchBoundaries(signal),
-        fetchImdTelemetry('43295', signal),
+        fetchImdTelemetry({
+          stationId: resolvedStationId,
+          state: stateParam,
+          lat: latParam,
+          lng: lngParam,
+        }, signal),
       ]);
       if (signal?.aborted) return;
 
@@ -104,12 +124,31 @@ export function useForecast() {
       setUsingDemo(true);
       setStatus('insufficient');
     }
-  }, []);
+  }, [stateParam, latParam, lngParam]);
 
   useEffect(() => {
     const controller = new AbortController();
     void reload(controller.signal);
-    return () => controller.abort();
+
+    // 60-second background polling for live incidents and IMD observations
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void reload();
+      }
+    }, 60000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void reload();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      controller.abort();
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [reload]);
 
   const stale = forecast ? isStale(forecast.generated_at, forecast.stale_after_seconds) : false;

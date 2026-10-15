@@ -31,12 +31,12 @@
   }
 
   .dark {
-    /* FLOOD THEME: Sea Porcelain Blur (Dark Mode) */
-    --bg-main: #0A1118;         /* Abyssal Canvas */
-    --bg-card: #101A24;         /* Frosted Navy Card */
+    /* FLOOD THEME: Sea Porcelain Blur (Dark Mode) - Luminous Oceanic Elevation */
+    --bg-main: #0E1724;         /* Deep Oceanic Canvas */
+    --bg-card: #162436;         /* Elevated Frosted Navy Card (High Contrast & Visibility) */
     --text-main: #E0F2FE;       /* Light Sea Foam */
     --text-muted: #94A3B8;
-    --border-color: rgba(14, 165, 233, 0.15); /* Glassy Aqua Border */
+    --border-color: rgba(56, 189, 248, 0.20); /* Glassy Specular Aqua Border */
     --color-brand-accent: #38BDF8; /* Neon Aqua */
     --danger-text: #FB7185;        /* Soft Neon Rose */
     --danger-bg: rgba(251, 113, 133, 0.08);

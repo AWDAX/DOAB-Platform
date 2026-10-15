@@ -11,8 +11,13 @@ from pydantic import BaseModel, Field
 
 from .boundaries import load_boundaries
 from .config import PILOT_BBOX, get_settings
-from .imd import get_imd_telemetry, search_imd_stations
+from .imd import get_imd_telemetry, search_imd_stations, resolve_station
 from .incidents import load_and_clean
+from .live_civic import (
+    fetch_live_gmda_incidents,
+    fetch_live_ndma_alerts,
+    get_all_live_civic_data,
+)
 from .national_labels import clean_national_labels
 from .predict import forecast_area, model_status
 from .routing import recommend_routes
@@ -199,9 +204,20 @@ def incidents(limit: int = 50) -> dict:
 
 
 @app.get("/imd/telemetry")
+def imd_telemetry(
+    station_id: str | None = None,
+    lat: float | None = None,
+    lng: float | None = None,
+    state: str | None = None,
+) -> dict:
+    """Live official station telemetry and rainfall observations from IMD, resolved by location or state."""
+    resolved_id = resolve_station(station_id, lat, lng, state)
+    return get_imd_telemetry(resolved_id)
+
+
 @app.get("/imd/station/{station_id}")
-def imd_station_telemetry(station_id: str = "43295") -> dict:
-    """Live official station telemetry and rainfall observations from IMD."""
+def imd_station_telemetry(station_id: str) -> dict:
+    """Live official station telemetry by explicit station ID."""
     return get_imd_telemetry(station_id)
 
 
@@ -240,4 +256,34 @@ def coverage() -> dict:
         "national_corridors": NATIONAL_CORRIDORS,
         "predictions": "multi_corridor_ml_active",
         "description": "High-resolution gradient boosted ML engine active across all designated national corridors."
+    }
+
+
+@app.get("/alerts/live")
+def live_national_alerts(category: str | None = None) -> dict:
+    """Live official disaster, flood, and severe rain alerts from NDMA Sachet (National)."""
+    alerts = fetch_live_ndma_alerts()
+    if category:
+        alerts = [a for a in alerts if category.lower() in a.get("category", "").lower() or category.lower() in a.get("disaster_type", "").lower()]
+    return {
+        "source": "NDMA Sachet (National Disaster Management Authority)",
+        "count": len(alerts),
+        "alerts": alerts,
+    }
+
+
+@app.get("/incidents/live")
+def live_civic_incidents() -> dict:
+    """Consolidated stream of live official civic alerts (NDMA) & surveyed waterlogging spots (GMDA)."""
+    return get_all_live_civic_data()
+
+
+@app.get("/gmda/incidents")
+def gmda_survey_incidents() -> dict:
+    """Live surveyed waterlogging spots from GMDA OneMap ArcGIS Server."""
+    spots = fetch_live_gmda_incidents()
+    return {
+        "source": "GMDA OneMap Official (Gurugram)",
+        "count": len(spots),
+        "incidents": spots,
     }

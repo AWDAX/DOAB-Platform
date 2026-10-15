@@ -84,7 +84,9 @@ import {
   Pencil,
   GripHorizontal,
   History,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck,
+  CloudRain
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
@@ -408,6 +410,18 @@ export const ALL_REGIONS: RegionOption[] = [
 const DEFAULT_NATIONAL_CENTER: [number, number] = [20.5937, 78.9629];
 const DEFAULT_NATIONAL_ZOOM = 5;
 
+const getStoredUserCoords = (): { coords: [number, number]; hasReal: boolean } => {
+  try {
+    const cached = JSON.parse(localStorage.getItem('doab_user_coords_v1') || 'null');
+    if (cached && typeof cached.lat === 'number' && typeof cached.lng === 'number' && !isNaN(cached.lat) && !isNaN(cached.lng)) {
+      return { coords: [cached.lat, cached.lng], hasReal: true };
+    }
+  } catch {}
+  return { coords: DEFAULT_NATIONAL_CENTER, hasReal: false };
+};
+
+const initialUserLocation = getStoredUserCoords();
+
 // Session-persisted map state so switching away from MapPage and back does not re-trigger the initial GPS zoom-in animation
 const mapSessionState: {
   hasCompletedInitialLocationZoom: boolean;
@@ -420,12 +434,12 @@ const mapSessionState: {
   isMultiStateMode: boolean;
   selectedStates: string[];
 } = {
-  hasCompletedInitialLocationZoom: false,
-  mapCenter: DEFAULT_NATIONAL_CENTER,
-  mapZoom: DEFAULT_NATIONAL_ZOOM,
-  userCoords: DEFAULT_NATIONAL_CENTER,
-  hasRealLocation: false,
-  isViewingMyLocation: false,
+  hasCompletedInitialLocationZoom: initialUserLocation.hasReal,
+  mapCenter: initialUserLocation.hasReal ? initialUserLocation.coords : DEFAULT_NATIONAL_CENTER,
+  mapZoom: initialUserLocation.hasReal ? 14 : DEFAULT_NATIONAL_ZOOM,
+  userCoords: initialUserLocation.coords,
+  hasRealLocation: initialUserLocation.hasReal,
+  isViewingMyLocation: initialUserLocation.hasReal,
   selectedState: 'all',
   isMultiStateMode: false,
   selectedStates: [],
@@ -434,7 +448,6 @@ const mapSessionState: {
 export default function MapPage({ envMode = 'flood', isDarkMode = false }: { envMode?: 'flood' | 'drought'; isDarkMode?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const copy = getPredictionCopy();
-  const { forecast, incidents: apiIncidents, boundaries, imdTelemetry, status, usingDemo, reload } = useForecast();
   const [destination, setDestination] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
   const [selectedState, setSelectedState] = useState<string>(() => mapSessionState.selectedState);
@@ -442,6 +455,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [selectedStates, setSelectedStates] = useState<string[]>(() => mapSessionState.selectedStates);
   const [stateSearchQuery, setStateSearchQuery] = useState('');
   const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
+  const [show7DayForecast, setShow7DayForecast] = useState(false);
   const stateComboboxRef = useRef<HTMLDivElement>(null);
 
   // Delivery Partner / Commercial Fleet mode context
@@ -546,20 +560,44 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
   // Path Creation Mode State (Interactive Map Waypoint Picking & Manual Input)
   const isCreatePathQuery = searchParams.get('mode') === 'create_path';
-  const [isPathCreationMode, setIsPathCreationMode] = useState<boolean>(isCreatePathQuery);
-  const [pathOrigin, setPathOrigin] = useState<[number, number] | null>(null);
-  const [pathDest, setPathDest] = useState<[number, number] | null>(null);
-  const [pathOriginAddress, setPathOriginAddress] = useState<string>('');
-  const [pathDestAddress, setPathDestAddress] = useState<string>('');
-  const [pathPickingTarget, setPathPickingTarget] = useState<'origin' | 'destination' | null>('origin');
+  const queryOriginLat = searchParams.get('origin_lat');
+  const queryOriginLng = searchParams.get('origin_lng');
+  const queryDestLat = searchParams.get('dest_lat');
+  const queryDestLng = searchParams.get('dest_lng');
+  const queryOriginName = searchParams.get('origin_name') || '';
+  const queryDestName = searchParams.get('dest_name') || '';
+  const queryRouteName = searchParams.get('name') || '';
+
+  const initialOrigin: [number, number] | null = (queryOriginLat && queryOriginLng)
+    ? [parseFloat(queryOriginLat), parseFloat(queryOriginLng)]
+    : null;
+  const initialDest: [number, number] | null = (queryDestLat && queryDestLng)
+    ? [parseFloat(queryDestLat), parseFloat(queryDestLng)]
+    : null;
+
+  const [isPathCreationMode, setIsPathCreationMode] = useState<boolean>(isCreatePathQuery || Boolean(initialOrigin && initialDest));
+  const [pathOrigin, setPathOrigin] = useState<[number, number] | null>(initialOrigin);
+  const [pathDest, setPathDest] = useState<[number, number] | null>(initialDest);
+  const [pathOriginAddress, setPathOriginAddress] = useState<string>(queryOriginName);
+  const [pathDestAddress, setPathDestAddress] = useState<string>(queryDestName);
+  const [pathPickingTarget, setPathPickingTarget] = useState<'origin' | 'destination' | null>(
+    initialOrigin && initialDest ? null : initialOrigin ? 'destination' : 'origin'
+  );
   const [pathSummaryName, setPathSummaryName] = useState<string>('');
   const [selectedCandidateIdx, setSelectedCandidateIdx] = useState<number>(0);
   const [saveSuccessToast, setSaveSuccessToast] = useState<string | null>(null);
-  const [customRouteName, setCustomRouteName] = useState<string>('');
+  const [customRouteName, setCustomRouteName] = useState<string>(queryRouteName);
   const [isListeningTarget, setIsListeningTarget] = useState<'origin' | 'destination' | 'liveSearch' | 'stateSearch' | null>(null);
   const [travelMode, setTravelMode] = useState<'driving' | 'motorcycle' | 'transit' | 'walking'>('driving');
   const [osrmRoutes, setOsrmRoutes] = useState<Array<{ geometry: [number, number][]; distance_meters: number; duration_seconds: number }> | null>(null);
   const [isEvaluatingRoutes, setIsEvaluatingRoutes] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (initialOrigin && initialDest) {
+      setMapCenter([(initialOrigin[0] + initialDest[0]) / 2, (initialOrigin[1] + initialDest[1]) / 2]);
+      setMapZoom(13);
+    }
+  }, []);
 
   // Fetch real street road network geometry and alternative bypass routes via OSRM with memory caching
   useEffect(() => {
@@ -709,6 +747,103 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const liveRiskHasDraggedRef = useRef(false);
   const createPathDragControls = useDragControls();
 
+  // Panel Resizability States (with localStorage memory and safe boundary clamping)
+  const [liveRiskWidth, setLiveRiskWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('doab_live_risk_w');
+      return saved ? Math.min(Math.max(parseInt(saved, 10), 360), 680) : 450;
+    } catch {
+      return 450;
+    }
+  });
+  const [liveRiskMaxHeight, setLiveRiskMaxHeight] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('doab_live_risk_h');
+      return saved ? Math.min(Math.max(parseInt(saved, 10), 380), 920) : 700;
+    } catch {
+      return 700;
+    }
+  });
+
+  const [createPathWidth, setCreatePathWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('doab_create_path_w');
+      return saved ? Math.min(Math.max(parseInt(saved, 10), 440), 780) : 580;
+    } catch {
+      return 580;
+    }
+  });
+  const [createPathMaxHeight, setCreatePathMaxHeight] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('doab_create_path_h');
+      return saved ? Math.min(Math.max(parseInt(saved, 10), 400), 880) : 660;
+    } catch {
+      return 660;
+    }
+  });
+
+  // Resize handler for Live Risk Monitor
+  const handleLiveRiskResizeStart = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = liveRiskWidth;
+    const startH = liveRiskMaxHeight;
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      const newW = Math.min(Math.max(startW + dx, 360), Math.min(680, window.innerWidth - 32));
+      const newH = Math.min(Math.max(startH + dy, 380), Math.min(850, window.innerHeight - 80));
+      setLiveRiskWidth(newW);
+      setLiveRiskMaxHeight(newH);
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      try {
+        localStorage.setItem('doab_live_risk_w', String(liveRiskWidth));
+        localStorage.setItem('doab_live_risk_h', String(liveRiskMaxHeight));
+      } catch {}
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  }, [liveRiskWidth, liveRiskMaxHeight]);
+
+  // Resize handler for Create Safe Path
+  const handleCreatePathResizeStart = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = createPathWidth;
+    const startH = createPathMaxHeight;
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      const newW = Math.min(Math.max(startW + dx, 440), Math.min(780, window.innerWidth - 32));
+      const newH = Math.min(Math.max(startH + dy, 400), Math.min(880, window.innerHeight - 80));
+      setCreatePathWidth(newW);
+      setCreatePathMaxHeight(newH);
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      try {
+        localStorage.setItem('doab_create_path_w', String(createPathWidth));
+        localStorage.setItem('doab_create_path_h', String(createPathMaxHeight));
+      } catch {}
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  }, [createPathWidth, createPathMaxHeight]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node;
@@ -741,7 +876,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   // Selected Incident: null by default so no unwanted distance or vector line is computed until the user explicitly selects a point
   const [selectedIncident, setSelectedIncident] = useState<TelemetryIncident | null>(null);
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
-  const [clusterSortBy] = useState<'proximity' | 'severity'>('proximity');
+  const [prioritizeRecent, setPrioritizeRecent] = useState<boolean>(true);
+  const [prioritizeNearest, setPrioritizeNearest] = useState<boolean>(true);
   const [isMapFlying, setIsMapFlying] = useState(false);
 
   // Default Coordinates: National All-India Overview Center
@@ -751,6 +887,40 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
   const [mapCenter, setMapCenter] = useState<[number, number]>(() => mapSessionState.mapCenter);
   const [mapZoom, setMapZoom] = useState<number>(() => mapSessionState.mapZoom);
+
+  const forecastCoords = useMemo(() => {
+    // If a specific state is chosen in the combobox or multi-select, use that state's geographic center for regional telemetry
+    const activeStateVal = isMultiStateMode && selectedStates.length > 0 
+      ? selectedStates[selectedStates.length - 1] 
+      : selectedState;
+
+    if (activeStateVal && activeStateVal !== 'all') {
+      const reg = ALL_REGIONS.find((r) => r.val.toLowerCase() === activeStateVal.toLowerCase());
+      if (reg) {
+        return { lat: reg.center[0], lng: reg.center[1] };
+      }
+    }
+    if (hasRealLocation && (userCoords[0] !== DEFAULT_NATIONAL_CENTER[0] || userCoords[1] !== DEFAULT_NATIONAL_CENTER[1])) {
+      return { lat: userCoords[0], lng: userCoords[1] };
+    }
+    // If map is focused on a specific city or region:
+    if (Math.abs(mapCenter[0] - DEFAULT_NATIONAL_CENTER[0]) > 0.4 || Math.abs(mapCenter[1] - DEFAULT_NATIONAL_CENTER[1]) > 0.4) {
+      return { lat: mapCenter[0], lng: mapCenter[1] };
+    }
+    return null;
+  }, [selectedState, isMultiStateMode, selectedStates, hasRealLocation, userCoords, mapCenter]);
+
+  const activeStateParam = useMemo(() => {
+    if (isMultiStateMode && selectedStates.length > 0) {
+      return selectedStates[selectedStates.length - 1];
+    }
+    return selectedState !== 'all' ? selectedState : undefined;
+  }, [isMultiStateMode, selectedStates, selectedState]);
+
+  const { forecast, incidents: apiIncidents, boundaries, imdTelemetry, status, usingDemo, reload } = useForecast({
+    state: activeStateParam,
+    coords: forecastCoords,
+  });
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(true);
   const [activeLeftTab, setActiveLeftTab] = useState<'search' | 'forecast' | 'incident' | 'clusters'>('search');
 
@@ -1323,13 +1493,14 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     };
 
     // Use real street-network geometries from OSRM for all 3 corridors
+    // If OSRM returns fewer than 3 alternative branches, synthesize distinct elevated ridge bypass curves
     const geomDirect = osrmRoutes && osrmRoutes[0] ? osrmRoutes[0].geometry : buildCurvedGeometry(0.02);
-    const geomBalanced = osrmRoutes && (osrmRoutes[1] || osrmRoutes[0]) ? (osrmRoutes[1] ? osrmRoutes[1].geometry : osrmRoutes[0].geometry) : buildCurvedGeometry(-0.18);
-    const geomSafest = osrmRoutes && (osrmRoutes[2] || osrmRoutes[1] || osrmRoutes[0]) ? (osrmRoutes[2] ? osrmRoutes[2].geometry : (osrmRoutes[1] ? osrmRoutes[1].geometry : osrmRoutes[0].geometry)) : buildCurvedGeometry(0.24);
+    const geomBalanced = osrmRoutes && osrmRoutes[1] ? osrmRoutes[1].geometry : buildCurvedGeometry(-0.18);
+    const geomSafest = osrmRoutes && osrmRoutes[2] ? osrmRoutes[2].geometry : buildCurvedGeometry(0.24);
 
     const distDirect = osrmRoutes && osrmRoutes[0] ? osrmRoutes[0].distance_meters : Math.round(baseKm * 1000);
     const distBalanced = osrmRoutes && osrmRoutes[1] ? osrmRoutes[1].distance_meters : Math.round(distDirect * 1.08);
-    const distSafest = osrmRoutes && osrmRoutes[2] ? osrmRoutes[2].distance_meters : Math.round((distBalanced || distDirect) * 1.09);
+    const distSafest = osrmRoutes && osrmRoutes[2] ? osrmRoutes[2].distance_meters : Math.round(distDirect * 1.15);
 
     const riskSafest = assessCorridorHazard(geomSafest, 0.65);
     const riskBalanced = assessCorridorHazard(geomBalanced, 1.45);
@@ -1808,39 +1979,169 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     };
   }, [userCoords, filteredIncidents, hasRealLocation]);
 
-  // DOAB Cluster Engine: Group incidents by Ward / Corridor into macro danger clusters
+  // Real-Time Geofence Auto-Alert Trigger
+  // Actively evaluates user's proximity to severe flood hazards & underpass submersions
+  const lastAlertTimestampRef = useRef<number>(0);
+  const alertedIncidentIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!hasRealLocation || !filteredIncidents.length) return;
+
+    // Read user alert configuration from localStorage
+    const alertDistanceMeters = parseInt(localStorage.getItem('doab_alert_distance') || '500', 10);
+    const alertMinSeverity = localStorage.getItem('doab_alert_sensitivity') || 'high';
+    const clearanceLimitCm = parseInt(localStorage.getItem('doab_clearance_limit') || '15', 10);
+
+    const lat1 = userCoords[0];
+    const lon1 = userCoords[1];
+
+    let nearestHazard: TelemetryIncident | null = null;
+    let minDistanceM = Infinity;
+
+    for (const inc of filteredIncidents) {
+      const isCritical = inc.severity === 'Critical';
+      const isHigh = inc.severity === 'High';
+      const severityMatch = 
+        alertMinSeverity === 'all' ||
+        (alertMinSeverity === 'high' && (isCritical || isHigh)) ||
+        (alertMinSeverity === 'critical' && isCritical);
+
+      const depthExceedsClearance = (inc.waterDepthCm || 0) >= clearanceLimitCm;
+
+      if (!severityMatch && !depthExceedsClearance) continue;
+
+      // Haversine distance in meters
+      const R = 6371000;
+      const dLat = (inc.lat - lat1) * Math.PI / 180;
+      const dLon = (inc.lng - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) * Math.cos((inc.lat * Math.PI) / 180) * 
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distM = R * c;
+
+      if (distM < minDistanceM) {
+        minDistanceM = distM;
+        nearestHazard = inc;
+      }
+    }
+
+    const now = Date.now();
+    // Trigger danger broadcast if within geofence radius and not dismissed in the last 4 minutes
+    if (
+      nearestHazard &&
+      minDistanceM <= alertDistanceMeters &&
+      (now - lastAlertTimestampRef.current > 240000 || alertedIncidentIdRef.current !== nearestHazard.id)
+    ) {
+      lastAlertTimestampRef.current = now;
+      alertedIncidentIdRef.current = nearestHazard.id;
+
+      window.dispatchEvent(
+        new CustomEvent('doab:trigger-danger-broadcast', {
+          detail: {
+            title: nearestHazard.title || 'Severe Waterlogging Ahead',
+            ward: nearestHazard.ward || 'Active Corridor Zone',
+            distanceAhead: `${Math.round(minDistanceM)} meters`,
+            waterDepthCm: nearestHazard.waterDepthCm || 45,
+            description:
+              nearestHazard.description ||
+              `Standing water (~${nearestHazard.waterDepthCm || 45}cm) detected ahead exceeding vehicle clearance limit.`
+          }
+        })
+      );
+    }
+  }, [userCoords, hasRealLocation, filteredIncidents]);
+
+  // DOAB Composite Macro Risk Cluster Engine:
+  // Ranks clusters dynamically on: (1) Live Cases + Severity, (2) Recency decay, (3) Proximity to User GPS / Viewport
   const recurringClusters = useMemo(() => {
     const clusterMap = new Map<string, {
       ward: string;
       category: string;
       count: number;
+      criticalCount: number;
+      highCount: number;
+      mediumCount: number;
+      lowCount: number;
+      maxWaterDepthCm: number;
+      latestTimestampMs: number;
       highestSeverity: 'Critical' | 'High' | 'Medium' | 'Low';
       points: { lat: number; lng: number }[];
     }>();
 
     const SEVERITY_RANK: Record<string, number> = { 'Critical': 3, 'High': 2, 'Medium': 1, 'Low': 0 };
 
+    const parseIncTime = (timeStr?: string): number => {
+      if (!timeStr) return Date.now() - 90 * 86400000;
+      const t = Date.parse(timeStr);
+      if (!isNaN(t)) return t;
+      const parts = timeStr.split(/[- /:]/);
+      if (parts.length >= 3) {
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[2], 10);
+        const dt = new Date(y < 100 ? 2000 + y : y, m, d);
+        if (!isNaN(dt.getTime())) return dt.getTime();
+      }
+      return Date.now() - 90 * 86400000;
+    };
+
     filteredIncidents.forEach((inc) => {
-      const key = `${inc.ward || 'Bengaluru'}::${inc.category || 'waterlogging'}`;
+      const key = `${inc.ward || 'Regional Corridor'}::${inc.category || 'waterlogging'}`;
       if (!clusterMap.has(key)) {
         clusterMap.set(key, {
-          ward: inc.ward || 'Bengaluru',
+          ward: inc.ward || 'Regional Corridor',
           category: inc.category || 'waterlogging',
           count: 0,
+          criticalCount: 0,
+          highCount: 0,
+          mediumCount: 0,
+          lowCount: 0,
+          maxWaterDepthCm: 0,
+          latestTimestampMs: 0,
           highestSeverity: inc.severity,
-          points: []
+          points: [],
         });
       }
       const item = clusterMap.get(key)!;
       item.count += 1;
+      if (inc.severity === 'Critical') item.criticalCount++;
+      else if (inc.severity === 'High') item.highCount++;
+      else if (inc.severity === 'Medium') item.mediumCount++;
+      else item.lowCount++;
+
+      if (inc.waterDepthCm && inc.waterDepthCm > item.maxWaterDepthCm) {
+        item.maxWaterDepthCm = inc.waterDepthCm;
+      }
+
+      const tMs = parseIncTime(inc.updatedTime);
+      if (tMs > item.latestTimestampMs) {
+        item.latestTimestampMs = tMs;
+      }
+
       item.points.push({ lat: inc.lat, lng: inc.lng });
       if ((SEVERITY_RANK[inc.severity] || 0) > (SEVERITY_RANK[item.highestSeverity] || 0)) {
         item.highestSeverity = inc.severity;
       }
     });
 
+    const now = Date.now();
+    const isStateFiltered = (!isMultiStateMode && selectedState !== 'all') || (isMultiStateMode && selectedStates.length > 0);
+
+    // ── OPERATIONAL REFERENCE CENTER FOR PROXIMITY ──
+    // When a specific state is selected from the combobox, proximity MUST be evaluated relative to 
+    // that state's regional center/corridor, NOT the user's remote live GPS!
+    let referenceCenter: [number, number] = mapCenter;
+    if (!isStateFiltered && hasRealLocation) {
+      referenceCenter = userCoords;
+    } else if (isStateFiltered) {
+      const activeState = isMultiStateMode && selectedStates.length > 0 ? selectedStates[selectedStates.length - 1] : selectedState;
+      const reg = ALL_REGIONS.find((r) => r.val.toLowerCase() === activeState.toLowerCase());
+      referenceCenter = reg ? reg.center : mapCenter;
+    }
+
     return Array.from(clusterMap.values()).map((c) => {
-      // Calculate max spatial span between reports in this ward/sector cluster using haversine
       let maxDist = 0;
       for (let i = 0; i < c.points.length; i++) {
         for (let j = i + 1; j < c.points.length; j++) {
@@ -1850,9 +2151,58 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       }
       const centerLat = c.points.reduce((acc, p) => acc + p.lat, 0) / c.points.length;
       const centerLng = c.points.reduce((acc, p) => acc + p.lng, 0) / c.points.length;
+      
       const distFromUser = hasRealLocation
         ? haversineKm(userCoords[0], userCoords[1], centerLat, centerLng)
         : null;
+
+      // Distance from current operational reference (State Center if state active, else GPS or map center)
+      const distFromRef = haversineKm(referenceCenter[0], referenceCenter[1], centerLat, centerLng);
+
+      // 1. Criticality Load Score [0 - 100] (Severity weights + maximum water depth + case density)
+      const casesWeight = Math.min(
+        100, 
+        c.criticalCount * 28 + c.highCount * 16 + c.mediumCount * 6 + c.count * 4 + Math.min(c.maxWaterDepthCm / 2, 20)
+      );
+
+      // 2. Recency Score [0 - 100]
+      const hoursAgo = Math.max(0, (now - c.latestTimestampMs) / 3600000);
+      let recencyWeight = 15;
+      if (hoursAgo <= 3) recencyWeight = 100;
+      else if (hoursAgo <= 6) recencyWeight = 90;
+      else if (hoursAgo <= 24) recencyWeight = 75;
+      else if (hoursAgo <= 72) recencyWeight = 50;
+      else if (hoursAgo <= 168) recencyWeight = 30;
+      else recencyWeight = 15;
+
+      // 3. Proximity Score [0 - 100] (distance to operational reference)
+      let proximityWeight = 10;
+      if (distFromRef <= 5.0) proximityWeight = 100;
+      else if (distFromRef <= 12.0) proximityWeight = 85;
+      else if (distFromRef <= 25.0) proximityWeight = 65;
+      else if (distFromRef <= 50.0) proximityWeight = 45;
+      else if (distFromRef <= 100.0) proximityWeight = 25;
+      else proximityWeight = Math.max(5, Math.round(25 - (distFromRef - 100) * 0.1));
+
+      // ── PRIORITIZED INTERSECTION SCORING MODEL ──
+      // Multiplicative intersection: Recent conditioned on Nearness.
+      // A recent event 1500 km away drops down; only events that are BOTH Recent AND Near stay high.
+      const recentNearIntersection = (recencyWeight * proximityWeight) / 100;
+      const trifectaIntersection = (recentNearIntersection * casesWeight) / 100;
+
+      let compositeScore = 0;
+      if (prioritizeRecent && prioritizeNearest) {
+        // Balanced Intersection Mode: Recent + Near intersection prioritized first, then Criticality + Trifecta
+        compositeScore = Math.round(
+          0.45 * recentNearIntersection + 0.35 * casesWeight + 0.20 * trifectaIntersection
+        );
+      } else if (prioritizeRecent && !prioritizeNearest) {
+        compositeScore = Math.round(0.55 * recencyWeight + 0.45 * casesWeight);
+      } else if (!prioritizeRecent && prioritizeNearest) {
+        compositeScore = Math.round(0.55 * proximityWeight + 0.45 * casesWeight);
+      } else {
+        compositeScore = Math.round(casesWeight);
+      }
 
       const clusterId = `${c.ward}::${c.category}::${centerLat.toFixed(4)}_${centerLng.toFixed(4)}`;
       return {
@@ -1861,15 +2211,23 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         lat: centerLat,
         lng: centerLng,
         clusterRadiusKm: maxDist > 0 ? Math.max(maxDist, 1.2) : 2.5,
-        distFromUser
+        distFromUser,
+        distFromRef,
+        isStateFiltered,
+        compositeScore,
       };
-    }).sort((a, b) => {
-      if (clusterSortBy === 'proximity' && a.distFromUser != null && b.distFromUser != null) {
-        return a.distFromUser - b.distFromUser;
-      }
-      return b.count - a.count;
-    });
-  }, [filteredIncidents, userCoords, hasRealLocation, clusterSortBy]);
+    }).sort((a, b) => b.compositeScore - a.compositeScore);
+  }, [
+    filteredIncidents, 
+    userCoords, 
+    hasRealLocation, 
+    mapCenter, 
+    prioritizeRecent, 
+    prioritizeNearest,
+    selectedState,
+    isMultiStateMode,
+    selectedStates
+  ]);
 
   const handleSelectIncident = (incident: TelemetryIncident) => {
     playClick();
@@ -1897,7 +2255,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         }
 
         const osPerm = await NativeService.checkPermissions();
-        if (osPerm.location !== 'granted') {
+        if (osPerm.location === 'denied') {
           return;
         }
 
@@ -2067,9 +2425,13 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             dragMomentum={false}
             dragElastic={0.08}
             dragConstraints={mapParentRef}
-            className="absolute top-2 sm:top-4 left-0 right-0 mx-auto z-50 w-[calc(100%-1rem)] sm:w-[580px] max-w-full pointer-events-auto flex flex-col"
+            className="absolute top-2 sm:top-4 left-0 right-0 mx-auto z-50 w-[calc(100%-1rem)] max-w-full pointer-events-auto flex flex-col"
+            style={{ width: `${createPathWidth}px`, maxWidth: 'calc(100vw - 1rem)' }}
           >
-            <div className="neo-glass-card rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)]/95 dark:bg-[#0c141d]/95 flex flex-col gap-2.5 sm:gap-3 overflow-visible relative">
+            <div 
+              style={{ maxHeight: `${createPathMaxHeight}px` }}
+              className={`neo-glass-card rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)]/95 ${envMode === 'drought' ? 'dark:bg-[#151210]/95' : 'dark:bg-[#0c141d]/95'} flex flex-col gap-2.5 sm:gap-3 overflow-y-auto custom-scrollbar relative`}
+            >
               {/* Header / Drag Handle */}
               <div 
                 onPointerDown={(e) => {
@@ -2510,6 +2872,17 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     )}
                   </div>
 
+                  {/* Natural Elevation Ridge Callout when direct and safest corridors both exhibit low hazard exposure */}
+                  {candidateSafePaths.length >= 3 && Math.abs(candidateSafePaths[0].mean_risk - candidateSafePaths[2].mean_risk) < 0.06 && (
+                    <div className="px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[10.5px] text-[var(--text-muted)] flex items-start sm:items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200 shrink-0 mt-0.5 sm:mt-0" />
+                      <div className="leading-snug">
+                        <span className="font-bold text-[var(--text-main)]">Optimal Natural Ridge: </span>
+                        <span>Direct terrain already traverses an elevated ridge line with minimal flood risk. Path 1 adds maximum buffer detour, while Path 3 offers the fastest direct transit.</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Corridor Profile Buttons & Actions - Strictly Inline Single Row */}
                   <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 pt-2 border-t border-[var(--border-color)]">
                     {/* Left: Corridor Profile segmented selector with animated moving pillbar */}
@@ -2587,6 +2960,19 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   </Link>
                 </div>
               )}
+
+              {/* Corner Resize Grip */}
+              <div
+                onPointerDown={handleCreatePathResizeStart}
+                className="absolute bottom-1.5 right-1.5 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
+                title="Drag corner to resize panel"
+              >
+                <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
+                  <circle cx="8" cy="8" r="1.1" />
+                  <circle cx="8" cy="4.5" r="1.1" />
+                  <circle cx="4.5" cy="8" r="1.1" />
+                </svg>
+              </div>
             </div>
           </motion.div>
         )}
@@ -2619,12 +3005,21 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         dragElastic={0.08}
         dragConstraints={mapParentRef}
         onDragStart={() => { liveRiskHasDraggedRef.current = true; }}
-        className={`absolute top-1.5 left-2.5 right-2.5 sm:top-4 sm:left-4 sm:right-auto ${isStateDropdownOpen || alsSuggestions.length > 0 || isSearchFocused ? 'z-50' : 'z-30'} sm:w-[420px] md:w-[450px] pointer-events-none`}
+        className={`absolute top-1.5 left-2.5 right-2.5 sm:top-4 sm:left-4 sm:right-auto ${isStateDropdownOpen || alsSuggestions.length > 0 || isSearchFocused ? 'z-50' : 'z-30'} pointer-events-none`}
+        style={{ width: `${liveRiskWidth}px`, maxWidth: 'calc(100vw - 1.25rem)' }}
       >
         <div 
           id="tour-map-search" 
-          className={`rounded-2xl pointer-events-auto shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] dark:border-white/15 bg-[var(--bg-card)] dark:bg-[#0c141d] transition-all duration-200 ${
-            isStateDropdownOpen || alsSuggestions.length > 0 || isSearchFocused ? 'overflow-visible' : 'overflow-hidden'
+          style={{ 
+            maxHeight: isMobileCollapsed 
+              ? undefined 
+              : `${show7DayForecast && activeLeftTab === 'forecast' ? Math.max(liveRiskMaxHeight, 740) : liveRiskMaxHeight}px`,
+            scrollbarGutter: 'stable'
+          }}
+          className={`rounded-2xl pointer-events-auto shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] dark:border-white/15 bg-[var(--bg-card)] ${
+            envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
+          } transition-all duration-200 relative ${
+            isStateDropdownOpen || alsSuggestions.length > 0 || isSearchFocused ? 'overflow-visible' : isMobileCollapsed ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'
           }`}
         >
           
@@ -2644,7 +3039,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               playClick();
               setIsMobileCollapsed(!isMobileCollapsed);
             }}
-            className={`flex items-center justify-between gap-2.5 bg-[var(--bg-main)]/95 dark:bg-[#090f16] px-3.5 py-2 cursor-grab active:cursor-grabbing select-none touch-none transition-colors hover:bg-[var(--bg-main)] dark:hover:bg-[#0d1620] ${
+            className={`flex items-center justify-between gap-2.5 bg-[var(--bg-main)]/95 ${
+              envMode === 'drought' ? 'dark:bg-[#0f0d0b] hover:bg-[var(--bg-main)] dark:hover:bg-[#181411]' : 'dark:bg-[#090f16] hover:bg-[var(--bg-main)] dark:hover:bg-[#0d1620]'
+            } px-3.5 py-2 cursor-grab active:cursor-grabbing select-none touch-none transition-colors ${
               isMobileCollapsed ? 'rounded-2xl' : 'rounded-t-2xl border-b border-[var(--text-main)]/20 dark:border-white/20'
             }`}
             title="Drag to reposition window • Click to collapse"
@@ -2669,6 +3066,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
               {/* Dual Engine Sliding Pill Bar (Professional Apple/Mapbox Standard — Enlarged Touch Targets) */}
               <div 
+                id="tour-map-engine"
                 className="relative flex items-center p-1 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xs select-none"
                 role="tablist"
                 aria-label="Map rendering engine mode"
@@ -2897,7 +3295,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
                     {/* Autocomplete Suggestions Dropdown */}
                     {alsSuggestions.length > 0 && (
-                      <div className="absolute z-[100] left-0 right-0 top-full mt-1.5 bg-[var(--bg-card)] dark:bg-[#0c141d] border border-[var(--border-color)] dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl max-h-64 overflow-y-auto">
+                      <div className={`absolute z-[100] left-0 right-0 top-full mt-1.5 bg-[var(--bg-card)] ${
+                        envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
+                      } border border-[var(--border-color)] dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl max-h-64 overflow-y-auto`}>
                         {alsSuggestions.map((place, idx) => (
                           <button
                             key={idx}
@@ -2919,7 +3319,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
                     {/* Cached Recent Searches Dropdown (When input is focused and empty) */}
                     {isSearchFocused && !destination.trim() && recentSearches.length > 0 && alsSuggestions.length === 0 && (
-                      <div className="absolute z-[100] left-0 right-0 top-full mt-1.5 bg-[var(--bg-card)] dark:bg-[#0c141d] border border-[var(--border-color)] dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl max-h-64 overflow-y-auto">
+                      <div className={`absolute z-[100] left-0 right-0 top-full mt-1.5 bg-[var(--bg-card)] ${
+                        envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
+                      } border border-[var(--border-color)] dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl max-h-64 overflow-y-auto`}>
                         <div className="px-3.5 py-2 text-[9px] font-mono text-[var(--text-muted)] border-b border-[var(--border-color)] dark:border-white/10 flex items-center justify-between bg-[var(--bg-main)]/70">
                           <span className="flex items-center gap-1.5 font-bold text-[var(--text-main)]">
                             <History className="h-3.5 w-3.5 text-[var(--text-main)]" />
@@ -3286,23 +3688,116 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     )}
 
                     {imdTelemetry && (
-                      <div className="mt-2 p-2 rounded-lg bg-neutral-900/[0.04] dark:bg-white/[0.05] border border-[var(--border-color)]/70 space-y-1 font-mono text-[10px]">
+                      <div className="mt-2 p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-1.5 font-mono text-[10px]">
                         <div className="flex items-center justify-between text-[var(--text-main)] font-semibold">
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span>{imdTelemetry.station_name}</span>
+                          <span className="flex items-center gap-1.5 truncate">
+                            <Radar className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0" />
+                            <span className="truncate">{imdTelemetry.station_name}</span>
                           </span>
-                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                            IMD Live
+                          <span className="mono-badge text-[9px] font-bold px-1.5 py-0.5 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] shrink-0">
+                            IMD LIVE
                           </span>
                         </div>
                         <div className="grid grid-cols-2 gap-1 text-[var(--text-muted)] text-[9.5px]">
                           <div>24h Rain: <span className="text-[var(--text-main)] font-bold">{imdTelemetry.rainfall_24h_mm} mm</span></div>
-                          <div>Temp: <span className="text-[var(--text-main)] font-bold">{imdTelemetry.temp_max_c}°C / {imdTelemetry.temp_min_c}°C</span></div>
+                          <div>
+                            Temp: <span className="text-[var(--text-main)] font-bold">
+                              {(() => {
+                                const maxT = imdTelemetry.temp_max_c > 0 
+                                  ? imdTelemetry.temp_max_c 
+                                  : (imdTelemetry.forecast_7day?.[0]?.temp_max || 0);
+                                const minT = imdTelemetry.temp_min_c > 0 
+                                  ? imdTelemetry.temp_min_c 
+                                  : (imdTelemetry.forecast_7day?.[0]?.temp_min || 0);
+                                if (maxT > 0 && minT > 0) return `${maxT}°C / ${minT}°C`;
+                                if (maxT > 0) return `${maxT}°C`;
+                                if (minT > 0) return `${minT}°C`;
+                                return '28°C / 21°C';
+                              })()}
+                            </span>
+                          </div>
                         </div>
                         {imdTelemetry.warning?.text && imdTelemetry.warning.text !== 'No warning' && (
-                          <div className="text-[9.5px] text-amber-600 dark:text-amber-400 font-sans line-clamp-2">
-                            ⚠️ {imdTelemetry.warning.text}
+                          <div className="flex items-start gap-1.5 text-[9.5px] text-[var(--text-main)] font-sans border-t border-[var(--border-color)]/60 pt-1 mt-1">
+                            <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-[8.5px] font-mono text-[var(--text-muted)] uppercase tracking-wider block">
+                                Doppler Radar / Satellite Nowcast
+                              </span>
+                              <span className="line-clamp-2 leading-tight">
+                                {Array.from(new Set(imdTelemetry.warning.text.split(';').map(s => s.trim()).filter(Boolean))).join('; ')}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Interactive 7-Day Synoptic NWP Forecast Drawer (DOAB Monospace Badge Standard) */}
+                        {imdTelemetry.forecast_7day && imdTelemetry.forecast_7day.length > 0 && (
+                          <div className="border-t border-[var(--border-color)]/60 pt-2 mt-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playClick();
+                                setShow7DayForecast(!show7DayForecast);
+                              }}
+                              className="w-full flex items-center justify-between text-[9px] font-mono p-1 rounded-md hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
+                            >
+                              <span className="flex items-center gap-1.5 font-bold text-[var(--text-main)]">
+                                <CloudRain className="h-3 w-3 text-[var(--color-brand-accent)] shrink-0" />
+                                <span>7-DAY NWP OUTLOOK</span>
+                              </span>
+                              <span className={`text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border transition-colors ${
+                                show7DayForecast
+                                  ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]'
+                                  : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)]'
+                              }`}>
+                                {show7DayForecast ? '[COLLAPSE]' : '[EXPAND 7D]'}
+                              </span>
+                            </button>
+
+                            <AnimatePresence initial={false}>
+                              {show7DayForecast && (
+                                <motion.div
+                                  key="sevenDayForecastDrawer"
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="mt-2 space-y-1 max-h-[340px] overflow-y-auto custom-scrollbar pr-0.5">
+                                    {imdTelemetry.forecast_7day.map((day) => {
+                                      const dateObj = new Date();
+                                      dateObj.setDate(dateObj.getDate() + day.day_offset);
+                                      const dayName = day.day_offset === 0 
+                                        ? 'Today' 
+                                        : day.day_offset === 1 
+                                          ? 'Tomorrow' 
+                                          : dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+
+                                      return (
+                                        <div
+                                          key={`day-forecast-${day.day_offset}`}
+                                          className="p-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]/70 flex items-center justify-between gap-1.5 text-[9px] font-mono"
+                                        >
+                                          <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-1">
+                                              <span className="font-bold text-[var(--text-main)] shrink-0">{dayName}</span>
+                                              <span className="text-[var(--text-muted)] truncate">• {day.forecast}</span>
+                                            </div>
+                                          </div>
+                                          <div className="shrink-0 text-right">
+                                            <span className="font-bold text-[var(--text-main)]">
+                                              {day.temp_max}° / {day.temp_min}°C
+                                            </span>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         )}
                       </div>
@@ -3310,9 +3805,22 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                   </div>
 
                   {forecast?.cells[0]?.target_time && (
-                    <div className="pt-1 border-t border-[var(--border-color)]/60 text-[10px] font-mono text-[var(--text-muted)] flex items-center justify-between">
-                      <span>{copy.oneHour}</span>
-                      <span className="font-bold text-[var(--text-main)]">{forecast.cells[0].target_time}</span>
+                    <div className="pt-1.5 border-t border-[var(--border-color)]/60 text-[10px] font-mono text-[var(--text-muted)] flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <span>Risk Horizon:</span>
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--border-color)] text-[var(--text-main)] font-bold">1h Ahead</span>
+                      </span>
+                      <span className="font-bold text-[var(--text-main)]">
+                        {(() => {
+                          try {
+                            const d = new Date(forecast.cells[0].target_time);
+                            if (!isNaN(d.getTime())) {
+                              return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) + ' IST';
+                            }
+                          } catch {}
+                          return forecast.cells[0].target_time.replace('T', ' ');
+                        })()}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -3321,25 +3829,72 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               {/* TAB 3: DOAB Macro Danger Cluster Table */}
               {activeLeftTab === 'clusters' && (
                 <div className="flex flex-col gap-2 animate-in fade-in duration-150">
-                  <div className="flex items-center justify-between pb-1 border-b border-[var(--border-color)]">
-                    <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-main)] flex items-center gap-1.5">
-                      <Layers className="h-3 w-3 text-[var(--text-main)] dark:text-neutral-200" />
-                      <span>Macro Risk Clusters ({recurringClusters.length})</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playClick();
-                        setShowHeatLayer(!showHeatLayer);
-                      }}
-                      className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
-                        showHeatLayer
-                          ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-950 dark:border-white'
-                          : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)]'
-                      }`}
-                    >
-                      {showHeatLayer ? 'Halos ON' : 'Halos OFF'}
-                    </button>
+                  <div className="flex flex-col gap-1.5 pb-1.5 border-b border-[var(--border-color)]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-main)] flex items-center gap-1.5">
+                        <Layers className="h-3 w-3 text-[var(--text-main)] dark:text-neutral-200" />
+                        <span>Macro Risk Clusters ({recurringClusters.length})</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          setShowHeatLayer(!showHeatLayer);
+                        }}
+                        className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+                          showHeatLayer
+                            ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-950 dark:border-white'
+                            : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)]'
+                        }`}
+                      >
+                        {showHeatLayer ? 'Halos ON' : 'Halos OFF'}
+                      </button>
+                    </div>
+
+                    {/* Interactive Ranking Priority Chips (Recent Cases / Nearest Cases) */}
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          setPrioritizeRecent(!prioritizeRecent);
+                        }}
+                        className={`h-6 w-[106px] px-2 rounded-md text-[9px] font-mono font-bold border transition-all cursor-pointer inline-flex items-center justify-between gap-1 select-none shrink-0 ${
+                          prioritizeRecent
+                            ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-xs'
+                            : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--text-main)]/30'
+                        }`}
+                        title="Filter / Rank: prioritize recent incidents"
+                      >
+                        <span className="whitespace-nowrap">Recent Cases</span>
+                        <span className={`w-2.5 h-2.5 flex items-center justify-center shrink-0 transition-opacity ${
+                          prioritizeRecent ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                        }`}>
+                          <Check size={10} strokeWidth={3} />
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          setPrioritizeNearest(!prioritizeNearest);
+                        }}
+                        className={`h-6 w-[106px] px-2 rounded-md text-[9px] font-mono font-bold border transition-all cursor-pointer inline-flex items-center justify-between gap-1 select-none shrink-0 ${
+                          prioritizeNearest
+                            ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-xs'
+                            : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--text-main)]/30'
+                        }`}
+                        title="Filter / Rank: prioritize clusters closest to your location or selected state"
+                      >
+                        <span className="whitespace-nowrap">Nearest Cases</span>
+                        <span className={`w-2.5 h-2.5 flex items-center justify-center shrink-0 transition-opacity ${
+                          prioritizeNearest ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                        }`}>
+                          <Check size={10} strokeWidth={3} />
+                        </span>
+                      </button>
+                    </div>
                   </div>
 
 
@@ -3370,18 +3925,15 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                         >
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              {/* Indicator dot: subtle and small, only blinks when selected */}
-                              <span className="relative flex items-center justify-center w-2 h-2 shrink-0">
-                                {isSelected && isCrit && (
-                                  <span className="absolute inline-flex w-full h-full rounded-full bg-rose-500 opacity-60 animate-ping" />
-                                )}
-                                <span className={`relative inline-flex rounded-full shrink-0 w-1.5 h-1.5 ${
-                                  isCrit 
-                                    ? isSelected ? 'bg-rose-700 dark:bg-rose-400 animate-pulse' : 'bg-rose-700/80 dark:bg-rose-400/80' 
-                                    : isHigh 
-                                      ? 'bg-amber-700 dark:bg-amber-400' 
-                                      : 'bg-slate-600 dark:bg-slate-400'
-                                }`} />
+                              {/* Monospace DOAB Severity Badge */}
+                              <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border shrink-0 ${
+                                isCrit 
+                                  ? 'border-rose-900/30 text-rose-800 dark:text-rose-300 bg-rose-500/10' 
+                                  : isHigh 
+                                    ? 'border-amber-900/30 text-amber-800 dark:text-amber-300 bg-amber-500/10' 
+                                    : 'border-[var(--border-color)] text-[var(--text-muted)] bg-[var(--bg-card)]'
+                              }`}>
+                                {isCrit ? '[CRIT]' : isHigh ? '[HIGH]' : '[ZONE]'}
                               </span>
                               <span className="font-bold text-xs truncate text-[var(--text-main)]">
                                 {cluster.ward}
@@ -3389,26 +3941,39 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                             </div>
                             <div className="text-[10px] text-[var(--text-muted)] font-mono mt-0.5 flex items-center gap-2">
                               <span>Radius: ~{cluster.clusterRadiusKm.toFixed(1)} km</span>
-                              {cluster.distFromUser != null && (
+                              {cluster.isStateFiltered ? (
+                                <span className="text-[var(--text-main)] dark:text-neutral-300 font-semibold">
+                                  {cluster.distFromRef.toFixed(1)} km from state focus
+                                </span>
+                              ) : cluster.distFromUser != null ? (
                                 <span className="text-[var(--text-main)] dark:text-neutral-300 font-semibold">
                                   {cluster.distFromUser.toFixed(1)} km from you
+                                </span>
+                              ) : (
+                                <span className="text-[var(--text-main)] dark:text-neutral-300 font-semibold">
+                                  {cluster.distFromRef.toFixed(1)} km from view
                                 </span>
                               )}
                             </div>
                           </div>
 
-                          <div className="text-right shrink-0 flex flex-col items-end">
-                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full border ${
+                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[8.5px] font-mono text-[var(--text-muted)] font-semibold">
+                                Score:
+                              </span>
+                              <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-[var(--text-main)] text-[var(--bg-card)]">
+                                {cluster.compositeScore}
+                              </span>
+                            </div>
+                            <span className={`text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded-full border ${
                               isCrit
                                 ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
                                 : isHigh
                                   ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
                                   : 'bg-slate-500/[0.08] dark:bg-slate-400/[0.12] text-slate-700 dark:text-slate-300 border-slate-500/25 dark:border-slate-400/25'
                             }`}>
-                              {cluster.count} reports
-                            </span>
-                            <span className="text-[9px] font-mono text-[var(--text-muted)] mt-0.5">
-                              {cluster.highestSeverity}
+                              {cluster.count} {cluster.count === 1 ? 'case' : 'cases'}
                             </span>
                           </div>
                         </div>
@@ -3474,25 +4039,47 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           type="button"
                           onClick={() => handleRerouteAroundIncident(selectedIncident)}
                           className="flex-1 py-1.5 px-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-lg font-semibold text-[10px] flex items-center justify-center gap-1 hover:opacity-90 transition-opacity shadow-2xs whitespace-nowrap cursor-pointer"
+                          title="Compute 3 safe elevated bypass corridors steering clear of this danger hotspot"
                         >
                           <RouteIcon className="h-3 w-3 shrink-0" />
-                          <span className="whitespace-nowrap">Reroute Around</span>
+                          <span className="whitespace-nowrap">Avoid Hazard & Find Bypass</span>
                         </button>
                         
-                        <a
-                          href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => playClick()}
-                          className="px-2.5 py-1.5 rounded-lg bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-[10px] font-semibold flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap shrink-0"
-                        >
-                          <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
-                            <path d="M12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5Z" fill="#FFFFFF" />
-                          </svg>
-                          <span className="whitespace-nowrap">{copy.openMaps}</span>
-                          <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
-                        </a>
+                        {userRole === 'delivery' ? (
+                          <Tooltip content="Emergency Responder / Fleet: Direct dispatch navigation to crisis site" position="top">
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => playClick()}
+                              className="px-2.5 py-1.5 rounded-lg bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-[10px] font-semibold flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap shrink-0"
+                            >
+                              <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
+                                <path d="M12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5Z" fill="#FFFFFF" />
+                              </svg>
+                              <span className="whitespace-nowrap">Fleet Dispatch</span>
+                              <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
+                            </a>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip content="Direct navigation to hazard for emergency crews / pump operators (Citizens: use Avoid Hazard)" position="top">
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => playClick()}
+                              className="px-2 py-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] text-[10px] font-mono flex items-center gap-1 transition-all shadow-2xs whitespace-nowrap shrink-0"
+                            >
+                              <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
+                                <path d="M12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5Z" fill="#FFFFFF" />
+                              </svg>
+                              <span className="whitespace-nowrap">Crew Nav</span>
+                              <ExternalLink className="h-2 w-2 opacity-60 shrink-0" />
+                            </a>
+                          </Tooltip>
+                        )}
 
                         <button
                           type="button"
@@ -3515,11 +4102,26 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Corner Resize Grip */}
+          {!isMobileCollapsed && (
+            <div
+              onPointerDown={handleLiveRiskResizeStart}
+              className="absolute bottom-1 right-1 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
+              title="Drag corner to resize Live Risk Monitor"
+            >
+              <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
+                <circle cx="8" cy="8" r="1.1" />
+                <circle cx="8" cy="4.5" r="1.1" />
+                <circle cx="4.5" cy="8" r="1.1" />
+              </svg>
+            </div>
+          )}
         </div>
       </motion.div>
 
       {/* ── Top-Right DOAB Floating Neo-Glass Map Controls Toolbar (Shifted down on mobile/touch views below Live Risk) ── */}
-      <div id="tour-map-controls" className="absolute top-[4.5rem] right-2.5 sm:top-4 sm:right-4 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">
+      <div id="tour-map-controls" className="absolute top-[4.5rem] right-2.5 sm:top-4 sm:right-4 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 backdrop-blur-xl border border-[var(--border-color)] shadow-xl pointer-events-auto">
         {/* 1. Start Map Page Tour Guide (Placed at the very top, matching theme styling) */}
         <Tooltip content="Live Map Guide" position="left">
           <button
@@ -3528,7 +4130,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               playClick();
               window.dispatchEvent(new CustomEvent('doab:start-page-tour', { detail: { pageKey: 'dashboard' } }));
             }}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-[var(--text-main)] hover:bg-[var(--bg-main)]"
             aria-label="Start Map Tour Guide"
           >
             <Compass size={16} />
@@ -3547,7 +4149,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               } catch (_) {}
               window.dispatchEvent(new CustomEvent('doab:open-assistant'));
             }}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 group relative"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer text-[var(--text-main)] hover:bg-[var(--bg-main)] group relative"
             aria-label="Open DOAB AI Intelligence Assistant"
           >
             <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center border border-[var(--border-color)] dark:border-white/20 group-hover:scale-110 transition-transform shadow-2xs">
@@ -3559,7 +4161,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           </button>
         </Tooltip>
 
-        <div className="w-5 h-px bg-[var(--border-color)] dark:bg-white/10 my-0.5" />
+        <div className="w-5 h-px bg-[var(--border-color)] my-0.5" />
 
         {/* 3. My Location FAB with AnimatedCrosshair */}
         <Tooltip content={isViewingMyLocation ? "City Overview (Zoom Out)" : "Fly to My GPS Location"} position="left">
@@ -3568,10 +4170,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             onClick={handleRecenter}
             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer relative group ${
               isLocating
-                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md animate-pulse'
+                ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-md animate-pulse'
                 : isViewingMyLocation
-                  ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md'
-                  : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+                  ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-md'
+                  : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
             }`}
             aria-label={isViewingMyLocation ? "Zoom out to regional map overview" : "Fly map to my current GPS location"}
           >
@@ -3594,8 +4196,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             }}
             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
               showHeatLayer
-                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md ring-2 ring-rose-500/30'
-                : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+                ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-md ring-2 ring-[var(--color-brand-accent)]/30'
+                : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
             }`}
             aria-label="Toggle Risk Halo and Cluster Table"
           >
@@ -3610,8 +4212,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             onClick={handleToggleFullscreen}
             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isFullScreen 
-                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md' 
-                : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+                ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-md' 
+                : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
             }`}
             aria-label="Toggle Fullscreen"
           >
@@ -3626,8 +4228,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             onClick={() => { playClick(); setShowInfo(!showInfo); }}
             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer relative overflow-hidden ${
               showInfo 
-                ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md rotate-0' 
-                : 'text-neutral-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+                ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-md rotate-0' 
+                : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
             }`}
             aria-label={showInfo ? "Close Nearby Safety and Alerts Panel" : "View Nearby Safety and Alerts"}
           >
@@ -3659,11 +4261,11 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.95, x: 8 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute top-[4.5rem] right-14 sm:top-4 sm:right-16 z-20 w-80 sm:w-96 p-4 rounded-3xl backdrop-blur-2xl bg-[var(--bg-card)]/95 dark:bg-[#12100e]/95 border border-[var(--border-color)] dark:border-white/15 shadow-2xl space-y-3.5 pointer-events-auto"
+            className="absolute top-[4.5rem] right-14 sm:top-4 sm:right-16 z-20 w-80 sm:w-96 p-4 rounded-3xl backdrop-blur-2xl bg-[var(--bg-card)]/95 border border-[var(--border-color)] shadow-2xl space-y-3.5 pointer-events-auto"
           >
             
             {/* Header */}
-            <div className="flex items-center justify-between pb-2.5 border-b border-[var(--border-color)] dark:border-white/10">
+            <div className="flex items-center justify-between pb-2.5 border-b border-[var(--border-color)]">
               <div className="flex items-center space-x-2 text-xs font-bold text-[var(--text-main)]">
                 <Radar size={15} className="text-[var(--text-main)] dark:text-neutral-200 animate-spin" style={{ animationDuration: '8s' }} />
                 <span>Nearby Safety & Routes</span>

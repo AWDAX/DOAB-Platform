@@ -943,16 +943,16 @@ export default function MapLibreView({
 
 
       {/* ── Professional Neo-Glass 3D GPU Camera Control Rack (Bottom-Right) ── */}
-      <div className="absolute bottom-6 right-4 sm:bottom-8 sm:right-6 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 dark:bg-[#12100e]/90 backdrop-blur-xl border border-[var(--border-color)] dark:border-white/15 shadow-xl pointer-events-auto">
+      <div className="absolute bottom-6 right-4 sm:bottom-8 sm:right-6 z-20 flex flex-col items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)]/90 backdrop-blur-xl border border-[var(--border-color)] shadow-xl pointer-events-auto">
         {/* Zoom In (+) */}
         <Tooltip content="Zoom In (+ or Scroll)" position="left">
           <button
             type="button"
             onClick={handleZoomIn}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all duration-200 cursor-pointer"
             aria-label="Zoom in"
           >
-            <Plus size={15} />
+            <Plus size={16} />
           </button>
         </Tooltip>
 
@@ -961,14 +961,14 @@ export default function MapLibreView({
           <button
             type="button"
             onClick={handleZoomOut}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all duration-200 cursor-pointer"
             aria-label="Zoom out"
           >
-            <Minus size={15} />
+            <Minus size={16} />
           </button>
         </Tooltip>
 
-        <div className="w-5 h-px bg-[var(--border-color)] dark:bg-white/10 my-0.5" />
+        <div className="w-5 h-px bg-[var(--border-color)] my-0.5" />
 
         {/* 3D Z-Rotation & Orbit Drag Button (Hold & Drag to Orbit, Click to Toggle Tilt) */}
         <div className="relative">
@@ -979,10 +979,10 @@ export default function MapLibreView({
               onPointerMove={handleZPointerMove}
               onPointerUp={handleZPointerUp}
               onPointerCancel={handleZPointerUp}
-              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-grab active:cursor-grabbing select-none relative group ${
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-grab active:cursor-grabbing select-none relative group ${
                 isDraggingZ
-                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-lg ring-2 ring-neutral-500 scale-105'
-                  : 'text-[var(--text-main)] hover:bg-[var(--text-main)]/10'
+                  ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-md'
+                  : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
               }`}
               aria-label="Hold and drag to rotate 3D camera around Z-axis"
             >
@@ -1010,7 +1010,7 @@ export default function MapLibreView({
 
               {/* Mini "3D" indicator badge on button */}
               <span className={`absolute -bottom-0.5 -right-0.5 text-[7px] font-mono font-black px-1 rounded-sm leading-tight ${
-                isDraggingZ ? 'bg-white text-neutral-950 dark:bg-neutral-950 dark:text-white' : 'bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)]'
+                isDraggingZ ? 'bg-[var(--bg-card)] text-[var(--text-main)]' : 'bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)]'
               }`}>
                 3D
               </span>
@@ -1019,10 +1019,10 @@ export default function MapLibreView({
 
           {/* Live Rotation HUD while dragging */}
           {isDraggingZ && (
-            <div className="absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap px-2.5 py-1 rounded-xl bg-neutral-950/95 text-white border border-white/20 text-[10px] font-mono font-bold shadow-xl flex items-center gap-1.5 backdrop-blur-md pointer-events-none z-30">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block" />
+            <div className="absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap px-2.5 py-1 rounded-xl bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] text-[10px] font-mono font-bold shadow-xl flex items-center gap-1.5 backdrop-blur-md pointer-events-none z-30">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-main)] animate-ping inline-block" />
               <span>Z-Orbit: {bearing}°</span>
-              <span className="text-neutral-500">•</span>
+              <span className="text-[var(--text-muted)]">•</span>
               <span>Tilt: {pitch}°</span>
             </div>
           )}
@@ -1033,7 +1033,7 @@ export default function MapLibreView({
           <button
             type="button"
             onClick={handleResetBearing}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer relative group"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all duration-200 cursor-pointer relative group"
             aria-label="Reset orientation north"
           >
             <div 
@@ -1065,7 +1065,7 @@ export default function MapLibreView({
                 />
 
                 {/* Center Pivot Bezel */}
-                <circle cx="12" cy="11.5" r="1.8" className="fill-white dark:fill-[#12100e] stroke-neutral-700 dark:stroke-white/80" strokeWidth="1" />
+                <circle cx="12" cy="11.5" r="1.8" className="fill-[var(--bg-card)] stroke-[var(--text-main)]" strokeWidth="1" />
                 
                 {/* Cardinal 'N' Marker Text */}
                 <text 
@@ -1087,10 +1087,10 @@ export default function MapLibreView({
           <button
             type="button"
             onClick={handleRotateLeft}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all duration-200 cursor-pointer"
             aria-label="Orbit left"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={15} />
           </button>
         </Tooltip>
 
@@ -1099,10 +1099,10 @@ export default function MapLibreView({
           <button
             type="button"
             onClick={handleRotateRight}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all duration-200 cursor-pointer"
             aria-label="Orbit right"
           >
-            <RotateCcw size={14} className="-scale-x-100" />
+            <RotateCcw size={15} className="-scale-x-100" />
           </button>
         </Tooltip>
       </div>

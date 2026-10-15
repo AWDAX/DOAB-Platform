@@ -285,16 +285,16 @@ export default function GlobalSidebar() {
               Navigation
             </span>
             <div className="flex items-center gap-1">
-              <Tooltip content="Start Page Tour" shortcut="Shift+T" position="bottom">
+              <Tooltip content="Start Global Tour" shortcut="Shift+T" position="bottom">
                 <button
                   type="button"
                   id="tour-guide-btn"
                   onClick={() => {
                     playClick();
-                    window.dispatchEvent(new CustomEvent('doab:open-tour'));
+                    window.dispatchEvent(new CustomEvent('doab:open-tour', { detail: { pageKey: 'global' } }));
                   }}
                   className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
-                  aria-label="Start Page Guided Tour"
+                  aria-label="Start Global Guided Tour"
                 >
                   <Compass className="h-4.5 w-4.5 text-current transition-transform duration-500 hover:rotate-45" />
                 </button>
@@ -313,20 +313,6 @@ export default function GlobalSidebar() {
           </>
         ) : (
           <div className="flex flex-col items-center gap-1.5 w-full">
-            <Tooltip content="Start Page Tour" shortcut="Shift+T" position="right" className="w-full flex justify-center">
-              <button
-                type="button"
-                id="tour-guide-btn"
-                onClick={() => {
-                  playClick();
-                  window.dispatchEvent(new CustomEvent('doab:open-tour'));
-                }}
-                className="w-10 h-10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors flex items-center justify-center cursor-pointer mx-auto"
-                aria-label="Start Page Guided Tour"
-              >
-                <Compass className="h-4.5 w-4.5 text-current" />
-              </button>
-            </Tooltip>
             <Tooltip content="Expand Sidebar" shortcut="Ctrl+]" position="right" className="w-full flex justify-center">
               <button
                 type="button"

@@ -102,6 +102,8 @@ def _google_alternatives(origin: tuple[float, float], destination: tuple[float, 
         risk, quality = _mean_risk(points)
         duration = route.get("duration") or "0s"
         seconds = int(str(duration).rstrip("s") or 0)
+        midpoint = points[len(points) // 2] if len(points) > 2 else None
+        route_waypoints = [midpoint] if midpoint else None
         routes.append(
             {
                 "summary": route.get("description") or "Driving alternative",
@@ -110,7 +112,7 @@ def _google_alternatives(origin: tuple[float, float], destination: tuple[float, 
                 "mean_risk": risk,
                 "data_quality": quality,
                 "scored": quality == "ok",
-                "maps_url": maps_directions_url(origin, destination),
+                "maps_url": maps_directions_url(origin, destination, waypoints=route_waypoints),
             }
         )
     routes.sort(key=lambda item: (item["mean_risk"] is None, item["mean_risk"] or 1, item["duration_seconds"]))

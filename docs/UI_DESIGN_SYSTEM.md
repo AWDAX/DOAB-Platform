@@ -331,4 +331,26 @@ Instead of maintaining brittle separate URL branches, DOAB implements industry-s
 3. **Dual-Engine Hardware Parity (`MapLibreView.tsx`)**:
    - Implemented identically across both 2D Lite (`Leaflet`) and 3D GPU (`MapLibre GL`) rendering pipelines via `fill-opacity-transition: { duration: 400 }` and `line-opacity-transition: { duration: 400 }` paint rules.
 
+---
+
+## ⚡ 13. Layout Stability, Anti-Jitter Engineering & Monospace Drawer Architecture (`MapPage.tsx`)
+
+### 13.1 Root Causes of Floating Card Jitter
+1. **Dynamic Content Height Overflow**: When an expandable drawer (e.g. 7-Day NWP Forecast) is opened, sudden DOM insertion pushes the parent card past its `maxHeight`. The browser abruptly injects a vertical scrollbar, reducing available content width by 12–15px and causing all inner text, inputs, and tabs to twitch horizontally.
+2. **Sibling Chip Shifting**: Using fluid or dynamic width constraints (e.g. `min-w-[94px]` vs `min-w-[96px]`) combined with conditional active borders creates subpixel layout shifts that displace adjacent action chips when toggled.
+
+### 13.2 Anti-Jitter Architecture Rules
+1. **Stable Scrollbar Gutter (`scrollbarGutter: 'stable'`)**:
+   - Always apply `scrollbarGutter: 'stable'` to floating HUD card containers (`#tour-map-search`). This reserves scrollbar space and ensures zero horizontal layout snapping when drawers expand or contract.
+2. **Fixed-Width Invariant Toggle Chips**:
+   - Toggle buttons placed side-by-side must use identical, fixed width classes (e.g. `w-[106px] shrink-0`) with matched border widths (`border-[var(--text-main)]` active vs `border-[var(--border-color)]` inactive) to guarantee zero horizontal layout shift on toggle.
+3. **Framer Motion Height Transitions (`AnimatePresence`)**:
+   - Never inject expandable drawers with raw conditional rendering (`{isOpen && <div>...</div>}`).
+   - Always wrap expandable sub-panels in `<AnimatePresence initial={false}>` and `<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="overflow-hidden">`.
+4. **Dynamic Container Headroom Expansion**:
+   - When an expandable drawer is triggered inside a height-constrained card, dynamically elevate the card's `maxHeight` boundary (e.g. from `700px` to `740px`) and expand inner list containers (e.g. `max-h-[340px]`) so all items fit cleanly without forcing inner scroll collisions.
+5. **DOAB Monospace Operational Badges**:
+   - Adhere strictly to the DOAB Monospace Standard: `[EXPAND 7D]`, `[COLLAPSE]`, `[CRIT]`, `[HIGH]`, `[ZONE]`, `[LIVE]`. Never use emojis or pulsing colored dots.
+
+
 

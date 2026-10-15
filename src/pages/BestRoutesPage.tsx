@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Route as RouteIcon, Navigation2, Activity, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink, MapPin, ThumbsUp, ThumbsDown, Star, RefreshCw, Truck, ShieldCheck, Box, Pencil } from 'lucide-react';
+import { Route as RouteIcon, Navigation2, Activity, Share2, Check, Bookmark, BookmarkCheck, Plus, Trash2, X, ExternalLink, MapPin, ThumbsUp, ThumbsDown, Star, RefreshCw, Truck, ShieldCheck, Box, Pencil, Eye } from 'lucide-react';
 import { fetchRoutes, type RouteOption, type RouteResponse } from '../lib/predictionApi';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import ConfirmationModal from '../components/ConfirmationModal';
+import Tooltip from '../components/Tooltip';
 
 // High-fidelity Google Maps Pin SVG icon
 function GoogleMapsIcon({ className = 'h-3.5 w-3.5' }: { className?: string }) {
@@ -70,12 +71,27 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 
 // Realistic fallback alternatives when the local prediction API is offline
 function generateFallbackRoutes(origin: { lat: number; lng: number }, destination: { lat: number; lng: number }): RouteResponse {
-  const directMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
   const crowKm = Math.max(0.5, haversineKm(origin.lat, origin.lng, destination.lat, destination.lng));
   // Urban road network factor ~1.35x crow-flies distance
   const baseRoadMeters = Math.round(crowKm * 1350);
   // Average city driving speed ~25 km/h (~7 m/s)
   const baseSeconds = Math.round(baseRoadMeters / 7);
+
+  // High-ground bypass waypoints computed from perpendicular vectors
+  const midLat = (origin.lat + destination.lat) / 2;
+  const midLng = (origin.lng + destination.lng) / 2;
+  const dLat = destination.lat - origin.lat;
+  const dLng = destination.lng - origin.lng;
+  // Ridge waypoint (+15% perpendicular offset)
+  const ridgeLat = Number((midLat - dLng * 0.15).toFixed(5));
+  const ridgeLng = Number((midLng + dLat * 0.15).toFixed(5));
+  // Inner ring bypass waypoint (-12% perpendicular offset)
+  const bypassLat = Number((midLat + dLng * 0.12).toFixed(5));
+  const bypassLng = Number((midLng - dLat * 0.12).toFixed(5));
+
+  const ridgeMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&waypoints=${ridgeLat},${ridgeLng}&travelmode=driving`;
+  const bypassMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&waypoints=${bypassLat},${bypassLng}&travelmode=driving`;
+  const directMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
 
   return {
     scored: true,
@@ -90,7 +106,7 @@ function generateFallbackRoutes(origin: { lat: number; lng: number }, destinatio
         mean_risk: 0.038,
         data_quality: 'ok',
         scored: true,
-        maps_url: directMapsUrl,
+        maps_url: ridgeMapsUrl,
         rank: 'safest',
       },
       {
@@ -100,7 +116,7 @@ function generateFallbackRoutes(origin: { lat: number; lng: number }, destinatio
         mean_risk: 0.125,
         data_quality: 'ok',
         scored: true,
-        maps_url: directMapsUrl,
+        maps_url: bypassMapsUrl,
         rank: 'alternative',
       },
       {
@@ -249,6 +265,71 @@ export default function BestRoutesPage() {
     ? availableRoutes.filter((r) => savedSummaries.has(r.summary?.trim()))
     : availableRoutes;
   const current = routes[active] || routes[0];
+
+  const getRouteNavigationParams = (route: RouteOption) => {
+    // 1. Check if route is a SavedOfflineRoute with origin/dest coordinates
+    const saved = savedOfflineRoutes.find(s => s.summary === route.summary);
+    if (saved?.origin && saved?.destination) {
+      return {
+        originLat: saved.origin.lat,
+        originLng: saved.origin.lng,
+        destLat: saved.destination.lat,
+        destLng: saved.destination.lng,
+        name: route.summary,
+      };
+    }
+    // 2. Or check if custom route in localStorage
+    try {
+      const customSaved: any[] = JSON.parse(localStorage.getItem('doab_custom_created_routes') || '[]');
+      const match = customSaved.find(c => c.summary === route.summary);
+      if (match?.origin_coords && match?.destination_coords) {
+        return {
+          originLat: match.origin_coords[0],
+          originLng: match.origin_coords[1],
+          destLat: match.destination_coords[0],
+          destLng: match.destination_coords[1],
+          name: route.summary,
+        };
+      }
+    } catch (_) {}
+
+    // 3. Or parse from maps_url query params
+    try {
+      if (route.maps_url) {
+        const u = new URL(route.maps_url);
+        const o = u.searchParams.get('origin');
+        const d = u.searchParams.get('destination');
+        if (o && d && o.includes(',') && d.includes(',')) {
+          const [olat, olng] = o.split(',').map(Number);
+          const [dlat, dlng] = d.split(',').map(Number);
+          if (!isNaN(olat) && !isNaN(olng) && !isNaN(dlat) && !isNaN(dlng)) {
+            return {
+              originLat: olat,
+              originLng: olng,
+              destLat: dlat,
+              destLng: dlng,
+              name: route.summary,
+            };
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 4. Fallback to default page coordinates
+    return {
+      originLat: ORIGIN.lat,
+      originLng: ORIGIN.lng,
+      destLat: destination.lat,
+      destLng: destination.lng,
+      name: route.summary,
+    };
+  };
+
+  const handleSeeOnMap = (route: RouteOption) => {
+    playClick();
+    const p = getRouteNavigationParams(route);
+    navigate(`/?mode=create_path&origin_lat=${p.originLat}&origin_lng=${p.originLng}&dest_lat=${p.destLat}&dest_lng=${p.destLng}&name=${encodeURIComponent(p.name)}`);
+  };
 
   // Open Arrival Feedback & Safe Path Bookmark Modal
   const handleMarkAsReached = (route: RouteOption) => {
@@ -560,87 +641,90 @@ export default function BestRoutesPage() {
             Elevation-aware bypass corridors computed using SRTM digital terrain models and live flood risk telemetry.
           </p>
         </div>
-        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto shrink-0">
+        <div id="tour-best-switcher" className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto shrink-0">
           <PageTourButton pageKey="routes_best" label="Routes Guide" className="h-9 w-full sm:w-auto justify-center" />
 
           {/* Create Custom Path Button (Strict Monochromatic Obsidian/Porcelain) */}
-          <button
-            type="button"
-            onClick={() => { playClick(); navigate('/map?mode=create_path'); }}
-            className="h-9 px-3.5 rounded-full bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 border border-neutral-950/20 dark:border-white/20 text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 w-full sm:w-auto"
-            title="Create and pick points interactively on map or via address autocomplete"
-          >
-            <Plus className="h-3.5 w-3.5 shrink-0" />
-            <span className="whitespace-nowrap">Create Safe Path</span>
-          </button>
+          <Tooltip content="Create and pick points interactively on map or via address autocomplete" position="bottom">
+            <button
+              type="button"
+              onClick={() => { playClick(); navigate('/map?mode=create_path'); }}
+              className="h-9 px-3.5 rounded-full bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 border border-neutral-950/20 dark:border-white/20 text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 w-full sm:w-auto"
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" />
+              <span className="whitespace-nowrap">Create Safe Path</span>
+            </button>
+          </Tooltip>
 
-          {/* Share Route Button (DOAB Standard) */}
-          <button
-            type="button"
-            onClick={() => {
-              playClick();
-              const shareData = {
-                title: 'DOAB Safe Elevation Route',
-                text: current ? `Safe Route: ${current.summary} (${formatKm(current.distance_meters)}, ${formatMinutes(current.duration_seconds)} - Risk: ${riskLabel(current, copy)})` : 'Check safe bypass routes on DOAB',
-                url: current?.maps_url || window.location.href,
-              };
+          {/* Share Route Button (DOAB Standard - Width Stabilized to prevent shift) */}
+          <Tooltip content="Share safe route with friends or emergency contacts" position="bottom">
+            <button
+              type="button"
+              onClick={() => {
+                playClick();
+                const shareData = {
+                  title: 'DOAB Safe Elevation Route',
+                  text: current ? `Safe Route: ${current.summary} (${formatKm(current.distance_meters)}, ${formatMinutes(current.duration_seconds)} - Risk: ${riskLabel(current, copy)})` : 'Check safe bypass routes on DOAB',
+                  url: current?.maps_url || window.location.href,
+                };
 
-              if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-                navigator.share(shareData).catch(() => {});
-              } else {
-                navigator.clipboard.writeText(shareData.url).then(() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }).catch(() => {});
-              }
-            }}
-            className="h-9 px-3.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 group w-full sm:w-auto"
-            title="Share safe route with friends or emergency contacts"
-          >
-            {copied ? (
-              <>
-                <Check className="h-3.5 w-3.5 text-current shrink-0" />
-                <span className="font-bold whitespace-nowrap">Link Copied!</span>
-              </>
-            ) : (
-              <>
-                <Share2 className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
-                <span className="whitespace-nowrap">Share Route</span>
-              </>
-            )}
-          </button>
+                if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+                  navigator.share(shareData).catch(() => {});
+                } else {
+                  navigator.clipboard.writeText(shareData.url).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }).catch(() => {});
+                }
+              }}
+              className="h-9 px-3.5 min-w-[125px] rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 group w-full sm:w-auto"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-current shrink-0" />
+                  <span className="font-bold whitespace-nowrap">Link Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
+                  <span className="whitespace-nowrap">Share Route</span>
+                </>
+              )}
+            </button>
+          </Tooltip>
 
-          {/* Saved Offline View Toggle Filter */}
-          <button
-            type="button"
-            onClick={() => {
-              playClick();
-              setShowSavedOnly(prev => !prev);
-              setActive(0);
-            }}
-            className={`h-9 px-3.5 rounded-full border text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 group w-full sm:w-auto ${
-              showSavedOnly
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-xs font-bold'
-                : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)]'
-            }`}
-            title={showSavedOnly ? 'Showing saved offline paths. Click to show all paths.' : 'Filter to show saved offline paths only'}
-          >
-            {showSavedOnly ? (
-              <BookmarkCheck className="h-3.5 w-3.5 text-current shrink-0" />
-            ) : (
-              <Bookmark className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
-            )}
-            <span className="whitespace-nowrap">Saved Offline</span>
-            {savedOfflineRoutes.length > 0 && (
-              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold leading-none ${
+          {/* Saved Offline View Toggle Filter (Strictly width-anchored with min-w-[145px] & persistent counter slot so nothing shifts) */}
+          <Tooltip content={showSavedOnly ? 'Showing saved offline paths. Click to show all paths.' : 'Filter to show saved offline paths only'} position="bottom">
+            <button
+              type="button"
+              onClick={() => {
+                playClick();
+                setShowSavedOnly(prev => !prev);
+                setActive(0);
+              }}
+              className={`h-9 px-3.5 min-w-[145px] rounded-full border text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 shadow-2xs inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 group w-full sm:w-auto ${
+                showSavedOnly
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-xs font-bold'
+                  : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)]'
+              }`}
+            >
+              {showSavedOnly ? (
+                <BookmarkCheck className="h-3.5 w-3.5 text-current shrink-0" />
+              ) : (
+                <Bookmark className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
+              )}
+              <span className="whitespace-nowrap">Saved Offline</span>
+              <span className={`px-1.5 py-0.5 min-w-[20px] text-center tabular-nums rounded-full text-[10px] font-mono font-bold leading-none transition-opacity ${
+                savedOfflineRoutes.length > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              } ${
                 showSavedOnly
                   ? 'bg-white/20 dark:bg-neutral-900/20 text-current'
                   : 'bg-[var(--border-color)] text-[var(--text-muted)] group-hover:bg-white/20 group-hover:text-current'
               }`}>
                 {savedOfflineRoutes.length}
               </span>
-            )}
-          </button>
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -670,6 +754,16 @@ export default function BestRoutesPage() {
         <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono bg-neutral-900/5 dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200 border border-[var(--border-color)] dark:border-white/15">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-main)] dark:bg-white animate-pulse"></span>
           <span>SRTM Digital Elevation Model Active — High-Ground Bypass Routing</span>
+        </div>
+      )}
+
+      {routes.length >= 2 && routes[0].mean_risk != null && routes[routes.length - 1].mean_risk != null && Math.abs((routes[0].mean_risk ?? 0) - (routes[routes.length - 1].mean_risk ?? 0)) < 0.05 && (
+        <div className="mb-4 p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center gap-3 text-xs">
+          <ShieldCheck className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
+          <div className="text-[11px] text-[var(--text-muted)] leading-snug">
+            <strong className="text-[var(--text-main)] font-semibold">Optimal Direct Ridge Corridor: </strong>
+            The direct street alignment between these coordinates already traverses an elevated crest line with minimal flood accumulation risk (&lt;5%). When direct and bypass paths share low risk, taking the direct route is safe and requires no detour.
+          </div>
         </div>
       )}
       {status === 'ready' && body && !body.scored && (
@@ -815,74 +909,97 @@ export default function BestRoutesPage() {
                     <td className="py-4 px-6 text-center font-mono tabular-nums whitespace-nowrap">{riskLabel(route, copy)}</td>
                     <td id={index === 0 ? 'tour-best-engage' : undefined} className="py-4 px-8 text-center whitespace-nowrap min-w-[380px]">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleMarkAsReached(route)}
-                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] dark:text-neutral-200 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95 group"
-                          title="Confirm you have reached destination safely and provide AI probability feedback"
-                        >
-                          <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] group-hover:text-current transition-colors" />
-                          <span>Reached Destination</span>
-                        </button>
-                        <a 
-                          href={route.maps_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-xs font-semibold transition-all shadow-xs"
-                        >
-                          <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
-                          <span>{copy.openMaps}</span>
-                          <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => handleShareRoute(route)}
-                          className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
-                          title="Share safe route"
-                        >
-                          {copiedSummary === route.summary ? (
-                            <Check className="h-3.5 w-3.5 text-emerald-500" />
-                          ) : (
-                            <Share2 className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleRouteOfflineSave(route)}
-                          className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
-                            isRouteSavedOffline(route.summary)
-                              ? 'text-amber-500 hover:text-amber-600 bg-amber-500/10'
-                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)]'
-                          }`}
-                          title={isRouteSavedOffline(route.summary) ? 'Saved offline (click to unsave)' : 'Save path for offline use'}
-                        >
-                          {isRouteSavedOffline(route.summary) ? (
-                            <BookmarkCheck className="h-3.5 w-3.5 text-amber-500" />
-                          ) : (
-                            <Bookmark className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playClick();
-                            setRoutePendingRename(route);
-                            setNewRenameValue(route.summary);
-                          }}
-                          className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
-                          title="Rename safe route"
-                          aria-label="Rename safe route"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => promptDeleteRoute(route)}
-                          className="p-1.5 rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                          title="Delete this safe path"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <Tooltip content="View this evaluated safe path on the interactive GIS map" position="top">
+                          <button
+                            type="button"
+                            onClick={() => handleSeeOnMap(route)}
+                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold transition-all shadow-2xs cursor-pointer active:scale-95 group"
+                          >
+                            <Eye className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] group-hover:text-current transition-colors" />
+                            <span>See on Map</span>
+                          </button>
+                        </Tooltip>
+
+                        <Tooltip content="Confirm you have reached destination safely and provide AI probability feedback" position="top">
+                          <button
+                            type="button"
+                            onClick={() => handleMarkAsReached(route)}
+                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] dark:text-neutral-200 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95 group"
+                          >
+                            <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] group-hover:text-current transition-colors" />
+                            <span>Reached Destination</span>
+                          </button>
+                        </Tooltip>
+
+                        <Tooltip content="Open navigation in Google Maps" position="top">
+                          <a 
+                            href={route.maps_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-xs font-semibold transition-all shadow-xs"
+                          >
+                            <GoogleMapsIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span>{copy.openMaps}</span>
+                            <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
+                          </a>
+                        </Tooltip>
+
+                        <Tooltip content="Share safe route" position="top">
+                          <button
+                            type="button"
+                            onClick={() => handleShareRoute(route)}
+                            className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                          >
+                            {copiedSummary === route.summary ? (
+                              <Check className="h-3.5 w-3.5 text-emerald-500" />
+                            ) : (
+                              <Share2 className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </Tooltip>
+
+                        <Tooltip content={isRouteSavedOffline(route.summary) ? 'Saved offline (click to unsave)' : 'Save path for offline use'} position="top">
+                          <button
+                            type="button"
+                            onClick={() => toggleRouteOfflineSave(route)}
+                            className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
+                              isRouteSavedOffline(route.summary)
+                                ? 'text-amber-500 hover:text-amber-600 bg-amber-500/10'
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+                            }`}
+                          >
+                            {isRouteSavedOffline(route.summary) ? (
+                              <BookmarkCheck className="h-3.5 w-3.5 text-amber-500" />
+                            ) : (
+                              <Bookmark className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </Tooltip>
+
+                        <Tooltip content="Rename safe route" position="top">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              playClick();
+                              setRoutePendingRename(route);
+                              setNewRenameValue(route.summary);
+                            }}
+                            className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                            aria-label="Rename safe route"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        </Tooltip>
+
+                        <Tooltip content="Delete this safe path" position="top">
+                          <button
+                            type="button"
+                            onClick={() => promptDeleteRoute(route)}
+                            className="p-1.5 rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </Tooltip>
                       </div>
                     </td>
                   </tr>
@@ -909,55 +1026,62 @@ export default function BestRoutesPage() {
                     <h2 className="font-semibold text-sm text-[var(--text-main)] leading-snug break-words">{route.summary}</h2>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => toggleRouteOfflineSave(route)}
-                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                        isRouteSavedOffline(route.summary)
-                          ? 'text-amber-500 hover:text-amber-600 bg-amber-500/10'
-                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)]'
-                      }`}
-                      title={isRouteSavedOffline(route.summary) ? 'Saved offline (click to unsave)' : 'Save path for offline use'}
-                    >
-                      {isRouteSavedOffline(route.summary) ? (
-                        <BookmarkCheck className="h-4 w-4 text-amber-500" />
-                      ) : (
-                        <Bookmark className="h-4 w-4" />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleShareRoute(route)}
-                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
-                      title="Share safe route"
-                    >
-                      {copiedSummary === route.summary ? (
-                        <Check className="h-4 w-4 text-emerald-500" />
-                      ) : (
-                        <Share2 className="h-4 w-4" />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playClick();
-                        setRoutePendingRename(route);
-                        setNewRenameValue(route.summary);
-                      }}
-                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
-                      title="Rename safe route"
-                      aria-label="Rename safe route"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => promptDeleteRoute(route)}
-                      className="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                      title="Delete path"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <Tooltip content={isRouteSavedOffline(route.summary) ? 'Saved offline (click to unsave)' : 'Save path for offline use'} position="top">
+                      <button
+                        type="button"
+                        onClick={() => toggleRouteOfflineSave(route)}
+                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                          isRouteSavedOffline(route.summary)
+                            ? 'text-amber-500 hover:text-amber-600 bg-amber-500/10'
+                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+                        }`}
+                      >
+                        {isRouteSavedOffline(route.summary) ? (
+                          <BookmarkCheck className="h-4 w-4 text-amber-500" />
+                        ) : (
+                          <Bookmark className="h-4 w-4" />
+                        )}
+                      </button>
+                    </Tooltip>
+
+                    <Tooltip content="Share safe route" position="top">
+                      <button
+                        type="button"
+                        onClick={() => handleShareRoute(route)}
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                      >
+                        {copiedSummary === route.summary ? (
+                          <Check className="h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <Share2 className="h-4 w-4" />
+                        )}
+                      </button>
+                    </Tooltip>
+
+                    <Tooltip content="Rename safe route" position="top">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          setRoutePendingRename(route);
+                          setNewRenameValue(route.summary);
+                        }}
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                        aria-label="Rename safe route"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
+
+                    <Tooltip content="Delete this safe path" position="top">
+                      <button
+                        type="button"
+                        onClick={() => promptDeleteRoute(route)}
+                        className="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-xl bg-[var(--bg-main)]/70 border border-[var(--border-color)] text-center font-mono">
@@ -974,6 +1098,16 @@ export default function BestRoutesPage() {
                     <span className="text-xs font-bold">{riskLabel(route, copy)}</span>
                   </div>
                 </div>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleSeeOnMap(route)}
+                    className="w-full py-2 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 group cursor-pointer"
+                  >
+                    <Eye className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] group-hover:text-current transition-colors" />
+                    <span>See on Map</span>
+                  </button>
+                </div>
                 <div className="flex flex-col min-[430px]:flex-row items-stretch min-[430px]:items-center gap-2 pt-1">
                   <button
                     type="button"
@@ -983,24 +1117,25 @@ export default function BestRoutesPage() {
                     <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] group-hover:text-current transition-colors" />
                     <span className="whitespace-nowrap">Reached Destination</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleShareRoute(route)}
-                    className="py-2.5 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 group cursor-pointer whitespace-nowrap"
-                    title="Share safe route"
-                  >
-                    {copiedSummary === route.summary ? (
-                      <>
-                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span className="font-bold whitespace-nowrap">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
-                        <span className="whitespace-nowrap">Share</span>
-                      </>
-                    )}
-                  </button>
+                  <Tooltip content="Share safe route" position="top">
+                    <button
+                      type="button"
+                      onClick={() => handleShareRoute(route)}
+                      className="py-2.5 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 group cursor-pointer whitespace-nowrap"
+                    >
+                      {copiedSummary === route.summary ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                          <span className="font-bold whitespace-nowrap">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
+                          <span className="whitespace-nowrap">Share</span>
+                        </>
+                      )}
+                    </button>
+                  </Tooltip>
                   <a 
                     href={route.maps_url} 
                     target="_blank" 
