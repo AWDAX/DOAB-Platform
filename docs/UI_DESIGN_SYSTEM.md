@@ -32,12 +32,12 @@ This document is the **single source of truth** for all design rules, color toke
 DOAB (Detect, Order, Alert, Back-check) features an environment-aware dynamic theme architecture:
 
 ### 1.1 The Flood Theme: "Sea Porcelain Blur"
-- **Base Surfaces:** Sea Porcelain Blur (`#F4F6F8` light mode) and Deep Oceanic Depth (`#0A1118` dark mode).
-- **Accents:** Crisp Aqua (`#38BDF8`), Deep Oceanic (`#0C4A6E` / `#0284C7`), and translucent frosted glass (`rgba(16, 26, 36, 0.6)`).
+- **Base Surfaces:** Sea Porcelain Blur (`#F4F6F8` light mode) and Elevated Deep Oceanic (`#0E1724` dark canvas, `#162436` frosted navy card).
+- **Accents:** Crisp Aqua (`#38BDF8`), Deep Oceanic (`#0C4A6E` / `#0284C7`), and specular aqua glass borders (`rgba(56, 189, 248, 0.20)`).
 - **Textures:** Liquid ripples, crisp aquatic borders, and subtle glassmorphic blurs.
 
 ### 1.2 The Drought Theme: "Amber Golden Ground"
-- **Base Surfaces:** Dusty Porcelain (`#FAFAF9` light mode) and Deep Ground (`#1C1612` dark mode).
+- **Base Surfaces:** Dusty Porcelain (`#FAFAF9` light mode) and Deep Ground (`#1F1915` dark canvas, `#2C241E` warm baked card).
 - **Accents:** Premium Amber (`#F59E0B`), Golden Bronze (`#D97706`), and Sun-baked Terracotta (`#78350F`).
 - **Textures:** Solid, matte finishes, sharp neo-glass cuts, and warm baked glows.
 
@@ -57,11 +57,12 @@ Inspired by Linear, Apple, and Vercel:
 
 | Surface Level | Flood Mode (Light / Dark) | Drought Mode (Light / Dark) |
 | :--- | :--- | :--- |
-| **Canvas Background** | `#F4F6F8` / `#0A1118` | `#FAFAF9` / `#1F1915` |
-| **Platform Cards** | `#FFFFFF` / `#101A24` | `#FFFFFF` / `#2C241E` |
+| **Canvas Background** | `#F4F6F8` / `#0E1724` | `#FAFAF9` / `#1F1915` |
+| **Platform Cards** | `#FFFFFF` / `#162436` | `#FFFFFF` / `#2C241E` |
+| **Border & Specular Rim** | `#E2E8F0` / `rgba(56, 189, 248, 0.20)` | `#E7E5E4` / `rgba(217, 119, 6, 0.20)` |
 | **Primary Text (`--text-main`)** | `#0C4A6E` / `#E0F2FE` | `#78350F` / `#FFF7ED` |
 | **Glassmorphic Blur** | `backdrop-blur-xl` + Sea tint | `backdrop-blur-xl` + Amber tint |
-| **Active Accent** | `#0284C7` (Cerulean) | `#D97706` (Bronze Amber) |
+| **Active Accent** | `#0284C7` (Cerulean) / `#38BDF8` (Neon Aqua) | `#D97706` (Bronze Amber) |
 
 ### 3.1 Centralized Light-Mode Primary Button & Sliding Pill Gradients (`src/index.css`)
 All primary buttons (`Create Safe Path`, `Open in Google Maps`, primary CTAs) and active sliding background pills (`2D Lite / 3D GPU`, `All Alerts` filter tabs, `Desktop Sidebar` vertical pill, `Assistant` mode switcher) share a centralized CSS variable (`--primary-btn-gradient` / `--auth-btn-gradient`) in Light Mode:

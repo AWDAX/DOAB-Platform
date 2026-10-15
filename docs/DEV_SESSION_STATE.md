@@ -66,6 +66,13 @@ Do NOT invent alternative architectures or revert to unverified scrapers. Follow
   - **NASA SRTM & ISRO CartoDEM**: 30m digital elevation models powering hydrological slope and depression calculations.
 - Verified TypeScript build integrity (`tsc -b && vite build` passing with zero errors).
 
+### 6. Luminous Oceanic Dark Theme Elevation (`src/index.css`, `docs/UI_DESIGN_SYSTEM.md`)
+- **Elevation Refinement:** Upgraded Flood Dark Mode tokens from sunken abyssal black to elevated frosted navy:
+  - `--bg-main`: `#0A1118` → `#0E1724` (Deep Oceanic Canvas).
+  - `--bg-card`: `#101A24` → `#162436` (Elevated Frosted Navy Card for crisp contrast and specular card readability).
+  - `--border-color`: `rgba(14, 165, 233, 0.15)` → `rgba(56, 189, 248, 0.20)` (Glassy Specular Aqua Rim).
+- **Documentation Parity:** Synchronized all design system tables and token matrices in `docs/UI_DESIGN_SYSTEM.md` with live production CSS.
+
 ---
 
 ## 🚀 Completed Session: Live Interactive Risk Routing, Speech Recognition, Memory Caching & Draggable Architecture (October 14, 2026)
