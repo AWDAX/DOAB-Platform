@@ -3798,7 +3798,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           </span>
                         </div>
                         <span className="mono-badge text-[8.5px] font-bold px-1.5 py-0.5 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--color-brand-accent)] shrink-0">
-                          1H FORWARD
+                          [1H FORWARD]
                         </span>
                       </div>
 
@@ -3827,7 +3827,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                                 <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded border ${
                                   p > 60
                                     ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
-                                    : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                                    : 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30'
                                 }`}>
                                   {p > 60 ? '[ACUTE DEFICIT]' : '[STABLE SUPPLY]'}
                                 </span>
@@ -3849,13 +3849,13 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                             }
                             if (p >= 25) {
                               return (
-                                <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30">
+                                <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30">
                                   [MODERATE POOLING]
                                 </span>
                               );
                             }
                             return (
-                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
+                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30">
                                 [LOW RISK / PASSABLE]
                               </span>
                             );
@@ -3875,8 +3875,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                                   : activeHydrologicalForecast.probabilityPercent >= 45
                                     ? 'bg-amber-600 dark:bg-amber-500'
                                     : activeHydrologicalForecast.probabilityPercent >= 25
-                                      ? 'bg-sky-600 dark:bg-sky-400'
-                                      : 'bg-emerald-600 dark:bg-emerald-400'
+                                      ? 'bg-slate-600 dark:bg-slate-400'
+                                      : 'bg-teal-600 dark:bg-teal-400'
                               }`}
                               style={{ width: `${activeHydrologicalForecast.probabilityPercent}%` }}
                             />
@@ -3899,7 +3899,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                             <span className="truncate">{imdTelemetry.station_name}</span>
                           </span>
                           <span className="mono-badge text-[9px] font-bold px-1.5 py-0.5 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] shrink-0">
-                            IMD LIVE
+                            [IMD LIVE]
                           </span>
                         </div>
                         <div className="grid grid-cols-2 gap-1 text-[var(--text-muted)] text-[9.5px]">
@@ -4012,7 +4012,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     <div className="pt-1.5 border-t border-[var(--border-color)]/60 text-[10px] font-mono text-[var(--text-muted)] flex items-center justify-between">
                       <span className="flex items-center gap-1">
                         <span>Risk Horizon:</span>
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--border-color)] text-[var(--text-main)] font-bold">1h Ahead</span>
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--border-color)] text-[var(--text-main)] font-bold">[1H AHEAD]</span>
                       </span>
                       <span className="font-bold text-[var(--text-main)]">
                         {(() => {
