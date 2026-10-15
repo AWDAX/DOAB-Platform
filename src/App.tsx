@@ -309,6 +309,7 @@ function AppContent({
   const handleAcceptWelcomeTour = () => {
     localStorage.setItem('doab_tour_first_login_prompted', 'true');
     setShowWelcomeTour(false);
+    setActiveTourType('global');
     setIsTourOpen(true);
   };
 
@@ -327,7 +328,10 @@ function AppContent({
     toggleEnvMode,
     toggleShortcutsModal: () => setIsShortcutsOpen((prev: boolean) => !prev),
     togglePreferencesModal: () => setIsPreferencesOpen((prev: boolean) => !prev),
-    toggleTour: () => setIsTourOpen((prev: boolean) => !prev),
+    toggleTour: () => {
+      setActiveTourType('global');
+      setIsTourOpen((prev: boolean) => !prev);
+    },
     focusSearch: () => {
       const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
       searchInput?.focus();
@@ -357,12 +361,12 @@ function AppContent({
       }
       setIsDangerBroadcastOpen(true);
     };
-    const handleOpenTour = () => {
-      setActiveTourType(undefined);
+    const handleOpenTour = (e?: CustomEvent) => {
+      setActiveTourType(e?.detail?.pageKey || 'global');
       setIsTourOpen(true);
     };
     const handleOpenPageTour = (e: CustomEvent) => {
-      setActiveTourType(e.detail?.pageKey);
+      setActiveTourType(e.detail?.pageKey || 'global');
       setIsTourOpen(true);
     };
     const handleOpenPreferences = () => setIsPreferencesOpen(true);
@@ -380,8 +384,8 @@ function AppContent({
 
     window.addEventListener('doab:open-permissions', handleOpenPermissions);
     window.addEventListener('doab:trigger-danger-broadcast', handleTriggerDanger as EventListener);
-    window.addEventListener('doab:open-tour', handleOpenTour);
-    window.addEventListener('doab:start-tour', handleOpenTour);
+    window.addEventListener('doab:open-tour', handleOpenTour as EventListener);
+    window.addEventListener('doab:start-tour', handleOpenTour as EventListener);
     window.addEventListener('doab:start-page-tour', handleOpenPageTour as EventListener);
     window.addEventListener('doab:open-preferences', handleOpenPreferences);
     window.addEventListener('doab:trigger-destination-arrival', handleTriggerArrival as EventListener);
@@ -392,8 +396,8 @@ function AppContent({
     return () => {
       window.removeEventListener('doab:open-permissions', handleOpenPermissions);
       window.removeEventListener('doab:trigger-danger-broadcast', handleTriggerDanger as EventListener);
-      window.removeEventListener('doab:open-tour', handleOpenTour);
-      window.removeEventListener('doab:start-tour', handleOpenTour);
+      window.removeEventListener('doab:open-tour', handleOpenTour as EventListener);
+      window.removeEventListener('doab:start-tour', handleOpenTour as EventListener);
       window.removeEventListener('doab:start-page-tour', handleOpenPageTour as EventListener);
       window.removeEventListener('doab:open-preferences', handleOpenPreferences);
       window.removeEventListener('doab:trigger-destination-arrival', handleTriggerArrival as EventListener);

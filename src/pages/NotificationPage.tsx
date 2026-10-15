@@ -231,7 +231,7 @@ export default function NotificationPage() {
             return (
               <div
                 key={`${alert.id || alert.lat}-${alert.lng}-${index}`}
-                id={alert.id ? `alert-card-${alert.id}` : index === 0 ? 'tour-alerts-critical' : index === 1 ? 'tour-alerts-tanker' : index === 2 ? 'tour-alerts-backcheck' : undefined}
+                id={index === 0 ? 'tour-alerts-critical' : index === 1 ? 'tour-alerts-tanker' : index === 2 ? 'tour-alerts-backcheck' : (alert.id ? `alert-card-${alert.id}` : undefined)}
                 data-focused-alert={isFocused ? 'true' : undefined}
                 className={`p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-4 items-start border transition-all duration-300 ${
                   isFocused

@@ -124,8 +124,28 @@ export function fetchBoundaries(signal?: AbortSignal): Promise<BoundaryCollectio
   return getJson('/boundaries', signal);
 }
 
-export function fetchImdTelemetry(stationId: string = '43295', signal?: AbortSignal): Promise<ImdTelemetry> {
-  return getJson<ImdTelemetry>(`/imd/station/${encodeURIComponent(stationId)}`, signal);
+export interface ImdTelemetryOptions {
+  stationId?: string;
+  lat?: number;
+  lng?: number;
+  state?: string;
+}
+
+export function fetchImdTelemetry(
+  optionsOrStationId?: string | ImdTelemetryOptions,
+  signal?: AbortSignal,
+): Promise<ImdTelemetry> {
+  if (typeof optionsOrStationId === 'string') {
+    return getJson<ImdTelemetry>(`/imd/station/${encodeURIComponent(optionsOrStationId)}`, signal);
+  }
+  const params = new URLSearchParams();
+  if (optionsOrStationId?.stationId) params.append('station_id', optionsOrStationId.stationId);
+  if (optionsOrStationId?.lat !== undefined && optionsOrStationId.lat !== null) params.append('lat', String(optionsOrStationId.lat));
+  if (optionsOrStationId?.lng !== undefined && optionsOrStationId.lng !== null) params.append('lng', String(optionsOrStationId.lng));
+  if (optionsOrStationId?.state) params.append('state', optionsOrStationId.state);
+
+  const query = params.toString();
+  return getJson<ImdTelemetry>(`/imd/telemetry${query ? `?${query}` : ''}`, signal);
 }
 
 export function fetchImdStations(query: string = '', signal?: AbortSignal): Promise<{ query: string; count: number; stations: ImdStation[] }> {
@@ -153,8 +173,64 @@ export function fetchRoutes(
   });
 }
 
+export interface LiveNdmaAlert {
+  id: string;
+  source: string;
+  disaster_type: string;
+  category: 'Flood' | 'Severe_Weather';
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  severity_level?: string;
+  area_description: string;
+  lat: number | null;
+  lng: number | null;
+  effective_start_time?: string;
+  effective_end_time?: string;
+  warning_message: string;
+  color?: string;
+  sender_org?: string;
+  status: string;
+}
+
+export interface LiveGmdaIncident {
+  id: string;
+  source: string;
+  category: string;
+  survey_type: string;
+  severity: string;
+  lat: number;
+  lng: number;
+  area_description: string;
+  remarks: string;
+  water_type_road?: string | null;
+  gully_trap?: string | null;
+  status: string;
+  updated_time: string;
+}
+
+export interface LiveCivicResponse {
+  status: string;
+  generated_at: string;
+  summary: {
+    ndma_total_alerts: number;
+    ndma_flood_alerts: number;
+    gmda_waterlogging_points: number;
+  };
+  national_alerts: LiveNdmaAlert[];
+  municipal_waterlogging: LiveGmdaIncident[];
+}
+
+export function fetchLiveAlerts(category?: string, signal?: AbortSignal): Promise<{ source: string; count: number; alerts: LiveNdmaAlert[] }> {
+  const query = category ? `?category=${encodeURIComponent(category)}` : '';
+  return getJson(`/alerts/live${query}`, signal);
+}
+
+export function fetchLiveCivicData(signal?: AbortSignal): Promise<LiveCivicResponse> {
+  return getJson<LiveCivicResponse>('/incidents/live', signal);
+}
+
 export function isStale(generatedAt: string, staleAfterSeconds: number, now = Date.now()): boolean {
   const stamp = Date.parse(generatedAt);
   if (Number.isNaN(stamp)) return true;
   return now - stamp > staleAfterSeconds * 1000;
 }
+

@@ -48,13 +48,96 @@ export interface TourStep {
 // COMPREHENSIVE TOUR STEP CONFIGURATIONS
 // ─────────────────────────────────────────────────────────────
 
+export const GLOBAL_TOUR_STEPS: TourStep[] = [
+  {
+    id: 'global_nav',
+    targetSelector: '#tour-nav-map',
+    title: 'DOAB Central Operations Hub',
+    stepLabel: 'Navigation Matrix',
+    badge: 'Global 01/05',
+    floodDescription: 'Central navigation rail connecting real-time hydrological GIS mapping, safe elevation bypasses, historical logs, civic notifications, and AI terminal.',
+    droughtDescription: 'Unified operations command connecting municipal water deficit tracking, tanker dispatch, and citizen verified distribution.',
+    proTip: 'Keyboard shortcuts 1 through 6 let you jump between operational views instantly.',
+    floodHighlight: 'Instant keyboard-driven civic routing',
+    droughtHighlight: 'Centralized municipal logistics rail',
+    icon: Compass,
+    preferredPosition: 'right',
+    highlightPadding: { x: 8, y: 8 },
+    spotlightRadius: 18
+  },
+  {
+    id: 'global_search',
+    targetSelector: '#tour-search',
+    title: 'Global Hazard & Command Search',
+    stepLabel: 'Command Palette',
+    badge: 'Global 02/05',
+    floodDescription: 'Press Ctrl + K anytime to open the global command palette. Search wards, impassable underpasses, and emergency shelters.',
+    droughtDescription: 'Query commercial tanker distribution points, community borewell levels, and emergency relief centers.',
+    proTip: 'Type any landmark or ward name for instant autocomplete suggestions.',
+    floodHighlight: 'Ctrl + K instant hazard lookup',
+    droughtHighlight: 'Real-time tanker & ward query',
+    icon: Search,
+    preferredPosition: 'bottom',
+    highlightPadding: { x: 10, y: 10 },
+    spotlightRadius: 20
+  },
+  {
+    id: 'global_climate',
+    targetSelector: '#tour-brand',
+    title: 'Dual-Climate Operational Toggle',
+    stepLabel: 'Climate Mode',
+    badge: 'Global 03/05',
+    floodDescription: 'Toggle between Monsoon Flood Inundation Operations and Scarcity Drought Logistics at any moment.',
+    droughtDescription: 'Switching dynamically adapts color themes, ML loss functions, routing algorithms, and civic action terminology.',
+    proTip: 'Press Shift + E on your keyboard to instantly switch operational modes.',
+    floodHighlight: 'Monsoon vs Scarcity instant shift',
+    droughtHighlight: 'Dynamic UI token re-theming',
+    icon: Droplets,
+    preferredPosition: 'bottom',
+    highlightPadding: { x: 10, y: 10 },
+    spotlightRadius: 20
+  },
+  {
+    id: 'global_copilot',
+    targetSelector: '#tour-ai-copilot',
+    title: 'DOAB AI Intelligence Assistant',
+    stepLabel: 'AI Terminal',
+    badge: 'Global 04/05',
+    floodDescription: 'Contextual conversational copilot with cited civic intelligence, voice dictation, and real-time hydrology reasoning.',
+    droughtDescription: 'Consult advisory guidelines, compute tanker turnaround times, and get verified civic answers without hallucination.',
+    proTip: 'Press "A" anytime to jump directly to the AI Assistant terminal.',
+    floodHighlight: 'Zero-hallucination hydrology model',
+    droughtHighlight: 'Hands-free voice recognition',
+    icon: AIOrbIcon,
+    preferredPosition: 'left',
+    highlightPadding: { x: 10, y: 10 },
+    spotlightRadius: 22
+  },
+  {
+    id: 'global_safety',
+    targetSelector: '#tour-permissions',
+    title: 'Life-Safety & Telemetry Center',
+    stepLabel: 'Permissions & Telemetry',
+    badge: 'Global 05/05',
+    floodDescription: 'Manage device GPS accuracy, on-device geofencing, emergency SOS danger broadcasts, and offline cache synchronization.',
+    droughtDescription: 'Configure municipal advisory SMS alerts, delivery fleet contracts, and commercial tanker credentials.',
+    proTip: 'Click the shield icon anytime to review hardware permissions and life-safety telemetry.',
+    floodHighlight: 'On-device privacy-first geofence',
+    droughtHighlight: 'Zero telemetry cloud leakage',
+    icon: Activity,
+    preferredPosition: 'bottom',
+    highlightPadding: { x: 8, y: 8 },
+    spotlightRadius: 18
+  }
+];
+
 export const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
     id: 'dashboard_map',
     targetSelector: '#tour-map-view',
     title: 'Risk Telemetry GIS Map',
-    badge: 'Step 01/06',
-    floodDescription: 'High-resolution Leaflet map displaying historical Bengaluru waterlogging complaints and real-time model risk contours.',
+    badge: 'Map 01/05',
+    floodDescription: 'High-resolution GIS map displaying historical waterlogging complaints, SRTM digital elevation contours, and real-time model risk polygons.',
     droughtDescription: 'Spatial tracking of ward water deficit, groundwater depletion alerts, and municipal tanker arrival corridors.',
     proTip: 'Drag to pan. Click any ward cluster or prediction cell to inspect raw depth telemetry.',
     floodHighlight: 'Sub-400m standing water perimeters',
@@ -67,24 +150,39 @@ export const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
     id: 'dashboard_search',
     targetSelector: '#tour-map-search',
-    title: 'Ward & Hazard Search Bar',
-    badge: 'Step 02/06',
-    floodDescription: 'Search complaints, waterlogged intersections, and critical flood hotspots with live severity filtering.',
-    droughtDescription: 'Filter emergency water request bounties and active municipal distribution points.',
-    proTip: 'Use the severity pills (Critical, High, Medium, Low) to isolate impassable roads.',
+    title: 'Live Risk Monitor & Hazard Search',
+    badge: 'Map 02/05',
+    floodDescription: 'Search complaints, waterlogged intersections, and critical flood hotspots with live severity filtering (Critical, High, Medium, Low).',
+    droughtDescription: 'Filter emergency water request bounties and active municipal distribution points with draggable telemetry inspector.',
+    proTip: 'Drag the header bar to reposition the panel anywhere on your screen.',
     floodHighlight: 'Live autocomplete & severity filtering',
-    droughtHighlight: 'Ward tanker demand filter',
+    droughtHighlight: 'Draggable ward telemetry dock',
     icon: Search,
     preferredPosition: 'bottom',
     highlightPadding: { x: 10, y: 10 },
     spotlightRadius: 18
   },
   {
+    id: 'dashboard_engine',
+    targetSelector: '#tour-map-engine',
+    title: 'Dual 2D/3D GPU Engine Dock',
+    badge: 'Map 03/05',
+    floodDescription: 'Switch between 2D Lite raster mode for low battery/bandwidth and 3D GPU mode for hardware-accelerated terrain contours and 60 FPS vector tilts.',
+    droughtDescription: 'Toggle high-detail 3D relief shaders for topological watershed monitoring or 2D raster tiles for field operations.',
+    proTip: 'In 3D mode, right-click and drag to tilt and rotate the digital elevation contours.',
+    floodHighlight: 'Hardware-accelerated 3D vector GIS',
+    droughtHighlight: 'Dynamic low-power vs high-detail rendering',
+    icon: Layers,
+    preferredPosition: 'bottom',
+    highlightPadding: { x: 8, y: 8 },
+    spotlightRadius: 18
+  },
+  {
     id: 'dashboard_forecast',
     targetSelector: '#tour-map-forecast',
     title: '1-Hour Prediction Telemetry',
-    badge: 'Step 03/06',
-    floodDescription: 'Machine learning model estimate for water accumulation in the next 60 minutes based on SRTM elevation and rainfall data.',
+    badge: 'Map 04/05',
+    floodDescription: 'Machine learning model estimate for water accumulation in the next 60 minutes based on SRTM elevation and IMD rainfall data.',
     droughtDescription: 'Groundwater depletion forecast and predicted tanker transit delays.',
     proTip: 'Click "Refresh" anytime to poll the newest server prediction telemetry.',
     floodHighlight: 'Model estimate, not a hardware sensor',
@@ -98,8 +196,8 @@ export const DASHBOARD_TOUR_STEPS: TourStep[] = [
     id: 'dashboard_controls',
     targetSelector: '#tour-map-controls',
     title: 'Map Telemetry Controls',
-    badge: 'Step 04/06',
-    floodDescription: 'Vertical control dock: GPS recenter, risk halos, prediction grids, ward boundaries, and intelligence overlay.',
+    badge: 'Map 05/05',
+    floodDescription: 'Vertical control dock: Dedicated Live Map Guide, GPS recenter, 2D/3D dual engine toggle, risk halos, and map intelligence.',
     droughtDescription: 'Quickly toggle deficit heatmaps, tanker distribution lines, and citizen verification markers.',
     proTip: 'Click the animated crosshair to snap the map directly to your live GPS coordinates.',
     floodHighlight: 'Custom vertical tool column with tooltips',
@@ -108,36 +206,6 @@ export const DASHBOARD_TOUR_STEPS: TourStep[] = [
     preferredPosition: 'left',
     highlightPadding: { x: 8, y: 8 },
     spotlightRadius: 18
-  },
-  {
-    id: 'dashboard_routes_nav',
-    targetSelector: '#tour-nav-best',
-    title: 'Safe Elevation Routing',
-    badge: 'Step 05/06',
-    floodDescription: 'Access safe computed paths engineered to navigate through high-elevation ridges and avoid valley flood traps.',
-    droughtDescription: 'Access commercial transit corridors for emergency water tankers and plumbing fleets.',
-    proTip: 'Keyboard shortcut: Press "2" on your keyboard to open Safe Routes instantly.',
-    floodHighlight: 'High-ground routing engine',
-    droughtHighlight: 'Priority dispatch corridors',
-    icon: RouteIcon,
-    preferredPosition: 'right',
-    highlightPadding: { x: 8, y: 8 },
-    spotlightRadius: 16
-  },
-  {
-    id: 'dashboard_assistant_nav',
-    targetSelector: '#tour-nav-assistant',
-    title: 'DOAB AI Copilot',
-    badge: 'Step 06/06',
-    floodDescription: 'Dedicated full-page conversational terminal with voice input, session history, and cited civic answers.',
-    droughtDescription: 'Inquire about tanker schedules, water distribution guidelines, and ward status.',
-    proTip: 'Press "A" anytime to jump directly to the DOAB AI Assistant.',
-    floodHighlight: 'Voice dictation & chat export',
-    droughtHighlight: 'Cited civic advisory terminal',
-    icon: AIOrbIcon,
-    preferredPosition: 'right',
-    highlightPadding: { x: 8, y: 8 },
-    spotlightRadius: 16
   }
 ];
 
@@ -583,6 +651,7 @@ export const LANDING_TOUR_STEPS: TourStep[] = [
 ];
 
 export const PAGE_TOUR_CONFIGS: Record<string, TourStep[]> = {
+  global: GLOBAL_TOUR_STEPS,
   dashboard: DASHBOARD_TOUR_STEPS,
   routes_best: BEST_ROUTES_TOUR_STEPS,
   routes_old: OLD_ROUTES_TOUR_STEPS,

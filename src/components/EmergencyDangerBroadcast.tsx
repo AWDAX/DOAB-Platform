@@ -27,7 +27,10 @@ export default function EmergencyDangerBroadcast({
 
   useEffect(() => {
     if (isOpen) {
-      playAlertAlarm();
+      const isSirenAllowed = localStorage.getItem('doab_alert_siren_enabled') !== 'false';
+      if (isSirenAllowed) {
+        playAlertAlarm();
+      }
       NativeService.triggerSosHaptics();
       NativeService.sendEmergencyNotification(
         "🚨 SEVERE FLOOD / DANGER AHEAD",

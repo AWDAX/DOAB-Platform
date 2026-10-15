@@ -1,7 +1,7 @@
 # Developer Session State & Next Agent Execution Directive
 
 **Current Branch:** `frontend` (merged & synced with `main`)  
-**Last Updated:** October 14, 2026  
+**Last Updated:** October 15, 2026  
 **Primary Next Plan Documents:** 
 1. 🎯 **Immediate Present Plan:** [`docs/BACKEND_SERVING_AND_LAMBDA_ARCHITECTURE.md`](./BACKEND_SERVING_AND_LAMBDA_ARCHITECTURE.md) (RDS PostgreSQL Seeder, FastAPI Viewport Endpoint, AWS Lambda IMD Ingestion)
 2. 🗺️ **National Grid & Weather Roadmap:** [`docs/FUTURE_NATIONAL_GRID_IMD_PLAN.md`](./FUTURE_NATIONAL_GRID_IMD_PLAN.md) (Uber H3, 1,405 IMD Stations, Temporal Decay Half-Life)
@@ -22,8 +22,49 @@ Do NOT invent alternative architectures or revert to unverified scrapers. Follow
 
 - **Live Production App & Native APK:** Built, verified, and synced across all 4 `DOAB-APP.apk` deliverable locations.
 - **Data Parity:** ~450–600 stratified nationwide incident pins across 20+ states and 40 macro cluster halos are live on both localhost and production (`doab.sahnirmaan.live`).
+- **Live IMD Weather & Radar Telemetry:** Real-time 24h rainfall (mm), diurnal min/max temperatures, Doppler Radar / Satellite nowcast severe warnings, and 7-day NWP outlook active via 1,405 station registry and KD-tree lookup.
 - **Routing Engine:** Offline SRTM digital elevation solver fallback active in `BestRoutesPage.tsx` providing ranked corridors (8.2%, 16.5%, 44.8% risk).
 - **Interactive Safe Path Creator:** Fully draggable, speech-enabled, OSRM/DEM-evaluated 3-tier corridor system with dual-surface evaluation loaders and instant in-memory route caching.
+
+---
+
+## 🚀 Completed Session: IMD Weather Integration, Prioritized Intersection Model, State Focus Decoupling & Anti-Jitter Engineering (October 15, 2026)
+
+### 1. Macro Risk Clusters: Prioritized Intersection Scoring Model (`MapPage.tsx`)
+- **Problem:** Naive linear summation ($\text{Recency} + \text{Proximity} + \text{Criticality}$) allowed severe incidents from 3 weeks ago or fresh incidents 1,500 km away to falsely crowd out active, local dangers in the cluster ranking.
+- **Solution:** Implemented the Multiplicative Prioritized Intersection Model:
+  $$\text{Intersection Factor} = \frac{\text{Recency} \times \text{Proximity}}{100}$$
+  $$\text{Trifecta} = \frac{\text{Intersection Factor} \times \text{Criticality}}{100}$$
+  $$\text{Composite Score} = (0.45 \times \text{Intersection Factor}) + (0.35 \times \text{Criticality}) + (0.20 \times \text{Trifecta})$$
+- **Impact:** Recent cases must be near the operational focus to rank at the top. Far-off events have their recency score dampened by distance, ensuring actionable, localized priority.
+
+### 2. State Focus vs. Live GPS Location Decoupling (`MapPage.tsx`)
+- **Problem:** When a user explicitly selected a state from the combobox (e.g., Uttar Pradesh), proximity was still calculated against the user's remote physical GPS (e.g., Bengaluru), giving every cluster in the selected state a near-zero proximity penalty and displaying "1,642 km from you".
+- **Solution:** Decoupled the operational reference center:
+  - When `selectedState !== 'all'`, `referenceCenter` snaps to the selected state's regional capital/corridor center (`distFromRef`), and cluster cards contextually display `~X.X km from state focus`.
+  - Only in All-India mode does it use the user's live GPS (`X.X km from you`).
+
+### 3. Layout Stability & Anti-Jitter Architecture (`MapPage.tsx`, `docs/UI_DESIGN_SYSTEM.md`)
+- **Problem 1 (Chip Shifting):** Toggling `Recent Cases` shifted `Nearest Cases` horizontally due to fluid `min-w` and border width variations.
+  - **Fix:** Enforced invariant `w-[106px] shrink-0` and matched active border widths (`border-[var(--text-main)]`), guaranteeing zero sibling shift on toggle.
+- **Problem 2 (7-Day Drawer Jitter):** Expanding the 7-day forecast pushed the card past `maxHeight`, causing the browser to abruptly inject a vertical scrollbar, reducing available card width and twitching all tabs.
+  - **Fix:** Added `scrollbarGutter: 'stable'` to `#tour-map-search`, wrapped the drawer in Framer Motion `<AnimatePresence>` and `<motion.div>` with `overflow-hidden`, and elevated card `maxHeight` boundary from 700px to 740px dynamically on expansion.
+- **Problem 3 (7-Day List Truncation):** List was clamped to `max-h-48` (192px), showing only 5 days and requiring nested inner scrolling.
+  - **Fix:** Increased inner list max-height to `max-h-[340px]`, allowing all 7 days to fit cleanly inside the card without clipping or inner scrollbars.
+
+### 4. Official IMD City Weather & Nowcast Engine Integration (`services/prediction-api/app/imd.py`, `src/data/stationRegistry.ts`)
+- **Discovery:** Reverse-engineered official IMD City Weather endpoints (`citywx/responsive/api/search.php` and `fetchCity_static.php`).
+- **Backend Service:** Implemented `IMDStationClient` with KD-Tree nearest station lookup across 1,405 stations, TTL caching, 24h rainfall parsing (accounting for IMD standard synoptic reporting cycles), temperature min/max fallback handling, and Doppler Weather Radar/Satellite nowcast warning extraction.
+- **Frontend Integration:** Linked active station weather to the user's viewport/location, surfacing 24h rain (mm), temperature, nowcast warnings, and 7-day NWP synoptic forecast directly in the Live Risk Monitor.
+
+### 5. Multi-Source Civic & Disaster Ingestion Architecture Verification
+- Comprehensive audit of data sources documented in `docs/LIVE_CIVIC_DATA_INGESTION_ARCHITECTURE.md`:
+  - **NDMA Sachet**: ITU Common Alerting Protocol (CAP) live alerts across all 36 states and UTs.
+  - **GMDA OneMap**: Esri ArcGIS REST FeatureServer (`flood_survey_2/FeatureServer/0`) for underpass flood depth surveys.
+  - **UFEWS Gorakhpur**: Ward-level municipal waterlogging incident stream.
+  - **OpenCity / Janaagraha**: Geocoded municipal drainage grievance dataset.
+  - **NASA SRTM & ISRO CartoDEM**: 30m digital elevation models powering hydrological slope and depression calculations.
+- Verified TypeScript build integrity (`tsc -b && vite build` passing with zero errors).
 
 ---
 
