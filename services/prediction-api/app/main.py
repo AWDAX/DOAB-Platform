@@ -27,10 +27,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 app = FastAPI(title="DOAB waterlogging estimates", version="1.0.0")
 _settings = get_settings()
+_cors_origins = ["*"] if "*" in _settings.cors_origins else _settings.cors_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_settings.cors_origins,
-    allow_methods=["GET", "POST"],
+    allow_origins=_cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
     allow_headers=["*"],
 )
 

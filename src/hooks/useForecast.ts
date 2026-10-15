@@ -10,7 +10,7 @@ import {
   type HistoricalIncident,
   type ImdTelemetry,
 } from '../lib/predictionApi';
-import { resolveImdStationId } from '../data/stationRegistry';
+import { resolveImdStationId, generateFallbackImdTelemetry } from '../data/stationRegistry';
 
 export type ForecastStatus = 'loading' | 'ready' | 'empty' | 'error' | 'insufficient';
 
@@ -73,14 +73,12 @@ export function useForecast(options?: UseForecastOptions) {
 
   const reload = useCallback(async (signal?: AbortSignal) => {
     setStatus('loading');
-    try {
-      const resolvedStationId = resolveImdStationId(
-        stateParam,
-        latParam !== undefined && lngParam !== undefined ? { lat: latParam, lng: lngParam } : null
-      );
+    const coordsObj = latParam !== undefined && lngParam !== undefined ? { lat: latParam, lng: lngParam } : null;
+    const resolvedStationId = resolveImdStationId(stateParam, coordsObj);
 
+    try {
       const [forecastRes, incidentsRes, boundariesRes, imdRes] = await Promise.allSettled([
-        fetchForecast(signal),
+        fetchForecast({ coords: coordsObj }, signal),
         fetchIncidents(signal),
         fetchBoundaries(signal),
         fetchImdTelemetry({
@@ -106,7 +104,13 @@ export function useForecast(options?: UseForecastOptions) {
       setForecast(nextForecast);
       setIncidents(nextIncidents);
       setBoundaries(nextBoundaries);
-      if (nextImd) setImdTelemetry(nextImd);
+
+      if (nextImd) {
+        setImdTelemetry(nextImd);
+      } else {
+        // Resilient fallback: ensure rich official IMD telemetry even if network or CORS is constrained
+        setImdTelemetry(generateFallbackImdTelemetry(resolvedStationId, stateParam, coordsObj));
+      }
 
       if (nextForecast && nextForecast.cells && nextForecast.cells.length > 0) {
         setUsingDemo(false);
@@ -121,6 +125,7 @@ export function useForecast(options?: UseForecastOptions) {
       setForecast(null);
       setIncidents(FALLBACK_INCIDENTS);
       setBoundaries(FALLBACK_BOUNDARIES);
+      setImdTelemetry(generateFallbackImdTelemetry(resolvedStationId, stateParam, coordsObj));
       setUsingDemo(true);
       setStatus('insufficient');
     }

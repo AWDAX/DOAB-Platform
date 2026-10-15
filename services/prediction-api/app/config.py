@@ -16,11 +16,20 @@ PROCESSED_DIR = DATA_DIR / "processed"
 MODEL_DIR = SERVICE_ROOT / "models"
 DEFAULT_MODEL_PATH = MODEL_DIR / "waterlogging_1h.joblib"
 
-# Repo root is parents[2] of this file: services/prediction-api/app/config.py
-REPO_ROOT = SERVICE_ROOT.parents[1]
-DEFAULT_INCIDENT_CSV = (
-    REPO_ROOT / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv"
-)
+def _find_incident_csv() -> Path:
+    candidates = [
+        SERVICE_ROOT.parents[1] / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv",
+        SERVICE_ROOT.parent / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv",
+        SERVICE_ROOT / "data" / "raw" / "Dataset [Old Dataset 2].csv",
+        SERVICE_ROOT / "data" / "raw" / "incidents.csv",
+        Path.cwd() / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv",
+    ]
+    for c in candidates:
+        if c.is_file():
+            return c
+    return candidates[0]
+
+DEFAULT_INCIDENT_CSV = _find_incident_csv()
 
 # High-resolution ML corridor (Bengaluru pilot with geolocated micro-labels)
 PILOT_BBOX = {"min_lat": 12.60, "max_lat": 13.30, "min_lng": 77.30, "max_lng": 77.90}
@@ -61,7 +70,10 @@ def _csv_env(name: str, default: str) -> list[str]:
 class Settings:
     model_path: Path = field(default_factory=lambda: Path(os.getenv("PREDICTION_MODEL_PATH", DEFAULT_MODEL_PATH)))
     incident_csv: Path = field(default_factory=lambda: Path(os.getenv("INCIDENT_CSV_PATH", DEFAULT_INCIDENT_CSV)))
-    cors_origins: list[str] = field(default_factory=lambda: _csv_env("PREDICTION_CORS_ORIGINS", "http://localhost:5173"))
+    cors_origins: list[str] = field(default_factory=lambda: _csv_env(
+        "PREDICTION_CORS_ORIGINS",
+        "http://localhost:5173,http://localhost:4173,http://localhost:3000,https://doab.sahnirmaan.live,https://api-doab.sahnirmaan.live,https://doab.pages.dev,*"
+    ))
     rate_limit_per_minute: int = int(os.getenv("PREDICTION_RATE_LIMIT_PER_MINUTE", "60"))
     # Server-side only. Never shipped to the browser. Optional: without it, routes are returned unscored.
     google_routes_api_key: str | None = os.getenv("GOOGLE_ROUTES_API_KEY") or None

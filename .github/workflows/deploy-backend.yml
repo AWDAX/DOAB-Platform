@@ -32,8 +32,9 @@ jobs:
           ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
 
           echo "🚀 Syncing backend files to EC2..."
-          ssh "$USER@$HOST" "mkdir -p /home/ubuntu/app"
+          ssh "$USER@$HOST" "mkdir -p /home/ubuntu/app '/home/ubuntu/Muncipal corp Dataset'"
           rsync -avz -e "ssh -i ~/.ssh/id_rsa" --exclude="venv" --delete services/prediction-api/ "$USER@$HOST:/home/ubuntu/app/"
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa" "Muncipal corp Dataset/" "$USER@$HOST:/home/ubuntu/Muncipal corp Dataset/"
 
           echo "🔄 Running setup and service restart on EC2..."
           ssh "$USER@$HOST" "bash -s" << 'EOF'
