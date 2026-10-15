@@ -25,19 +25,26 @@ jobs:
           USER: ${{ secrets.EC2_USER }}
         run: |
           set -e
-          echo "Setting up SSH key..."
+          echo "Setting up SSH key and keepalive..."
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+          cat << 'SSHEOF' >> ~/.ssh/config
+          Host *
+            ServerAliveInterval 15
+            ServerAliveCountMax 240
+            TCPKeepAlive yes
+            StrictHostKeyChecking no
+          SSHEOF
 
           echo "🚀 Syncing backend files to EC2..."
-          ssh "$USER@$HOST" "mkdir -p /home/ubuntu/app '/home/ubuntu/Muncipal corp Dataset'"
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa" --exclude="venv" --delete services/prediction-api/ "$USER@$HOST:/home/ubuntu/app/"
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa" "Muncipal corp Dataset/" "$USER@$HOST:/home/ubuntu/Muncipal corp Dataset/"
+          ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=240 "$USER@$HOST" "mkdir -p /home/ubuntu/app '/home/ubuntu/Muncipal corp Dataset'"
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o ServerAliveInterval=15" --exclude="venv" --delete services/prediction-api/ "$USER@$HOST:/home/ubuntu/app/"
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o ServerAliveInterval=15" "Muncipal corp Dataset/" "$USER@$HOST:/home/ubuntu/Muncipal corp Dataset/"
 
           echo "🔄 Running setup and service restart on EC2..."
-          ssh "$USER@$HOST" "bash -s" << 'EOF'
+          ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=240 "$USER@$HOST" "bash -s" << 'EOF'
             set -e
             APP_DIR="/home/ubuntu/app"
             if [ ! -f "$APP_DIR/venv/bin/python" ]; then
@@ -50,7 +57,9 @@ jobs:
             cd "$APP_DIR"
             if [ ! -f "$APP_DIR/models/waterlogging_1h.joblib" ]; then
               mkdir -p "$APP_DIR/models"
-              "$APP_DIR/venv/bin/python" -m app.cli build-dataset || echo "Dataset build skipped/cached"
+              if [ ! -f "$APP_DIR/data/processed/training_table.csv" ]; then
+                "$APP_DIR/venv/bin/python" -m app.cli build-dataset || echo "Dataset build skipped/cached"
+              fi
               "$APP_DIR/venv/bin/python" -m app.cli train || echo "Model train skipped"
             fi
 
