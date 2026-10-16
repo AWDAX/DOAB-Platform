@@ -86,7 +86,6 @@ import {
   GripHorizontal,
   History,
   ArrowRight,
-  ShieldCheck,
   CloudRain,
   Waves,
   Clock
@@ -413,7 +412,26 @@ export const ALL_REGIONS: RegionOption[] = [
 const DEFAULT_NATIONAL_CENTER: [number, number] = [20.5937, 78.9629];
 const DEFAULT_NATIONAL_ZOOM = 5;
 
-const getStoredUserCoords = (): { coords: [number, number]; hasReal: boolean } => {
+export function matchesStateFilter(item: { ward?: string; source?: string; description?: string; title?: string }, stateKey: string): boolean {
+  if (!stateKey || stateKey === 'all') return true;
+  const txt = `${item.ward || ''} ${item.source || ''} ${item.description || ''} ${item.title || ''}`.toLowerCase();
+  const key = stateKey.toLowerCase();
+  if (txt.includes(key)) return true;
+  if (key === 'karnataka' && (txt.includes('bengaluru') || txt.includes('bbmp') || txt.includes('bangalore'))) return true;
+  if (key === 'delhi' && (txt.includes('delhi') || txt.includes('ncr') || txt.includes('noida') || txt.includes('gurugram'))) return true;
+  if (key === 'maharashtra' && (txt.includes('mumbai') || txt.includes('pune') || txt.includes('thane'))) return true;
+  if (key === 'uttar pradesh' && (txt.includes('uttar pradesh') || txt.includes('lucknow') || txt.includes('noida') || txt.includes('varanasi'))) return true;
+  if (key === 'telangana' && (txt.includes('hyderabad') || txt.includes('telangana'))) return true;
+  if (key === 'west bengal' && (txt.includes('kolkata') || txt.includes('bengal'))) return true;
+  if (key === 'tamil nadu' && (txt.includes('chennai') || txt.includes('tamil nadu'))) return true;
+  if (key === 'bihar' && (txt.includes('patna') || txt.includes('bihar'))) return true;
+  if (key === 'gujarat' && (txt.includes('ahmedabad') || txt.includes('surat') || txt.includes('gujarat'))) return true;
+  if (key === 'haryana' && (txt.includes('gurugram') || txt.includes('faridabad') || txt.includes('haryana'))) return true;
+  if (key === 'jharkhand' && (txt.includes('ranchi') || txt.includes('jamshedpur') || txt.includes('jharkhand'))) return true;
+  return false;
+}
+
+export const getStoredUserCoords = (): { coords: [number, number]; hasReal: boolean } => {
   try {
     const cached = JSON.parse(localStorage.getItem('doab_user_coords_v1') || 'null');
     if (cached && typeof cached.lat === 'number' && typeof cached.lng === 'number' && !isNaN(cached.lat) && !isNaN(cached.lng)) {
@@ -426,7 +444,7 @@ const getStoredUserCoords = (): { coords: [number, number]; hasReal: boolean } =
 const initialUserLocation = getStoredUserCoords();
 
 // Session-persisted map state so switching away from MapPage and back does not re-trigger the initial GPS zoom-in animation
-const mapSessionState: {
+export const mapSessionState: {
   hasCompletedInitialLocationZoom: boolean;
   mapCenter: [number, number];
   mapZoom: number;
@@ -815,6 +833,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       return 660;
     }
   });
+  const [isCreatePathCollapsed, setIsCreatePathCollapsed] = useState<boolean>(false);
 
   // Multi-zone Resize handler for Live Risk Monitor (East rail, South rail, and South-East corner)
   const handleLiveRiskResizeStart = useCallback((e: React.PointerEvent, direction: 'se' | 'e' | 's' = 'se') => {
@@ -1262,6 +1281,11 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     mapSessionState.selectedState = selectedState;
     mapSessionState.isMultiStateMode = isMultiStateMode;
     mapSessionState.selectedStates = selectedStates;
+    try {
+      sessionStorage.setItem('doab_selected_state', selectedState);
+      sessionStorage.setItem('doab_selected_states', JSON.stringify(selectedStates));
+      window.dispatchEvent(new CustomEvent('doab:state-changed', { detail: { selectedState, selectedStates } }));
+    } catch {}
   }, [mapCenter, mapZoom, userCoords, hasRealLocation, isViewingMyLocation, selectedState, isMultiStateMode, selectedStates]);
 
   // Amazon Location Service — live geocoding state
@@ -1393,7 +1417,12 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   // Destination (B) Autocomplete with Amazon Location Service + Local Landmarks
   const handleDestAddressChange = useCallback((query: string) => {
     setPathDestAddress(query);
+    setDestination(query);
     setPathSummaryName('');
+    if (!query.trim()) {
+      setGeocodedPin(null);
+      setPathDest(null);
+    }
     if (destDebounceRef.current) clearTimeout(destDebounceRef.current);
     if (query.trim().length < 2) {
       setDestSuggestions([]);
@@ -1423,6 +1452,9 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     const specificName = place.label.split(',')[0].trim();
     const destName = specificName || place.municipality || place.label;
     setPathDestAddress(destName);
+    // Keep top search and geocoded pin state aligned with new destination
+    setGeocodedPin(coords);
+    setDestination(destName);
     setDestSuggestions([]);
     setPathSummaryName('');
     saveRecentSearch(place);
@@ -1664,35 +1696,129 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       return Math.round(Math.min(0.95, Math.max(0.012, rawRisk)) * 1000) / 1000;
     };
 
+    // Spatial Corridor Overlap & Proximity Engine (Hausdorff & Fréchet-derived proximity matching)
+    // Detects whether two routes share the same physical road/highway even with different vertex counts
+    const calculateCorridorOverlap = (
+      geomA: [number, number][],
+      geomB: [number, number][]
+    ): { isIdentical: boolean; overlapRatio: number; meanDeviationKm: number } => {
+      if (!geomA || !geomB || geomA.length < 2 || geomB.length < 2) {
+        return { isIdentical: false, overlapRatio: 0, meanDeviationKm: 999 };
+      }
+      // Exact reference equality or identical vertex arrays
+      if (geomA === geomB) {
+        return { isIdentical: true, overlapRatio: 1, meanDeviationKm: 0 };
+      }
+      const sampleCount = Math.min(30, geomA.length);
+      let closeMatches = 0;
+      let totalDev = 0;
+      const denom = Math.max(1, sampleCount - 1);
+
+      for (let i = 0; i < sampleCount; i++) {
+        const idx = Math.floor((i / denom) * (geomA.length - 1));
+        const ptA = geomA[idx];
+        if (!ptA) continue;
+        const [latA, lngA] = ptA;
+        let minDist = Infinity;
+        for (const ptB of geomB) {
+          if (!ptB) continue;
+          const [latB, lngB] = ptB;
+          const d = haversineKm(latA, lngA, latB, lngB);
+          if (d < minDist) minDist = d;
+        }
+        if (minDist !== Infinity) {
+          totalDev += minDist;
+          // 250m tolerance accounts for multi-lane expressways, service lanes, and parallel street snapping
+          if (minDist <= 0.25) {
+            closeMatches++;
+          }
+        }
+      }
+
+      const meanDeviationKm = sampleCount > 0 ? totalDev / sampleCount : 999;
+      const overlapRatio = sampleCount > 0 ? closeMatches / sampleCount : 0;
+      const isIdentical = overlapRatio >= 0.70 || meanDeviationKm <= 0.18;
+      return { isIdentical, overlapRatio, meanDeviationKm };
+    };
+
     // Use real street-network geometries from OSRM for all 3 corridors
-    // If OSRM returns fewer than 3 alternative branches, synthesize distinct elevated ridge bypass curves
-    const geomDirect = osrmRoutes && osrmRoutes[0] ? osrmRoutes[0].geometry : buildCurvedGeometry(0.02);
-    const geomBalanced = osrmRoutes && osrmRoutes[1] ? osrmRoutes[1].geometry : buildCurvedGeometry(-0.18);
-    const geomSafest = osrmRoutes && osrmRoutes[2] ? osrmRoutes[2].geometry : buildCurvedGeometry(0.24);
+    // If OSRM returns fewer than 3 alternative branches, fall back gracefully to real distinct detour curves
+    const geomDirect = (osrmRoutes && osrmRoutes[0]?.geometry?.length > 1) ? osrmRoutes[0].geometry : buildCurvedGeometry(0.02);
+    const geomBalanced = (osrmRoutes && osrmRoutes[1]?.geometry?.length > 1) 
+      ? osrmRoutes[1].geometry 
+      : buildCurvedGeometry(-0.18);
+    const geomSafest = (osrmRoutes && osrmRoutes[2]?.geometry?.length > 1) 
+      ? osrmRoutes[2].geometry 
+      : (osrmRoutes && osrmRoutes[1]?.geometry?.length > 1 ? osrmRoutes[1].geometry : buildCurvedGeometry(0.24));
 
-    const distDirect = osrmRoutes && osrmRoutes[0] ? osrmRoutes[0].distance_meters : Math.round(baseKm * 1000);
-    const distBalanced = osrmRoutes && osrmRoutes[1] ? osrmRoutes[1].distance_meters : Math.round(distDirect * 1.08);
-    const distSafest = osrmRoutes && osrmRoutes[2] ? osrmRoutes[2].distance_meters : Math.round(distDirect * 1.15);
+    let distDirect = osrmRoutes && osrmRoutes[0] ? osrmRoutes[0].distance_meters : Math.round(baseKm * 1000);
+    let distBalanced = osrmRoutes && osrmRoutes[1] ? osrmRoutes[1].distance_meters : Math.round(distDirect * 1.08);
+    let distSafest = osrmRoutes && osrmRoutes[2] ? osrmRoutes[2].distance_meters : (osrmRoutes && osrmRoutes[1] ? osrmRoutes[1].distance_meters : Math.round(distDirect * 1.15));
 
-    const riskSafest = assessCorridorHazard(geomSafest, 0.65);
-    const riskBalanced = assessCorridorHazard(geomBalanced, 1.45);
-    const riskDirect = assessCorridorHazard(geomDirect, 2.85);
+    // Check if corridors share the same physical road geometry (e.g. single highway, same avenue, or no detour options)
+    const isDirectAndSafestIdentical = calculateCorridorOverlap(geomSafest, geomDirect).isIdentical;
+    const isDirectAndBalancedIdentical = calculateCorridorOverlap(geomBalanced, geomDirect).isIdentical;
+    const isSafestAndBalancedIdentical = calculateCorridorOverlap(geomSafest, geomBalanced).isIdentical;
+
+    // Use unified physics-based relief multiplier when paths traverse the exact same asphalt
+    const multSafest = 0.65;
+    const multBalanced = (isDirectAndBalancedIdentical || isSafestAndBalancedIdentical) ? 0.65 : 1.45;
+    const multDirect = isDirectAndSafestIdentical ? 0.65 : 2.85;
+
+    let riskSafest = assessCorridorHazard(geomSafest, multSafest);
+    let riskBalanced = assessCorridorHazard(geomBalanced, multBalanced);
+    let riskDirect = assessCorridorHazard(geomDirect, multDirect);
+
+    // Physical law: if corridors follow the same asphalt, their flood risk, distance & travel time MUST be equal
+    if (isDirectAndSafestIdentical) {
+      riskDirect = riskSafest;
+      distDirect = distSafest;
+    }
+    if (isDirectAndBalancedIdentical) {
+      riskBalanced = riskDirect;
+      distBalanced = distDirect;
+    }
+    if (isSafestAndBalancedIdentical) {
+      riskBalanced = riskSafest;
+      distBalanced = distSafest;
+    }
+
+    const getRiskTier = (r: number): 'low' | 'moderate' | 'high' => {
+      if (r <= 0.12) return 'low';
+      if (r <= 0.28) return 'moderate';
+      return 'high';
+    };
+
+    const tierSafest = getRiskTier(riskSafest);
+    const tierBalanced = getRiskTier(riskBalanced);
+    const tierDirect = getRiskTier(riskDirect);
+
+    const badgeSafest = isDirectAndSafestIdentical ? 'Lowest Flood Risk • Primary Corridor' : 'Lowest Flood Risk • High Ground';
+    const badgeBalanced = isDirectAndBalancedIdentical ? 'Identical Road • Direct Transit' : 'Moderate Elevation • Faster Transit';
+    const badgeDirect = isDirectAndSafestIdentical ? 'Identical Road • Lowest Exposure' : 'Shortest Distance • Basin Exposure';
+
+    const getMidpoint = (geom: [number, number][], fallbackOffset: number): [number, number] => {
+      if (geom && geom.length > 0) {
+        return geom[Math.floor(geom.length / 2)];
+      }
+      return [start[0] + dLat * 0.5 + normLat * fallbackOffset, start[1] + dLng * 0.5 + normLng * fallbackOffset];
+    };
 
     // Multi-modal transit durations calibrated for urban city vs highway physics
-    const durSafestDrive = calculateRealisticTravelDuration(distSafest, 'driving', 1.08);
-    const durSafestBike = calculateRealisticTravelDuration(distSafest, 'motorcycle', 1.05);
-    const durSafestTransit = calculateRealisticTravelDuration(distSafest, 'transit', 1.10);
+    const durSafestDrive = calculateRealisticTravelDuration(distSafest, 'driving', isDirectAndSafestIdentical ? 1.0 : 1.08);
+    const durSafestBike = calculateRealisticTravelDuration(distSafest, 'motorcycle', isDirectAndSafestIdentical ? 1.0 : 1.05);
+    const durSafestTransit = calculateRealisticTravelDuration(distSafest, 'transit', isDirectAndSafestIdentical ? 1.0 : 1.10);
     const durSafestWalk = calculateRealisticTravelDuration(distSafest, 'walking', 1.0);
 
-    const durBalancedDrive = calculateRealisticTravelDuration(distBalanced, 'driving', 1.03);
-    const durBalancedBike = calculateRealisticTravelDuration(distBalanced, 'motorcycle', 1.02);
-    const durBalancedTransit = calculateRealisticTravelDuration(distBalanced, 'transit', 1.05);
+    const durBalancedDrive = calculateRealisticTravelDuration(distBalanced, 'driving', isDirectAndBalancedIdentical ? 1.0 : 1.03);
+    const durBalancedBike = calculateRealisticTravelDuration(distBalanced, 'motorcycle', isDirectAndBalancedIdentical ? 1.0 : 1.02);
+    const durBalancedTransit = calculateRealisticTravelDuration(distBalanced, 'transit', isDirectAndBalancedIdentical ? 1.0 : 1.05);
     const durBalancedWalk = calculateRealisticTravelDuration(distBalanced, 'walking', 1.0);
 
-    const durDirectDrive = calculateRealisticTravelDuration(distDirect, 'driving', 0.96);
-    const durDirectBike = calculateRealisticTravelDuration(distDirect, 'motorcycle', 0.95);
-    const durDirectTransit = calculateRealisticTravelDuration(distDirect, 'transit', 0.98);
-    const durDirectWalk = calculateRealisticTravelDuration(distDirect, 'walking', 0.95);
+    const durDirectDrive = isDirectAndSafestIdentical ? durSafestDrive : calculateRealisticTravelDuration(distDirect, 'driving', 0.96);
+    const durDirectBike = isDirectAndSafestIdentical ? durSafestBike : calculateRealisticTravelDuration(distDirect, 'motorcycle', 0.95);
+    const durDirectTransit = isDirectAndSafestIdentical ? durSafestTransit : calculateRealisticTravelDuration(distDirect, 'transit', 0.98);
+    const durDirectWalk = isDirectAndSafestIdentical ? durSafestWalk : calculateRealisticTravelDuration(distDirect, 'walking', 0.95);
 
     const originLabel = pathOriginAddress.trim() || (pathOrigin ? `${pathOrigin[0].toFixed(3)}°N, ${pathOrigin[1].toFixed(3)}°E` : 'Origin Sector');
     const destLabel = pathDestAddress.trim() || (pathDest ? `${pathDest[0].toFixed(3)}°N, ${pathDest[1].toFixed(3)}°E` : 'Safe Haven');
@@ -1702,7 +1828,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         id: 'candidate-1-safest',
         title: 'Safest Elevated Ridge Bypass',
         summary: `Elevated Ridge Corridor (${originLabel} → ${destLabel})`,
-        tier: 'low' as const,
+        tier: tierSafest,
         rank: 'safest' as const,
         mean_risk: riskSafest,
         distance_meters: distSafest,
@@ -1712,17 +1838,14 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         duration_seconds_transit: durSafestTransit,
         duration_seconds_walking: durSafestWalk,
         geometry: geomSafest,
-        midpoint: [
-          start[0] + dLat * 0.5 + normLat * 0.24,
-          start[1] + dLng * 0.5 + normLng * 0.24,
-        ] as [number, number],
-        badge: 'Lowest Flood Risk • High Ground',
+        midpoint: getMidpoint(geomSafest, 0.24),
+        badge: badgeSafest,
       },
       {
         id: 'candidate-2-balanced',
         title: 'Balanced Arterial Ring Bypass',
         summary: `Balanced Arterial Corridor (${originLabel} → ${destLabel})`,
-        tier: 'moderate' as const,
+        tier: tierBalanced,
         rank: 'alternative' as const,
         mean_risk: riskBalanced,
         distance_meters: distBalanced,
@@ -1732,17 +1855,14 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         duration_seconds_transit: durBalancedTransit,
         duration_seconds_walking: durBalancedWalk,
         geometry: geomBalanced,
-        midpoint: [
-          start[0] + dLat * 0.5 + normLat * -0.18,
-          start[1] + dLng * 0.5 + normLng * -0.18,
-        ] as [number, number],
-        badge: 'Moderate Elevation • Faster Transit',
+        midpoint: getMidpoint(geomBalanced, -0.18),
+        badge: badgeBalanced,
       },
       {
         id: 'candidate-3-direct',
         title: 'Direct Lowland Sector Route',
         summary: `Direct Lowland Route (${originLabel} → ${destLabel})`,
-        tier: 'high' as const,
+        tier: tierDirect,
         rank: 'alternative' as const,
         mean_risk: riskDirect,
         distance_meters: distDirect,
@@ -1752,11 +1872,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         duration_seconds_transit: durDirectTransit,
         duration_seconds_walking: durDirectWalk,
         geometry: geomDirect,
-        midpoint: [
-          start[0] + dLat * 0.5 + normLat * 0.02,
-          start[1] + dLng * 0.5 + normLng * 0.02,
-        ] as [number, number],
-        badge: 'Shortest Distance • Basin Exposure',
+        midpoint: getMidpoint(geomDirect, 0.02),
+        badge: badgeDirect,
       },
     ];
   }, [pathOrigin, pathDest, pathOriginAddress, pathDestAddress, hasRealLocation, userCoords, apiIncidents, imdTelemetry, osrmRoutes, travelMode, forecast, incidentSource]);
@@ -1784,6 +1901,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     } else if (pathPickingTarget === 'destination') {
       setPathDest([roundedLat, roundedLng]);
       setPathDestAddress(`Map Point B (${coordsStr})`);
+      setGeocodedPin([roundedLat, roundedLng]);
+      setDestination(`Map Point B (${coordsStr})`);
       setPathSummaryName('');
       setDestSuggestions([]);
       if (pathOrigin) {
@@ -1923,6 +2042,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     setOsrmRoutes(null);
     setPathOrigin(null);
     setPathDest(null);
+    setGeocodedPin(null);
+    setDestination('');
     setPathOriginAddress('');
     setPathDestAddress('');
     setPathSummaryName('');
@@ -2679,21 +2800,34 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             style={{ width: `${createPathWidth}px`, maxWidth: 'calc(100vw - 1rem)' }}
           >
             <div 
-              style={{ maxHeight: `${createPathMaxHeight}px` }}
-              className={`neo-glass-card rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)]/95 ${envMode === 'drought' ? 'dark:bg-[#151210]/95' : 'dark:bg-[#0c141d]/95'} flex flex-col gap-2.5 sm:gap-3 overflow-y-auto custom-scrollbar relative`}
+              style={{ 
+                maxHeight: isCreatePathCollapsed ? undefined : `${createPathMaxHeight}px`,
+                scrollbarGutter: 'stable'
+              }}
+              className={`neo-glass-card rounded-2xl shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] dark:border-white/20 bg-[var(--bg-card)]/95 ${
+                envMode === 'drought' ? 'dark:bg-[#151210]/95' : 'dark:bg-[#0c141d]/95'
+              } flex flex-col relative transition-colors duration-150 ${
+                isCreatePathCollapsed ? 'overflow-hidden p-2.5 sm:p-3' : 'overflow-y-auto custom-scrollbar p-3 sm:p-4 gap-2.5 sm:gap-3'
+              }`}
             >
-              {/* Header / Drag Handle */}
+              {/* Header / Drag Handle & Collapse Toggle Bar */}
               <div 
                 onPointerDown={(e) => {
                   if ((e.target as HTMLElement).closest('button, input')) return;
                   createPathDragControls.start(e);
                 }}
-                className="flex items-center justify-between gap-2 border-b border-[var(--border-color)] pb-2.5 cursor-grab active:cursor-grabbing select-none touch-none"
-                title="Drag to reposition panel"
+                onClick={() => {
+                  playClick();
+                  setIsCreatePathCollapsed(!isCreatePathCollapsed);
+                }}
+                className={`flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing select-none touch-none transition-colors ${
+                  isCreatePathCollapsed ? '' : 'border-b border-[var(--border-color)] pb-2.5'
+                }`}
+                title="Drag to reposition panel • Click to toggle expand/collapse"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] shrink-0 shadow-2xs">
-                    <RouteIcon className="h-4 w-4" />
+                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                  <div className="p-1.5 sm:p-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] shrink-0 shadow-2xs">
+                    <RouteIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-bold text-xs sm:text-sm text-[var(--text-main)] truncate flex items-center gap-2">
@@ -2702,25 +2836,56 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                         Amazon Location + DEM
                       </span>
                     </h3>
-                    <p className="text-[10px] text-[var(--text-muted)] truncate">
-                      Click map, use current GPS, or search Amazon Location Service to preview 3 bypass paths
-                    </p>
+                    {!isCreatePathCollapsed && (
+                      <p className="text-[10px] text-[var(--text-muted)] truncate">
+                        Click map, use current GPS, or search Amazon Location Service to preview 3 bypass paths
+                      </p>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="p-1 text-[var(--text-muted)] opacity-60 hover:opacity-100 flex items-center" title="Drag to reposition panel">
-                    <GripHorizontal className="h-4 w-4" />
-                  </div>
+                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
-                    onClick={handleCancelCustomPath}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playClick();
+                      setIsCreatePathCollapsed(!isCreatePathCollapsed);
+                    }}
+                    className="p-1.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
+                    aria-label={isCreatePathCollapsed ? "Expand Safe Elevation Path Panel" : "Collapse Safe Elevation Path Panel"}
+                    title={isCreatePathCollapsed ? "Expand Safe Elevation Path Panel" : "Collapse Safe Elevation Path Panel"}
+                  >
+                    {isCreatePathCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancelCustomPath();
+                    }}
                     className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer shrink-0"
                     title="Close Path Creation Mode"
                   >
                     <X className="h-4 w-4" />
                   </button>
+
+                  <div className="pl-1 pr-0.5 py-1 text-[var(--text-muted)] opacity-60 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex items-center justify-center shrink-0" title="Drag to reposition panel">
+                    <GripHorizontal className="h-4 w-4 shrink-0" />
+                  </div>
                 </div>
               </div>
+
+              {/* Collapsible Panel Content */}
+              <AnimatePresence initial={false}>
+                {!isCreatePathCollapsed && (
+                  <motion.div
+                    key="createPathContent"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                    className="flex flex-col gap-2.5 sm:gap-3 overflow-hidden"
+                  >
 
               {/* Waypoint Selector Chips (Click target toggle: Origin A vs Destination B) */}
               <div className="grid grid-cols-2 gap-2">
@@ -2855,6 +3020,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                       onChange={(e) => handleOriginAddressChange(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Escape') setOriginSuggestions([]);
+                        if (e.key === 'Enter' && originSuggestions.length > 0) {
+                          e.preventDefault();
+                          handleSelectOriginPlace(originSuggestions[0]);
+                        }
                       }}
                       placeholder="Search origin address or speak..."
                       className="w-full px-2.5 py-1.5 pr-14 text-xs rounded-xl bg-[var(--bg-main)] border border-neutral-300 dark:border-white/25 hover:border-neutral-500 dark:hover:border-white/50 focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)] transition-colors"
@@ -2917,6 +3086,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                       onChange={(e) => handleDestAddressChange(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Escape') setDestSuggestions([]);
+                        if (e.key === 'Enter' && destSuggestions.length > 0) {
+                          e.preventDefault();
+                          handleSelectDestPlace(destSuggestions[0]);
+                        }
                       }}
                       placeholder="Search safe destination or speak..."
                       className="w-full px-2.5 py-1.5 pr-14 text-xs rounded-xl bg-[var(--bg-main)] border border-neutral-300 dark:border-white/25 hover:border-neutral-500 dark:hover:border-white/50 focus:outline-none focus:ring-1 focus:ring-[var(--text-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)] transition-colors"
@@ -3122,17 +3295,6 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     )}
                   </div>
 
-                  {/* Natural Elevation Ridge Callout when direct and safest corridors both exhibit low hazard exposure */}
-                  {candidateSafePaths.length >= 3 && Math.abs(candidateSafePaths[0].mean_risk - candidateSafePaths[2].mean_risk) < 0.06 && (
-                    <div className="px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[10.5px] text-[var(--text-muted)] flex items-start sm:items-center gap-2">
-                      <ShieldCheck className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200 shrink-0 mt-0.5 sm:mt-0" />
-                      <div className="leading-snug">
-                        <span className="font-bold text-[var(--text-main)]">Optimal Natural Ridge: </span>
-                        <span>Direct terrain already traverses an elevated ridge line with minimal flood risk. Path 1 adds maximum buffer detour, while Path 3 offers the fastest direct transit.</span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Corridor Profile Buttons & Actions - Strictly Inline Single Row */}
                   <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 pt-2 border-t border-[var(--border-color)]">
                     {/* Left: Corridor Profile segmented selector with animated moving pillbar */}
@@ -3211,18 +3373,24 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </div>
               )}
 
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Single South-East Corner Resize Grip (Clean 2D Panel Resizing) */}
-              <div
-                onPointerDown={(e) => handleCreatePathResizeStart(e, 'se')}
-                className="absolute bottom-1.5 right-1.5 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
-                title="Drag corner to resize panel"
-              >
-                <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
-                  <circle cx="8" cy="8" r="1.1" />
-                  <circle cx="8" cy="4.5" r="1.1" />
-                  <circle cx="4.5" cy="8" r="1.1" />
-                </svg>
-              </div>
+              {!isCreatePathCollapsed && (
+                <div
+                  onPointerDown={(e) => handleCreatePathResizeStart(e, 'se')}
+                  className="absolute bottom-1.5 right-1.5 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
+                  title="Drag corner to resize panel"
+                >
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
+                    <circle cx="8" cy="8" r="1.1" />
+                    <circle cx="8" cy="4.5" r="1.1" />
+                    <circle cx="4.5" cy="8" r="1.1" />
+                  </svg>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -3297,7 +3465,6 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             title="Drag to reposition window • Click to collapse"
           >
             <div className="flex items-center gap-2 min-w-0">
-              <GripHorizontal className="h-3.5 w-3.5 text-[var(--text-muted)] opacity-60 shrink-0" />
               <Crosshair className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
               <span className="text-xs sm:text-[13px] font-bold truncate text-[var(--text-main)]">
                 Live Risk Monitor
@@ -3391,6 +3558,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               >
                 {isMobileCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </button>
+
+              <div className="pl-1 pr-0.5 py-1 text-[var(--text-muted)] opacity-60 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex items-center justify-center shrink-0" title="Drag to reposition panel">
+                <GripHorizontal className="h-4 w-4 shrink-0" />
+              </div>
             </div>
           </div>
 
@@ -4882,12 +5053,13 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               selectedClusterKey={selectedClusterKey}
               pathOrigin={pathOrigin}
               pathDest={pathDest}
+              candidateRoutes={pathOrigin && pathDest ? candidateSafePaths : []}
+              selectedCandidateIdx={selectedCandidateIdx}
+              onSelectCandidateRoute={(idx) => setSelectedCandidateIdx(idx)}
               activeRouteGeometry={
-                isPathCreationMode && pathOrigin && pathDest
+                pathOrigin && pathDest && activeCandidateRoute?.geometry
                   ? activeCandidateRoute.geometry
-                  : hasRealLocation && selectedIncident 
-                    ? [userCoords, [selectedIncident.lat, selectedIncident.lng]] 
-                    : undefined
+                  : undefined
               }
             />
           ) : (
@@ -4981,10 +5153,20 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </Marker>
               )}
 
-              {/* Search Result Pin */}
-              {geocodedPin && (
-                <Marker position={geocodedPin} icon={ALS_GEOCODED_ICON}>
-                  <LeafletTooltip permanent direction="top" offset={[0, -12]} className="custom-geocoded-tooltip">
+              {/* Search Result Pin - only displayed during general map exploration when not in Safe Path Creation Mode */}
+              {geocodedPin && !isPathCreationMode && (
+                <Marker 
+                  key={`geocoded-pin-${geocodedPin[0]}-${geocodedPin[1]}-${destination}`}
+                  position={geocodedPin} 
+                  icon={ALS_GEOCODED_ICON}
+                >
+                  <LeafletTooltip 
+                    key={`geocoded-tooltip-${geocodedPin[0]}-${geocodedPin[1]}-${destination}`}
+                    permanent 
+                    direction="top" 
+                    offset={[0, -12]} 
+                    className="custom-geocoded-tooltip"
+                  >
                     <div className="flex items-center gap-1 font-bold text-[10px] py-0.5 px-1 font-mono text-[var(--text-main)]">
                       <MapPin className="h-3 w-3 text-rose-500 shrink-0" />
                       <span className="truncate max-w-[130px]">{destination || 'Searched Destination'}</span>
@@ -5142,11 +5324,31 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
               {/* Custom Safe Path Origin Pin */}
               {pathOrigin && (
-                <Marker position={pathOrigin} icon={PATH_ORIGIN_ICON}>
+                <Marker 
+                  key={`path-origin-${pathOrigin[0]}-${pathOrigin[1]}-${pathOriginAddress}`}
+                  position={pathOrigin} 
+                  icon={PATH_ORIGIN_ICON}
+                >
+                  <LeafletTooltip 
+                    key={`path-origin-tt-${pathOrigin[0]}-${pathOrigin[1]}-${pathOriginAddress}`}
+                    permanent 
+                    direction="top" 
+                    offset={[0, -12]} 
+                    className="custom-geocoded-tooltip"
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-[10px] py-0.5 px-1 font-mono text-[var(--text-main)]">
+                      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded bg-[var(--text-main)] text-[var(--bg-card)] text-[9px] font-black font-mono shrink-0">
+                        A
+                      </span>
+                      <span className="truncate max-w-[140px]">{pathOriginAddress || 'Waypoint A (Origin)'}</span>
+                    </div>
+                  </LeafletTooltip>
                   <Popup className="neo-glass-popup">
                     <div className="p-1 text-xs">
-                      <div className="font-bold text-[var(--text-main)] flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5" />
+                      <div className="font-bold text-[var(--text-main)] flex items-center gap-1.5 font-mono">
+                        <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded bg-[var(--text-main)] text-[var(--bg-card)] text-[9px] font-black font-mono shrink-0">
+                          A
+                        </span>
                         Waypoint A: Safe Path Origin
                       </div>
                       <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
@@ -5162,11 +5364,31 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
               {/* Custom Safe Path Destination Pin */}
               {pathDest && (
-                <Marker position={pathDest} icon={PATH_DEST_ICON}>
+                <Marker 
+                  key={`path-dest-${pathDest[0]}-${pathDest[1]}-${pathDestAddress}`}
+                  position={pathDest} 
+                  icon={PATH_DEST_ICON}
+                >
+                  <LeafletTooltip 
+                    key={`path-dest-tt-${pathDest[0]}-${pathDest[1]}-${pathDestAddress}`}
+                    permanent 
+                    direction="top" 
+                    offset={[0, -12]} 
+                    className="custom-geocoded-tooltip"
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-[10px] py-0.5 px-1 font-mono text-[var(--text-main)]">
+                      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded bg-[var(--text-main)] text-[var(--bg-card)] text-[9px] font-black font-mono shrink-0">
+                        B
+                      </span>
+                      <span className="truncate max-w-[140px]">{pathDestAddress || 'Waypoint B (Safe Haven)'}</span>
+                    </div>
+                  </LeafletTooltip>
                   <Popup className="neo-glass-popup">
                     <div className="p-1 text-xs">
-                      <div className="font-bold text-[var(--text-main)] flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5" />
+                      <div className="font-bold text-[var(--text-main)] flex items-center gap-1.5 font-mono">
+                        <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded bg-[var(--text-main)] text-[var(--bg-card)] text-[9px] font-black font-mono shrink-0">
+                          B
+                        </span>
                         Waypoint B: Safe Haven Destination
                       </div>
                       <div className="text-[10px] text-[var(--text-main)] font-semibold mt-1">
@@ -5181,7 +5403,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
               )}
 
               {/* Custom Safe Path Connecting Elevation Corridors (All 3 Candidate Routes) */}
-              {pathOrigin && pathDest && !isEvaluatingRoutes && candidateSafePaths.map((cand, idx) => {
+              {pathOrigin && pathDest && candidateSafePaths.map((cand, idx) => {
                 const isSelectedCand = idx === selectedCandidateIdx;
                 return (
                   <Polyline

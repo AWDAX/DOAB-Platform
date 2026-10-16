@@ -483,6 +483,7 @@ export default function DevAdminDashboard({
         probability: alertSeverity === 'Critical' ? 0.92 : alertSeverity === 'High' ? 0.74 : 0.45,
         confidence: 'Live Admin Dispatched Event',
         updatedTime: 'Just now (Admin Live Broadcast)',
+        createdAt: Date.now(),
         isMockup: false,
       };
 

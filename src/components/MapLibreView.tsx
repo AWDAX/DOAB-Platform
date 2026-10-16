@@ -23,6 +23,16 @@ export interface MapLibreCluster {
   count?: number;
 }
 
+export interface CandidatePathOption {
+  id: string;
+  title: string;
+  badge?: string;
+  mean_risk: number;
+  geometry: [number, number][];
+  distance_meters: number;
+  duration_seconds: number;
+}
+
 interface MapLibreViewProps {
   center: [number, number];
   zoom: number;
@@ -33,6 +43,9 @@ interface MapLibreViewProps {
   envMode: 'flood' | 'drought';
   userLocation: { lat: number; lng: number } | null;
   activeRouteGeometry?: [number, number][];
+  candidateRoutes?: CandidatePathOption[];
+  selectedCandidateIdx?: number;
+  onSelectCandidateRoute?: (idx: number) => void;
   clusters?: MapLibreCluster[];
   showHeatLayer?: boolean;
   selectedClusterKey?: string | null;
@@ -67,6 +80,9 @@ export default function MapLibreView({
   envMode,
   userLocation,
   activeRouteGeometry,
+  candidateRoutes = [],
+  selectedCandidateIdx = 0,
+  onSelectCandidateRoute,
   clusters = [],
   showHeatLayer = false,
   selectedClusterKey = null,
@@ -78,6 +94,8 @@ export default function MapLibreView({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
+  const onSelectCandidateRouteRef = useRef(onSelectCandidateRoute);
+  onSelectCandidateRouteRef.current = onSelectCandidateRoute;
   const currentStyleModeRef = useRef<boolean>(isDarkMode);
   const [bearing, setBearing] = useState<number>(-17.6);
   const [pitch, setPitch] = useState<number>(45);
@@ -370,43 +388,139 @@ export default function MapLibreView({
       });
     }
 
-    // 4. Active Route Polyline
-    const routeSourceId = 'active-route-source';
-    const routeLayerId = 'active-route-layer';
+    // 4. Candidate Safe Path Corridors (All 3 Routes: Safest, Balanced, Direct)
+    const candidateRouteSourceId = 'candidate-routes-source';
+    const candidateRouteInactiveLayerId = 'candidate-routes-inactive-layer';
+    const candidateRouteActiveLayerId = 'candidate-routes-active-layer';
 
+    // Remove legacy single-route layers if present
     try {
-      if (map.getLayer(routeLayerId)) map.removeLayer(routeLayerId);
-      if (map.getSource(routeSourceId)) map.removeSource(routeSourceId);
+      if (map.getLayer('active-route-layer')) map.removeLayer('active-route-layer');
+      if (map.getSource('active-route-source')) map.removeSource('active-route-source');
     } catch (_) {}
 
-    if (activeRouteGeometry && activeRouteGeometry.length > 1) {
-      const coordinates = activeRouteGeometry.map(pt => [pt[1], pt[0]]);
-      map.addSource(routeSourceId, {
+    const routesToRender: { id: string; title: string; geometry: [number, number][]; isSelected: boolean; idx: number }[] = [];
+
+    if (candidateRoutes && candidateRoutes.length > 0 && pathOrigin && pathDest) {
+      candidateRoutes.forEach((cand, idx) => {
+        if (cand.geometry && cand.geometry.length > 1) {
+          routesToRender.push({
+            id: cand.id,
+            title: cand.title,
+            geometry: cand.geometry,
+            isSelected: idx === (selectedCandidateIdx ?? 0),
+            idx,
+          });
+        }
+      });
+    } else if (activeRouteGeometry && activeRouteGeometry.length > 1) {
+      routesToRender.push({
+        id: 'active-single-route',
+        title: 'Active Safe Route',
+        geometry: activeRouteGeometry,
+        isSelected: true,
+        idx: 0,
+      });
+    }
+
+    const routeGeoJson: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: routesToRender.map((r) => ({
+        type: 'Feature',
+        id: r.idx,
+        properties: {
+          id: r.id,
+          title: r.title,
+          idx: r.idx,
+          isSelected: r.isSelected,
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: r.geometry.map((pt) => [pt[1], pt[0]]),
+        },
+      })),
+    };
+
+    const existingRouteSource = map.getSource(candidateRouteSourceId) as maplibregl.GeoJSONSource | undefined;
+    if (existingRouteSource && typeof existingRouteSource.setData === 'function') {
+      existingRouteSource.setData(routeGeoJson);
+    } else if (routesToRender.length > 0) {
+      map.addSource(candidateRouteSourceId, {
         type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: coordinates
+        data: routeGeoJson,
+      });
+    }
+
+    // Add inactive alternative routes layer (dashed, slate)
+    if (map.getSource(candidateRouteSourceId) && !map.getLayer(candidateRouteInactiveLayerId)) {
+      map.addLayer({
+        id: candidateRouteInactiveLayerId,
+        type: 'line',
+        source: candidateRouteSourceId,
+        filter: ['==', ['get', 'isSelected'], false],
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': isDarkMode ? '#94a3b8' : '#64748b',
+          'line-width': 3,
+          'line-dasharray': [3, 3],
+          'line-opacity': 0.55,
+        },
+      });
+
+      map.on('click', candidateRouteInactiveLayerId, (e: any) => {
+        if (e.features && e.features.length > 0 && onSelectCandidateRouteRef.current) {
+          const feat = e.features[0];
+          const idx = Number(feat.properties?.idx);
+          if (Number.isFinite(idx)) {
+            playClick();
+            onSelectCandidateRouteRef.current(idx);
           }
         }
       });
 
+      map.on('mouseenter', candidateRouteInactiveLayerId, () => {
+        try {
+          map.getCanvas().style.cursor = "url('/cursors/hand-pointer.svg') 10 2, pointer";
+        } catch (_) {}
+      });
+
+      map.on('mouseleave', candidateRouteInactiveLayerId, () => {
+        try {
+          map.getCanvas().style.cursor = "url('/cursors/default_cursor.svg') 6 3, default";
+        } catch (_) {}
+      });
+    } else if (map.getLayer(candidateRouteInactiveLayerId)) {
+      map.setPaintProperty(candidateRouteInactiveLayerId, 'line-color', isDarkMode ? '#94a3b8' : '#64748b');
+    }
+
+    // Add active selected route layer (bold, high contrast white/black)
+    if (map.getSource(candidateRouteSourceId) && !map.getLayer(candidateRouteActiveLayerId)) {
       map.addLayer({
-        id: routeLayerId,
+        id: candidateRouteActiveLayerId,
         type: 'line',
-        source: routeSourceId,
+        source: candidateRouteSourceId,
+        filter: ['==', ['get', 'isSelected'], true],
         layout: {
           'line-join': 'round',
-          'line-cap': 'round'
+          'line-cap': 'round',
         },
         paint: {
-          'line-color': isDarkMode ? '#f8fafc' : '#171717',
-          'line-width': 4,
-          'line-dasharray': [2, 1]
-        }
+          'line-color': isDarkMode ? '#ffffff' : '#171717',
+          'line-width': 4.5,
+          'line-dasharray': [4, 2],
+          'line-opacity': 0.95,
+        },
       });
+    } else if (map.getLayer(candidateRouteActiveLayerId)) {
+      map.setPaintProperty(candidateRouteActiveLayerId, 'line-color', isDarkMode ? '#ffffff' : '#171717');
+    }
+
+    // Clear route source if no routes exist
+    if (routesToRender.length === 0 && existingRouteSource && typeof existingRouteSource.setData === 'function') {
+      existingRouteSource.setData({ type: 'FeatureCollection', features: [] });
     }
   };
 
@@ -830,7 +944,7 @@ export default function MapLibreView({
       map.once('styledata', syncLayers);
       map.once('load', syncLayers);
     }
-  }, [clusters, showHeatLayer, selectedClusterKey, selectedIncident, userLocation, activeRouteGeometry, envMode, isCameraFlying]);
+  }, [clusters, showHeatLayer, selectedClusterKey, selectedIncident, userLocation, activeRouteGeometry, candidateRoutes, selectedCandidateIdx, pathOrigin, pathDest, envMode, isCameraFlying]);
 
   // Sync markers when incidents or selections change
   useEffect(() => {
