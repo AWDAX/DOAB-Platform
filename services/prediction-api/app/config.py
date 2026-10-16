@@ -16,6 +16,13 @@ PROCESSED_DIR = DATA_DIR / "processed"
 MODEL_DIR = SERVICE_ROOT / "models"
 DEFAULT_MODEL_PATH = MODEL_DIR / "waterlogging_1h.joblib"
 
+# Repo root resolution with multi-environment fallback
+REPO_ROOT = (
+    SERVICE_ROOT.parents[1] if len(SERVICE_ROOT.parents) > 1 and (SERVICE_ROOT.parents[1] / "Muncipal corp Dataset").is_dir()
+    else (SERVICE_ROOT.parent if (SERVICE_ROOT.parent / "Muncipal corp Dataset").is_dir()
+    else Path("/home/ubuntu"))
+)
+
 def _find_incident_csv() -> Path:
     candidates = [
         SERVICE_ROOT.parents[1] / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv",
