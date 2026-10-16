@@ -12,7 +12,16 @@ import {
   Users, 
   Activity, 
   Terminal, 
-  Play
+  Play,
+  Sliders,
+  Flame,
+  Droplets,
+  Layers,
+  ShieldAlert,
+  CloudRain,
+  Sun,
+  Waves,
+  RotateCcw
 } from 'lucide-react';
 import { 
   getCurrentAdminSession, 
@@ -27,6 +36,204 @@ import { playClick, playAlertAlarm } from '../utils/soundFx';
 import { NativeService } from '../utils/nativeService';
 import { RemoteAdminChannel } from '../services/remoteAdminChannel';
 
+export interface DisasterScenario {
+  id: string;
+  name: string;
+  category: 'cloudburst' | 'dam_overflow' | 'sump_waterlogging' | 'drought_deficit' | 'heatwave' | 'water_contamination';
+  envMode: 'flood' | 'drought';
+  severity: 'Critical' | 'High' | 'Medium';
+  location: string;
+  conditions: {
+    rainfallRate?: string;
+    inundationDepth?: string;
+    dischargeRate?: string;
+    reservoirLevel?: string;
+    waterDeficit?: string;
+    groundwaterDrop?: string;
+    ambientTemp?: string;
+    turbidity?: string;
+  };
+  triggerThreshold: string;
+  impactAdvisory: string;
+  payload: {
+    title: string;
+    ward: string;
+    severity: 'Critical' | 'High' | 'Medium';
+    waterDepthCm: number;
+    rainfallMmH: number;
+    probability: number;
+    confidence: string;
+    description: string;
+    lat: number;
+    lng: number;
+  };
+}
+
+export const DISASTER_SCENARIOS: DisasterScenario[] = [
+  {
+    id: 'scen-cloudburst',
+    name: 'Flash Flood & Cloudburst Inundation',
+    category: 'cloudburst',
+    envMode: 'flood',
+    severity: 'Critical',
+    location: 'Koramangala 80ft Road & Sony World Junction (Ward 14)',
+    conditions: {
+      rainfallRate: '82.4 mm/h (> 65mm/h Threshold)',
+      inundationDepth: '95 cm (> 60cm Extreme)',
+      dischargeRate: 'Local Storm Runoff Saturated (4.2 m/s)'
+    },
+    triggerThreshold: 'Rainfall > 60mm/h AND Sump Depth > 45cm → Critical Life-Safety Alarm',
+    impactAdvisory: 'Immediate bypass engaged. 80ft Road completely submerged. Low-clearance transit halted.',
+    payload: {
+      title: '🚨 CRITICAL FLASH FLOOD: 80ft Road Inundation',
+      ward: 'Ward 14 (Koramangala)',
+      severity: 'Critical',
+      waterDepthCm: 95,
+      rainfallMmH: 82,
+      probability: 0.98,
+      confidence: 'Multi-Sensor DEM Inundation Rule Triggered',
+      description: 'Severe flash flood surge reported. Water depth exceeds 90cm. Immediate high-ground bypass active.',
+      lat: 12.9352,
+      lng: 77.6245
+    }
+  },
+  {
+    id: 'scen-dam-overflow',
+    name: 'Dam Reservoir Overflow & Riverine Surge',
+    category: 'dam_overflow',
+    envMode: 'flood',
+    severity: 'Critical',
+    location: 'Cauvery Basin / Low-Lying Riverine Corridor',
+    conditions: {
+      reservoirLevel: '104.2% Full Reservoir Level (FRL)',
+      dischargeRate: '48,500 Cusecs Crest Gate Discharge',
+      inundationDepth: 'River Stage +1.85m Above Danger Level'
+    },
+    triggerThreshold: 'Reservoir Level > 100% FRL AND Discharge > 35,000 cusecs → Riverine Evacuation',
+    impactAdvisory: 'Spillway release active. Riparian settlements alerted. Emergency high-elevation corridors deployed.',
+    payload: {
+      title: '🌊 RESERVOIR CREST DISCHARGE WARNING: +1.85m Surge',
+      ward: 'Cauvery Riverine Lowlands (Zone 4)',
+      severity: 'Critical',
+      waterDepthCm: 120,
+      rainfallMmH: 64,
+      probability: 0.95,
+      confidence: 'Hydrological River Gauge & Reservoir Model',
+      description: 'Crest gates opened due to excess inflow. Downstream low-lying zones instructed to evacuate to relief camps.',
+      lat: 12.4215,
+      lng: 76.5724
+    }
+  },
+  {
+    id: 'scen-underpass',
+    name: 'Sub-Level Urban Underpass Sump Submersion',
+    category: 'sump_waterlogging',
+    envMode: 'flood',
+    severity: 'High',
+    location: 'Domlur / Inner Ring Road Sump Passage',
+    conditions: {
+      inundationDepth: '68 cm Sump Waterlogging',
+      rainfallRate: '44.0 mm/h Moderate Intensity',
+      dischargeRate: 'Sub-surface Sump Pump Tripped'
+    },
+    triggerThreshold: 'Underpass Inundation > 40cm OR Pump Failure → Traffic Interlock Engagement',
+    impactAdvisory: 'Automatic barrier deployment advised. Two-wheelers and sedans redirected via elevated flyover.',
+    payload: {
+      title: '⚠️ URBAN SUMP HAZARD: Domlur Underpass Submerged',
+      ward: 'Domlur (Ward 72)',
+      severity: 'High',
+      waterDepthCm: 68,
+      rainfallMmH: 44,
+      probability: 0.88,
+      confidence: 'Copernicus 201m DEM Baseline + Telemetry',
+      description: 'Underpass sump flooded to 68cm depth. Overhead flyover bypass active for all traffic.',
+      lat: 12.9610,
+      lng: 77.6387
+    }
+  },
+  {
+    id: 'scen-drought-tanker',
+    name: 'Acute Drought & Water Tanker Logistics Deficit',
+    category: 'drought_deficit',
+    envMode: 'drought',
+    severity: 'Critical',
+    location: 'Varthur & Whitefield Peripheral Borewell Belt',
+    conditions: {
+      waterDeficit: '86% Ward Demand-Supply Logistics Deficit',
+      groundwaterDrop: '-5.2m Below Seasonal Historical Baseline',
+      dischargeRate: 'Municipal Tanker Dispatch ETA: +6.5 Hours Delay'
+    },
+    triggerThreshold: 'Borewell Yield < 15% AND Deficit > 75% → Logistics Emergency Reroute',
+    impactAdvisory: 'Emergency water distribution protocol initiated. Fleet priority assigned to community health clinics.',
+    payload: {
+      title: '🚰 ACUTE WATER LOGISTICS DEFICIT: 86% Depletion',
+      ward: 'Ward 85 (Varthur Sub-basin)',
+      severity: 'Critical',
+      waterDepthCm: 0,
+      rainfallMmH: 0,
+      probability: 0.94,
+      confidence: 'Central Ground Water Board (CGWB) & Civic Telemetry',
+      description: 'Severe water deficit detected. Tanker corridor prioritized. Civic ration hubs active.',
+      lat: 12.9392,
+      lng: 77.7460
+    }
+  },
+  {
+    id: 'scen-heatwave',
+    name: 'Extreme Heatwave & Wet-Bulb Stress Advisory',
+    category: 'heatwave',
+    envMode: 'drought',
+    severity: 'High',
+    location: 'Central Transit Hub & Industrial Corridor',
+    conditions: {
+      ambientTemp: '44.8°C Peak Surface Temp (> 42°C Threshold)',
+      dischargeRate: 'Wet-Bulb Temperature: 32.4°C (Danger Mark)',
+      waterDeficit: 'Thermal Radiation Heat Index: 51.0°C'
+    },
+    triggerThreshold: 'Ambient > 42°C AND Wet-Bulb > 31°C → Red Advisory for Delivery Fleets & Outdoor Crews',
+    impactAdvisory: 'Mandatory hydration halts for Swiggy/Zomato fleets. Shaded hydration stations activated.',
+    payload: {
+      title: '☀️ SEVERE THERMAL HEAT STRESS: 44.8°C Wet-Bulb Alert',
+      ward: 'Central Commercial Corridor',
+      severity: 'High',
+      waterDepthCm: 0,
+      rainfallMmH: 0,
+      probability: 0.91,
+      confidence: 'IMD AWS Station Thermistor & Satellite LST',
+      description: 'Dangerous heatwave threshold breached. Delivery partners advised to utilize DOAB cool corridors.',
+      lat: 12.9716,
+      lng: 77.5946
+    }
+  },
+  {
+    id: 'scen-contamination',
+    name: 'Potable Water Infiltration & Contamination Notice',
+    category: 'water_contamination',
+    envMode: 'flood',
+    severity: 'High',
+    location: 'Indiranagar 100ft Road Feeder Trunk',
+    conditions: {
+      turbidity: '18.4 NTU (Permissible Standard < 5.0 NTU)',
+      dischargeRate: 'Stormwater Runoff Cross-Seepage Detected',
+      inundationDepth: 'Pipeline Trench Waterlogging: 42cm'
+    },
+    triggerThreshold: 'Turbidity > 10 NTU OR Cross-Pipeline Pressure Inversion → Boil Water Notice',
+    impactAdvisory: 'Precautionary municipal boil-water advisory. Automated chlorination booster dosing initiated.',
+    payload: {
+      title: '☣️ CIVIC POTABLE WATER QUALITY ADVISORY: Boil Water',
+      ward: 'Indiranagar (Ward 80)',
+      severity: 'High',
+      waterDepthCm: 42,
+      rainfallMmH: 35,
+      probability: 0.86,
+      confidence: 'Water Treatment Pipeline SCADA Telemetry',
+      description: 'Elevated turbidity and stormwater infiltration detected. Citizens advised to boil water prior to consumption.',
+      lat: 12.9784,
+      lng: 77.6408
+    }
+  }
+];
+
 export default function DevAdminDashboard() {
   const [session, setSession] = useState<AdminUser | null>(() => getCurrentAdminSession());
   
@@ -36,10 +243,16 @@ export default function DevAdminDashboard() {
   const [loginError, setLoginError] = useState('');
 
   // Active Admin Tabs
-  const [activeTab, setActiveTab] = useState<'triggers' | 'admins'>('triggers');
+  const [activeTab, setActiveTab] = useState<'scenarios' | 'triggers' | 'admins'>('scenarios');
 
   // Trigger Action States
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
+
+  // Interactive Rule Engine Threshold Simulator State
+  const [simRainfall, setSimRainfall] = useState(48);
+  const [simWaterDepth, setSimWaterDepth] = useState(38);
+  const [simTemp, setSimTemp] = useState(33);
+  const [simGroundwaterDeficit, setSimGroundwaterDeficit] = useState(2.2);
 
   // Custom Alert Injection Form State
   const [alertTitle, setAlertTitle] = useState('Critical Inundation: 80ft Road Corridor');
@@ -137,6 +350,105 @@ export default function DevAdminDashboard() {
     localStorage.removeItem('doab_admin_custom_alerts');
     window.dispatchEvent(new CustomEvent('doab:admin-alerts-updated'));
     showToast('Cleared all custom admin alerts.');
+  };
+
+  // 1. Broadcast Pre-calibrated Disaster Scenario
+  const handleBroadcastScenario = (scen: DisasterScenario) => {
+    playClick();
+    playAlertAlarm();
+    NativeService.triggerSosHaptics();
+
+    // Broadcast through RemoteAdminChannel to all connected devices & native APK
+    RemoteAdminChannel.broadcast('custom_alert', scen.payload);
+
+    if (scen.severity === 'Critical') {
+      RemoteAdminChannel.broadcast('sos_danger', {
+        title: scen.payload.title,
+        ward: scen.payload.ward,
+        waterDepthCm: scen.payload.waterDepthCm,
+        description: scen.payload.description,
+        distanceAhead: '150 meters',
+        isCritical: true,
+      });
+    }
+
+    showToast(`Dispatched test case: [${scen.name}] across all live user screens & devices.`);
+  };
+
+  // 2. Compute dynamic severity from threshold simulator
+  const computeSimulatedSeverity = (): { severity: 'Critical' | 'High' | 'Medium' | 'Low'; reason: string } => {
+    if (simWaterDepth >= 60 || simRainfall >= 70 || simTemp >= 44) {
+      return {
+        severity: 'Critical',
+        reason: simWaterDepth >= 60 
+          ? `Inundation depth (${simWaterDepth}cm) exceeds critical threshold (60cm)`
+          : simRainfall >= 70 
+            ? `Rainfall intensity (${simRainfall}mm/h) exceeds cloudburst threshold (70mm/h)`
+            : `Ambient temperature (${simTemp}°C) exceeds extreme thermal limit (44°C)`
+      };
+    }
+    if (simWaterDepth >= 35 || simRainfall >= 40 || simGroundwaterDeficit >= 4.0 || simTemp >= 40) {
+      return {
+        severity: 'High',
+        reason: simWaterDepth >= 35
+          ? `Inundation depth (${simWaterDepth}cm) triggers low-clearance vehicle hazard`
+          : simRainfall >= 40
+            ? `Heavy precipitation (${simRainfall}mm/h) risks rapid urban pooling`
+            : simGroundwaterDeficit >= 4.0
+              ? `Groundwater table depletion (-${simGroundwaterDeficit}m) triggers tanker supply deficit`
+              : `High heat index (${simTemp}°C) triggers outdoor worker advisory`
+      };
+    }
+    if (simWaterDepth >= 15 || simRainfall >= 20 || simGroundwaterDeficit >= 2.0) {
+      return {
+        severity: 'Medium',
+        reason: 'Localized water pooling or moderate drought stress'
+      };
+    }
+    return {
+      severity: 'Low',
+      reason: 'Normal baseline conditions; no alert threshold breached'
+    };
+  };
+
+  const simResult = computeSimulatedSeverity();
+
+  // 3. Broadcast custom simulated threshold condition
+  const handleBroadcastSimulatedThreshold = () => {
+    playClick();
+    if (simResult.severity === 'Critical') {
+      playAlertAlarm();
+      NativeService.triggerSosHaptics();
+    }
+
+    const payload = {
+      lat: 12.9352,
+      lng: 77.6245,
+      title: `[SIMULATED ${simResult.severity.toUpperCase()} ALERT] Custom Condition Trigger`,
+      ward: 'Active Monitored Zone (Ward 14)',
+      severity: simResult.severity,
+      waterDepthCm: simWaterDepth,
+      rainfallMmH: simRainfall,
+      probability: simResult.severity === 'Critical' ? 0.96 : simResult.severity === 'High' ? 0.78 : simResult.severity === 'Medium' ? 0.45 : 0.08,
+      confidence: 'Live Rule-Engine Simulation Trigger',
+      updatedTime: 'Just now (Rule Engine Trigger)',
+      description: `Threshold rule triggered: ${simResult.reason}. Conditions: Rain ${simRainfall}mm/h, Inundation ${simWaterDepth}cm, Temp ${simTemp}°C.`,
+      isMockup: false,
+    };
+
+    RemoteAdminChannel.broadcast('custom_alert', payload);
+    if (simResult.severity === 'Critical') {
+      RemoteAdminChannel.broadcast('sos_danger', {
+        title: payload.title,
+        ward: payload.ward,
+        waterDepthCm: payload.waterDepthCm,
+        description: payload.description,
+        distanceAhead: '200 meters',
+        isCritical: true,
+      });
+    }
+
+    showToast(`Broadcasted ${simResult.severity} threshold breach to all connected users.`);
   };
 
   // 4. Register New Sub-Admin
@@ -296,6 +608,7 @@ export default function DevAdminDashboard() {
         {/* Navigation Tabs */}
         <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-white/10 pb-2 overflow-x-auto">
           {[
+            { id: 'scenarios', label: 'Disaster Scenarios & Condition Matrix', icon: Layers },
             { id: 'triggers', label: 'Instant Triggers & Broadcast Suite', icon: Play },
             { id: 'admins', label: 'Admin Access Control', icon: Users },
           ].map((tab) => {
@@ -317,6 +630,276 @@ export default function DevAdminDashboard() {
             );
           })}
         </div>
+
+        {/* TAB 0: DISASTER SCENARIOS & CONDITION TRIGGER MATRIX */}
+        {activeTab === 'scenarios' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            
+            {/* Header & Notice */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5 text-neutral-950 dark:text-white" />
+                  <h2 className="text-sm sm:text-base font-bold text-neutral-950 dark:text-white">
+                    Operational Disaster Test Cases & Threshold Rules
+                  </h2>
+                </div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-3xl">
+                  Standardized test suites for all 6 extreme hazard events. Broadcasting any scenario instantly transmits verified telemetry to all active desktop browsers, mobile PWAs, and native Android APK devices via DOAB's pub/sub beacon.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={clearAdminAlerts}
+                  className="px-3 py-1.5 text-xs font-mono rounded-xl border border-neutral-300 dark:border-white/15 text-neutral-600 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Clear All Custom Alerts</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Interactive Environmental Threshold Rule Engine Simulator */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950">
+                    <Sliders className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
+                      Live Environmental Threshold Rule Simulator
+                    </h3>
+                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                      [CALIBRATION SANDBOX] Dynamically test alert condition rules by modulating live inputs
+                    </p>
+                  </div>
+                </div>
+
+                {/* Computed Severity Monospace Badge (Executive DOAB Palette) */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 uppercase hidden sm:inline">Calculated State:</span>
+                  <span className={`text-[10.5px] font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                    simResult.severity === 'Critical'
+                      ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30'
+                      : simResult.severity === 'High'
+                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                        : simResult.severity === 'Medium'
+                          ? 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30'
+                          : 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30'
+                  }`}>
+                    [{simResult.severity.toUpperCase()} ALERT]
+                  </span>
+                </div>
+              </div>
+
+              {/* Sliders Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                
+                {/* 1. Rainfall */}
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono">
+                    <span className="flex items-center gap-1 font-semibold text-neutral-700 dark:text-neutral-300">
+                      <CloudRain className="h-3.5 w-3.5 text-sky-500" />
+                      <span>Rainfall Rate</span>
+                    </span>
+                    <span className="font-bold text-neutral-950 dark:text-white">{simRainfall} mm/h</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="120"
+                    step="1"
+                    value={simRainfall}
+                    onChange={(e) => setSimRainfall(Number(e.target.value))}
+                    className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[8.5px] font-mono text-neutral-400">
+                    <span>0 (Dry)</span>
+                    <span>40 (Heavy)</span>
+                    <span>70+ (Cloudburst)</span>
+                  </div>
+                </div>
+
+                {/* 2. Inundation Depth */}
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono">
+                    <span className="flex items-center gap-1 font-semibold text-neutral-700 dark:text-neutral-300">
+                      <Waves className="h-3.5 w-3.5 text-teal-500" />
+                      <span>Sump Inundation</span>
+                    </span>
+                    <span className="font-bold text-neutral-950 dark:text-white">{simWaterDepth} cm</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="150"
+                    step="1"
+                    value={simWaterDepth}
+                    onChange={(e) => setSimWaterDepth(Number(e.target.value))}
+                    className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[8.5px] font-mono text-neutral-400">
+                    <span>0cm (Dry)</span>
+                    <span>35cm (Halt Low)</span>
+                    <span>60cm+ (Closure)</span>
+                  </div>
+                </div>
+
+                {/* 3. Ambient Temperature */}
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono">
+                    <span className="flex items-center gap-1 font-semibold text-neutral-700 dark:text-neutral-300">
+                      <Sun className="h-3.5 w-3.5 text-amber-500" />
+                      <span>Ambient Temp</span>
+                    </span>
+                    <span className="font-bold text-neutral-950 dark:text-white">{simTemp}°C</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="20"
+                    max="50"
+                    step="0.5"
+                    value={simTemp}
+                    onChange={(e) => setSimTemp(Number(e.target.value))}
+                    className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[8.5px] font-mono text-neutral-400">
+                    <span>25°C (Cool)</span>
+                    <span>40°C (Stress)</span>
+                    <span>44°C+ (Red Alert)</span>
+                  </div>
+                </div>
+
+                {/* 4. Groundwater Table Deficit */}
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono">
+                    <span className="flex items-center gap-1 font-semibold text-neutral-700 dark:text-neutral-300">
+                      <Droplets className="h-3.5 w-3.5 text-orange-500" />
+                      <span>Water Table Drop</span>
+                    </span>
+                    <span className="font-bold text-neutral-950 dark:text-white">-{simGroundwaterDeficit}m</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={simGroundwaterDeficit}
+                    onChange={(e) => setSimGroundwaterDeficit(Number(e.target.value))}
+                    className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[8.5px] font-mono text-neutral-400">
+                    <span>0m (Recharged)</span>
+                    <span>2m (Mild)</span>
+                    <span>4m+ (Acute)</span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Dynamic Evaluation Diagnostic Banner & Broadcast Trigger Button */}
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Rule Engine Evaluation:</span>
+                  <span className="font-semibold text-neutral-900 dark:text-neutral-100">{simResult.reason}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleBroadcastSimulatedThreshold}
+                  className="px-4 py-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 shrink-0 font-sans"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  <span>Broadcast Condition Trigger to All Devices</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 6 Pre-calibrated Standard Disaster Scenarios Grid */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Flame className="h-4 w-4 text-neutral-950 dark:text-white" />
+                  <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
+                    Pre-Calibrated Disaster Test Case Matrix (6 Major Hazards)
+                  </h3>
+                </div>
+                <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
+                  Click to broadcast exact simulated conditions to all testers
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {DISASTER_SCENARIOS.map((scen) => (
+                  <div
+                    key={scen.id}
+                    className="p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-sm flex flex-col justify-between gap-3 transition-all hover:border-neutral-400 dark:hover:border-white/20"
+                  >
+                    <div className="space-y-2.5">
+                      {/* Top Badges */}
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+                          [{scen.envMode === 'flood' ? 'FLOOD MODE' : 'DROUGHT MODE'}]
+                        </span>
+                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                          scen.severity === 'Critical'
+                            ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30'
+                            : scen.severity === 'High'
+                              ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                              : 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30'
+                        }`}>
+                          [{scen.severity.toUpperCase()}]
+                        </span>
+                      </div>
+
+                      {/* Title & Location */}
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white leading-snug">
+                          {scen.name}
+                        </h4>
+                        <div className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono mt-0.5">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{scen.location}</span>
+                        </div>
+                      </div>
+
+                      {/* Measured Conditions */}
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300/80 dark:border-white/10 space-y-1 text-[10px] font-mono">
+                        <span className="text-[8.5px] uppercase tracking-wider text-neutral-400 block font-semibold">Active Measurements:</span>
+                        {Object.entries(scen.conditions).map(([k, v]) => (
+                          <div key={k} className="flex items-center justify-between text-neutral-800 dark:text-neutral-200">
+                            <span className="capitalize text-neutral-500">{k.replace(/([A-Z])/g, ' $1')}:</span>
+                            <span className="font-semibold">{v}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Trigger Rule */}
+                      <div className="text-[9.5px] text-neutral-600 dark:text-neutral-400 leading-snug font-sans bg-neutral-100 dark:bg-white/5 p-2 rounded-xl">
+                        <strong className="text-neutral-950 dark:text-white block font-mono text-[9px] uppercase mb-0.5">Threshold Rule:</strong>
+                        {scen.triggerThreshold}
+                      </div>
+                    </div>
+
+                    {/* Broadcast Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleBroadcastScenario(scen)}
+                      className="w-full mt-2 py-2 px-3 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-bold hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 font-sans"
+                    >
+                      <Play className="h-3.5 w-3.5" />
+                      <span>Broadcast Scenario to All Users</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
 
         {/* TAB 1: INSTANT TRIGGERS */}
         {activeTab === 'triggers' && (

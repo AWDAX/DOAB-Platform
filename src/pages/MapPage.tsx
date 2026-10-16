@@ -457,6 +457,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [stateSearchQuery, setStateSearchQuery] = useState('');
   const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
   const [show7DayForecast, setShow7DayForecast] = useState(false);
+  const [forecastSubTab, setForecastSubTab] = useState<'inundation' | 'imd'>('inundation');
   const stateComboboxRef = useRef<HTMLDivElement>(null);
 
   // Delivery Partner / Commercial Fleet mode context
@@ -783,8 +784,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     }
   });
 
-  // Resize handler for Live Risk Monitor
-  const handleLiveRiskResizeStart = useCallback((e: React.PointerEvent) => {
+  // Multi-zone Resize handler for Live Risk Monitor (East rail, South rail, and South-East corner)
+  const handleLiveRiskResizeStart = useCallback((e: React.PointerEvent, direction: 'se' | 'e' | 's' = 'se') => {
     e.preventDefault();
     e.stopPropagation();
     const startX = e.clientX;
@@ -795,10 +796,14 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     const onPointerMove = (moveEvent: PointerEvent) => {
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
-      const newW = Math.min(Math.max(startW + dx, 360), Math.min(680, window.innerWidth - 32));
-      const newH = Math.min(Math.max(startH + dy, 380), Math.min(850, window.innerHeight - 80));
-      setLiveRiskWidth(newW);
-      setLiveRiskMaxHeight(newH);
+      if (direction === 'e' || direction === 'se') {
+        const newW = Math.min(Math.max(startW + dx, 360), Math.min(680, window.innerWidth - 32));
+        setLiveRiskWidth(newW);
+      }
+      if (direction === 's' || direction === 'se') {
+        const newH = Math.min(Math.max(startH + dy, 380), Math.min(850, window.innerHeight - 80));
+        setLiveRiskMaxHeight(newH);
+      }
     };
 
     const onPointerUp = () => {
@@ -814,8 +819,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     window.addEventListener('pointerup', onPointerUp);
   }, [liveRiskWidth, liveRiskMaxHeight]);
 
-  // Resize handler for Create Safe Path
-  const handleCreatePathResizeStart = useCallback((e: React.PointerEvent) => {
+  // Multi-zone Resize handler for Create Safe Path (East rail, South rail, and South-East corner)
+  const handleCreatePathResizeStart = useCallback((e: React.PointerEvent, direction: 'se' | 'e' | 's' = 'se') => {
     e.preventDefault();
     e.stopPropagation();
     const startX = e.clientX;
@@ -826,10 +831,14 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     const onPointerMove = (moveEvent: PointerEvent) => {
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
-      const newW = Math.min(Math.max(startW + dx, 440), Math.min(780, window.innerWidth - 32));
-      const newH = Math.min(Math.max(startH + dy, 400), Math.min(880, window.innerHeight - 80));
-      setCreatePathWidth(newW);
-      setCreatePathMaxHeight(newH);
+      if (direction === 'e' || direction === 'se') {
+        const newW = Math.min(Math.max(startW + dx, 440), Math.min(780, window.innerWidth - 32));
+        setCreatePathWidth(newW);
+      }
+      if (direction === 's' || direction === 'se') {
+        const newH = Math.min(Math.max(startH + dy, 400), Math.min(880, window.innerHeight - 80));
+        setCreatePathMaxHeight(newH);
+      }
     };
 
     const onPointerUp = () => {
@@ -3064,9 +3073,28 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </div>
               )}
 
-              {/* Corner Resize Grip */}
+              {/* Multi-Zone Perimeter Resize System (East rail, South rail, South-East Corner) */}
+              {/* East / Right Border Rail (Resize Width) */}
               <div
-                onPointerDown={handleCreatePathResizeStart}
+                onPointerDown={(e) => handleCreatePathResizeStart(e, 'e')}
+                className="absolute top-0 right-0 w-2.5 h-full cursor-e-resize select-none touch-none hover:bg-[var(--text-main)]/10 transition-colors z-30 group"
+                title="Drag edge to resize width"
+              >
+                <div className="absolute top-1/2 -translate-y-1/2 right-0.5 w-0.5 h-6 rounded-full bg-[var(--text-muted)] opacity-25 group-hover:opacity-100 transition-opacity" />
+              </div>
+
+              {/* South / Bottom Border Rail (Resize Height) */}
+              <div
+                onPointerDown={(e) => handleCreatePathResizeStart(e, 's')}
+                className="absolute bottom-0 left-0 w-full h-2.5 cursor-s-resize select-none touch-none hover:bg-[var(--text-main)]/10 transition-colors z-30 group"
+                title="Drag edge to resize height"
+              >
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-0.5 h-0.5 w-6 rounded-full bg-[var(--text-muted)] opacity-25 group-hover:opacity-100 transition-opacity" />
+              </div>
+
+              {/* South-East Corner Resize Grip */}
+              <div
+                onPointerDown={(e) => handleCreatePathResizeStart(e, 'se')}
                 className="absolute bottom-1.5 right-1.5 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
                 title="Drag corner to resize panel"
               >
@@ -3787,225 +3815,253 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                       <p>{copy.notASensor}</p>
                     )}
 
-                    {/* SECTION 1: DOAB AI Hydrological Inundation Prediction (Always Present, Location/State Aware) */}
+                    {/* SECTION 1: Unified Hydrological Forecast Hub (Segmented Sliding Pill Tabs) */}
                     <div className="mt-1 p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-2 font-mono text-[10px]">
-                      {/* Card Header */}
-                      <div className="flex items-center justify-between gap-1.5 text-[var(--text-main)] font-semibold border-b border-[var(--border-color)]/60 pb-1.5">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <Waves className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0" />
-                          <span className="truncate text-[10.5px] font-bold">
-                            {envMode === 'drought' ? 'DOAB WATER DEFICIT FORECAST' : 'DOAB AI INUNDATION FORECAST'}
-                          </span>
-                        </div>
-                        <span className="mono-badge text-[8.5px] font-bold px-1.5 py-0.5 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--color-brand-accent)] shrink-0">
-                          [1H FORWARD]
-                        </span>
+                      
+                      {/* Sub-Tab Switcher Pill Bar */}
+                      <div className="flex items-center p-0.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] select-none">
+                        <button
+                          type="button"
+                          onClick={() => { playClick(); setForecastSubTab('inundation'); }}
+                          className={`flex-1 py-1 px-1.5 rounded-md font-bold text-[9px] transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                            forecastSubTab === 'inundation'
+                              ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                          }`}
+                        >
+                          <Waves className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{envMode === 'drought' ? 'WATER DEFICIT' : 'DOAB AI INUNDATION'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { playClick(); setForecastSubTab('imd'); }}
+                          className={`flex-1 py-1 px-1.5 rounded-md font-bold text-[9px] transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                            forecastSubTab === 'imd'
+                              ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                          }`}
+                        >
+                          <Radar className="h-3 w-3 shrink-0" />
+                          <span className="truncate">IMD LIVE & 7D NWP</span>
+                        </button>
                       </div>
 
-                      {/* Location Context */}
-                      <div className="flex items-center justify-between text-[9px] text-[var(--text-muted)] font-mono">
+                      {/* Location Context Bar */}
+                      <div className="flex items-center justify-between text-[9px] text-[var(--text-muted)] font-mono border-b border-[var(--border-color)]/60 pb-1.5">
                         <span className="flex items-center gap-1 truncate">
                           <MapPin className="h-2.5 w-2.5 text-[var(--color-brand-accent)] shrink-0" />
                           <span className="truncate font-semibold text-[var(--text-main)]">{activeHydrologicalForecast.locationLabel}</span>
                         </span>
                         <span className="shrink-0 font-mono text-[8.5px] text-[var(--text-muted)]">
-                          {activeHydrologicalForecast.elevationBaseline}
+                          {forecastSubTab === 'inundation' 
+                            ? activeHydrologicalForecast.elevationBaseline 
+                            : imdTelemetry?.station_name || 'IMD Synoptic Radar'}
                         </span>
                       </div>
 
-                      {/* Inundation Probability & Meter */}
-                      <div className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]/80 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-bold">
-                            {envMode === 'drought' ? 'Logistics Deficit Probability' : 'Inundation Risk Probability'}
-                          </span>
-                          {/* DOAB Monospace Executive Severity Badge */}
-                          {(() => {
-                            const p = activeHydrologicalForecast.probabilityPercent;
-                            if (envMode === 'drought') {
-                              return (
-                                <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded border ${
-                                  p > 60
-                                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
-                                    : 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30'
-                                }`}>
-                                  {p > 60 ? '[ACUTE DEFICIT]' : '[STABLE SUPPLY]'}
-                                </span>
-                              );
-                            }
-                            if (p >= 70) {
-                              return (
-                                <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30">
-                                  [CRITICAL / 15CM ALERT]
-                                </span>
-                              );
-                            }
-                            if (p >= 45) {
-                              return (
-                                <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">
-                                  [HIGH WATERLOGGING]
-                                </span>
-                              );
-                            }
-                            if (p >= 25) {
-                              return (
-                                <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30">
-                                  [MODERATE POOLING]
-                                </span>
-                              );
-                            }
-                            return (
-                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30">
-                                [LOW RISK / PASSABLE]
-                              </span>
-                            );
-                          })()}
-                        </div>
-
-                        {/* Progress Meter Bar */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-[14px] font-bold text-[var(--text-main)] shrink-0 font-mono">
-                            {activeHydrologicalForecast.probabilityPercent}%
-                          </span>
-                          <div className="flex-1 h-2 rounded-full bg-[var(--border-color)] overflow-hidden">
-                            <div 
-                              className={`h-full transition-all duration-300 rounded-full ${
-                                activeHydrologicalForecast.probabilityPercent >= 70
-                                  ? 'bg-rose-600 dark:bg-rose-500'
-                                  : activeHydrologicalForecast.probabilityPercent >= 45
-                                    ? 'bg-amber-600 dark:bg-amber-500'
-                                    : activeHydrologicalForecast.probabilityPercent >= 25
-                                      ? 'bg-slate-600 dark:bg-slate-400'
-                                      : 'bg-teal-600 dark:bg-teal-400'
-                              }`}
-                              style={{ width: `${activeHydrologicalForecast.probabilityPercent}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Factors Details */}
-                        <div className="grid grid-cols-2 gap-1 text-[8.5px] text-[var(--text-muted)] border-t border-[var(--border-color)]/50 pt-1 mt-1">
-                          <div className="truncate">Runoff: <span className="text-[var(--text-main)] font-semibold">{activeHydrologicalForecast.runOffPotential}</span></div>
-                          <div className="truncate">Sump: <span className="text-[var(--text-main)] font-semibold">{activeHydrologicalForecast.sumpRisk}</span></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {imdTelemetry && (
-                      <div className="mt-2 p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-1.5 font-mono text-[10px]">
-                        <div className="flex items-center justify-between text-[var(--text-main)] font-semibold">
-                          <span className="flex items-center gap-1.5 truncate">
-                            <Radar className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0" />
-                            <span className="truncate">{imdTelemetry.station_name}</span>
-                          </span>
-                          <span className="mono-badge text-[9px] font-bold px-1.5 py-0.5 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] shrink-0">
-                            [IMD LIVE]
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-1 text-[var(--text-muted)] text-[9.5px]">
-                          <div>24h Rain: <span className="text-[var(--text-main)] font-bold">{imdTelemetry.rainfall_24h_mm} mm</span></div>
-                          <div>
-                            Temp: <span className="text-[var(--text-main)] font-bold">
-                              {(() => {
-                                const maxT = imdTelemetry.temp_max_c > 0 
-                                  ? imdTelemetry.temp_max_c 
-                                  : (imdTelemetry.forecast_7day?.[0]?.temp_max || 0);
-                                const minT = imdTelemetry.temp_min_c > 0 
-                                  ? imdTelemetry.temp_min_c 
-                                  : (imdTelemetry.forecast_7day?.[0]?.temp_min || 0);
-                                if (maxT > 0 && minT > 0) return `${maxT}°C / ${minT}°C`;
-                                if (maxT > 0) return `${maxT}°C`;
-                                if (minT > 0) return `${minT}°C`;
-                                return '28°C / 21°C';
-                              })()}
+                      {/* VIEW 1: DOAB AI Hydrological Inundation Prediction */}
+                      {forecastSubTab === 'inundation' && (
+                        <div className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]/80 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-bold">
+                              {envMode === 'drought' ? 'Logistics Deficit' : 'Inundation Risk'}
                             </span>
-                          </div>
-                        </div>
-                        {imdTelemetry.warning?.text && imdTelemetry.warning.text !== 'No warning' && (
-                          <div className="flex items-start gap-1.5 text-[9.5px] text-[var(--text-main)] font-sans border-t border-[var(--border-color)]/60 pt-1 mt-1">
-                            <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[8.5px] font-mono text-[var(--text-muted)] uppercase tracking-wider block">
-                                Doppler Radar / Satellite Nowcast
-                              </span>
-                              <span className="line-clamp-2 leading-tight">
-                                {Array.from(new Set(imdTelemetry.warning.text.split(';').map(s => s.trim()).filter(Boolean))).join('; ')}
+                            <div className="flex items-center gap-1.5">
+                              {/* DOAB Monospace Executive Severity Badge */}
+                              {(() => {
+                                const p = activeHydrologicalForecast.probabilityPercent;
+                                if (envMode === 'drought') {
+                                  return (
+                                    <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded border ${
+                                      p > 60
+                                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                                        : 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30'
+                                    }`}>
+                                      {p > 60 ? '[ACUTE DEFICIT]' : '[STABLE SUPPLY]'}
+                                    </span>
+                                  );
+                                }
+                                if (p >= 70) {
+                                  return (
+                                    <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30">
+                                      [CRITICAL / 15CM ALERT]
+                                    </span>
+                                  );
+                                }
+                                if (p >= 45) {
+                                  return (
+                                    <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">
+                                      [HIGH WATERLOGGING]
+                                    </span>
+                                  );
+                                }
+                                if (p >= 25) {
+                                  return (
+                                    <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30">
+                                      [MODERATE POOLING]
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30">
+                                    [LOW RISK / PASSABLE]
+                                  </span>
+                                );
+                              })()}
+                              <span className="mono-badge text-[8.5px] font-bold px-1 py-0.5 rounded border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--color-brand-accent)] shrink-0">
+                                [1H FORWARD]
                               </span>
                             </div>
                           </div>
-                        )}
 
-                        {/* Interactive 7-Day Synoptic NWP Forecast Drawer (DOAB Monospace Badge Standard) */}
-                        {imdTelemetry.forecast_7day && imdTelemetry.forecast_7day.length > 0 && (
-                          <div className="border-t border-[var(--border-color)]/60 pt-2 mt-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                playClick();
-                                setShow7DayForecast(!show7DayForecast);
-                              }}
-                              className="w-full flex items-center justify-between text-[9px] font-mono p-1 rounded-md hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
-                            >
-                              <span className="flex items-center gap-1.5 font-bold text-[var(--text-main)]">
-                                <CloudRain className="h-3 w-3 text-[var(--color-brand-accent)] shrink-0" />
-                                <span>7-DAY NWP OUTLOOK</span>
+                          {/* Progress Meter Bar */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-[14px] font-bold text-[var(--text-main)] shrink-0 font-mono">
+                              {activeHydrologicalForecast.probabilityPercent}%
+                            </span>
+                            <div className="flex-1 h-2 rounded-full bg-[var(--border-color)] overflow-hidden">
+                              <div 
+                                className={`h-full transition-all duration-300 rounded-full ${
+                                  activeHydrologicalForecast.probabilityPercent >= 70
+                                    ? 'bg-rose-600 dark:bg-rose-500'
+                                    : activeHydrologicalForecast.probabilityPercent >= 45
+                                      ? 'bg-amber-600 dark:bg-amber-500'
+                                      : activeHydrologicalForecast.probabilityPercent >= 25
+                                        ? 'bg-slate-600 dark:bg-slate-400'
+                                        : 'bg-teal-600 dark:bg-teal-400'
+                                }`}
+                                style={{ width: `${activeHydrologicalForecast.probabilityPercent}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Factors Details */}
+                          <div className="grid grid-cols-2 gap-1 text-[8.5px] text-[var(--text-muted)] border-t border-[var(--border-color)]/50 pt-1 mt-1">
+                            <div className="truncate">Runoff: <span className="text-[var(--text-main)] font-semibold">{activeHydrologicalForecast.runOffPotential}</span></div>
+                            <div className="truncate">Sump: <span className="text-[var(--text-main)] font-semibold">{activeHydrologicalForecast.sumpRisk}</span></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* VIEW 2: IMD Weather Observation & 7-Day Outlook */}
+                      {forecastSubTab === 'imd' && imdTelemetry && (
+                        <div className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]/80 space-y-2">
+                          <div className="flex items-center justify-between text-[var(--text-main)] font-semibold">
+                            <span className="flex items-center gap-1.5 truncate">
+                              <Radar className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0" />
+                              <span className="truncate">{imdTelemetry.station_name}</span>
+                            </span>
+                            <span className="mono-badge text-[8.5px] font-bold px-1.5 py-0.5 rounded border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] shrink-0">
+                              [IMD LIVE]
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-1 text-[var(--text-muted)] text-[9.5px]">
+                            <div>24h Rain: <span className="text-[var(--text-main)] font-bold">{imdTelemetry.rainfall_24h_mm} mm</span></div>
+                            <div>
+                              Temp: <span className="text-[var(--text-main)] font-bold">
+                                {(() => {
+                                  const maxT = imdTelemetry.temp_max_c > 0 
+                                    ? imdTelemetry.temp_max_c 
+                                    : (imdTelemetry.forecast_7day?.[0]?.temp_max || 0);
+                                  const minT = imdTelemetry.temp_min_c > 0 
+                                    ? imdTelemetry.temp_min_c 
+                                    : (imdTelemetry.forecast_7day?.[0]?.temp_min || 0);
+                                  if (maxT > 0 && minT > 0) return `${maxT}°C / ${minT}°C`;
+                                  if (maxT > 0) return `${maxT}°C`;
+                                  if (minT > 0) return `${minT}°C`;
+                                  return '28°C / 21°C';
+                                })()}
                               </span>
-                              <span className={`text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border transition-colors ${
-                                show7DayForecast
-                                  ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]'
-                                  : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)]'
-                              }`}>
-                                {show7DayForecast ? '[COLLAPSE]' : '[EXPAND 7D]'}
-                              </span>
-                            </button>
+                            </div>
+                          </div>
 
-                            <AnimatePresence initial={false}>
-                              {show7DayForecast && (
-                                <motion.div
-                                  key="sevenDayForecastDrawer"
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="mt-2 space-y-1 max-h-[340px] overflow-y-auto custom-scrollbar pr-0.5">
-                                    {imdTelemetry.forecast_7day.map((day) => {
-                                      const dateObj = new Date();
-                                      dateObj.setDate(dateObj.getDate() + day.day_offset);
-                                      const dayName = day.day_offset === 0 
-                                        ? 'Today' 
-                                        : day.day_offset === 1 
-                                          ? 'Tomorrow' 
-                                          : dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+                          {imdTelemetry.warning?.text && imdTelemetry.warning.text !== 'No warning' && (
+                            <div className="flex items-start gap-1.5 text-[9.5px] text-[var(--text-main)] font-sans border-t border-[var(--border-color)]/60 pt-1 mt-1">
+                              <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[8px] font-mono text-[var(--text-muted)] uppercase tracking-wider block">
+                                  Doppler Radar / Satellite Nowcast
+                                </span>
+                                <span className="line-clamp-2 leading-tight">
+                                  {Array.from(new Set(imdTelemetry.warning.text.split(';').map(s => s.trim()).filter(Boolean))).join('; ')}
+                                </span>
+                              </div>
+                            </div>
+                          )}
 
-                                      return (
-                                        <div
-                                          key={`day-forecast-${day.day_offset}`}
-                                          className="p-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]/70 flex items-center justify-between gap-1.5 text-[9px] font-mono"
-                                        >
-                                          <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-1">
-                                              <span className="font-bold text-[var(--text-main)] shrink-0">{dayName}</span>
-                                              <span className="text-[var(--text-muted)] truncate">• {day.forecast}</span>
+                          {/* Interactive 7-Day Synoptic NWP Forecast Drawer */}
+                          {imdTelemetry.forecast_7day && imdTelemetry.forecast_7day.length > 0 && (
+                            <div className="border-t border-[var(--border-color)]/60 pt-1.5 mt-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playClick();
+                                  setShow7DayForecast(!show7DayForecast);
+                                }}
+                                className="w-full flex items-center justify-between text-[9px] font-mono p-1 rounded-md hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer"
+                              >
+                                <span className="flex items-center gap-1.5 font-bold text-[var(--text-main)]">
+                                  <CloudRain className="h-3 w-3 text-[var(--color-brand-accent)] shrink-0" />
+                                  <span>7-DAY NWP OUTLOOK</span>
+                                </span>
+                                <span className={`text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border transition-colors ${
+                                  show7DayForecast
+                                    ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)]'
+                                    : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:text-[var(--text-main)]'
+                                }`}>
+                                  {show7DayForecast ? '[COLLAPSE]' : '[EXPAND 7D]'}
+                                </span>
+                              </button>
+
+                              <AnimatePresence initial={false}>
+                                {show7DayForecast && (
+                                  <motion.div
+                                    key="sevenDayForecastDrawer"
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="mt-1.5 space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar pr-0.5">
+                                      {imdTelemetry.forecast_7day.map((day) => {
+                                        const dateObj = new Date();
+                                        dateObj.setDate(dateObj.getDate() + day.day_offset);
+                                        const dayName = day.day_offset === 0 
+                                          ? 'Today' 
+                                          : day.day_offset === 1 
+                                            ? 'Tomorrow' 
+                                            : dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+
+                                        return (
+                                          <div
+                                            key={`day-forecast-${day.day_offset}`}
+                                            className="p-1.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)]/70 flex items-center justify-between gap-1.5 text-[8.5px] font-mono"
+                                          >
+                                            <div className="min-w-0 flex-1">
+                                              <div className="flex items-center gap-1">
+                                                <span className="font-bold text-[var(--text-main)] shrink-0">{dayName}</span>
+                                                <span className="text-[var(--text-muted)] truncate">• {day.forecast}</span>
+                                              </div>
+                                            </div>
+                                            <div className="shrink-0 text-right">
+                                              <span className="font-bold text-[var(--text-main)]">
+                                                {day.temp_max}° / {day.temp_min}°C
+                                              </span>
                                             </div>
                                           </div>
-                                          <div className="shrink-0 text-right">
-                                            <span className="font-bold text-[var(--text-main)]">
-                                              {day.temp_max}° / {day.temp_min}°C
-                                            </span>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                                        );
+                                      })}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {forecast?.cells[0]?.target_time && (
@@ -4307,19 +4363,40 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             )}
           </AnimatePresence>
 
-          {/* Corner Resize Grip */}
+          {/* Multi-Zone Perimeter Resize System (East rail, South rail, South-East Corner) */}
           {!isMobileCollapsed && (
-            <div
-              onPointerDown={handleLiveRiskResizeStart}
-              className="absolute bottom-1 right-1 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
-              title="Drag corner to resize Live Risk Monitor"
-            >
-              <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
-                <circle cx="8" cy="8" r="1.1" />
-                <circle cx="8" cy="4.5" r="1.1" />
-                <circle cx="4.5" cy="8" r="1.1" />
-              </svg>
-            </div>
+            <>
+              {/* East / Right Border Rail (Resize Width) */}
+              <div
+                onPointerDown={(e) => handleLiveRiskResizeStart(e, 'e')}
+                className="absolute top-0 right-0 w-2.5 h-full cursor-e-resize select-none touch-none hover:bg-[var(--text-main)]/10 transition-colors z-30 group"
+                title="Drag edge to resize width"
+              >
+                <div className="absolute top-1/2 -translate-y-1/2 right-0.5 w-0.5 h-6 rounded-full bg-[var(--text-muted)] opacity-25 group-hover:opacity-100 transition-opacity" />
+              </div>
+
+              {/* South / Bottom Border Rail (Resize Height) */}
+              <div
+                onPointerDown={(e) => handleLiveRiskResizeStart(e, 's')}
+                className="absolute bottom-0 left-0 w-full h-2.5 cursor-s-resize select-none touch-none hover:bg-[var(--text-main)]/10 transition-colors z-30 group"
+                title="Drag edge to resize height"
+              >
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-0.5 h-0.5 w-6 rounded-full bg-[var(--text-muted)] opacity-25 group-hover:opacity-100 transition-opacity" />
+              </div>
+
+              {/* South-East Corner Resize Grip */}
+              <div
+                onPointerDown={(e) => handleLiveRiskResizeStart(e, 'se')}
+                className="absolute bottom-1 right-1 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
+                title="Drag corner to resize Live Risk Monitor"
+              >
+                <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
+                  <circle cx="8" cy="8" r="1.1" />
+                  <circle cx="8" cy="4.5" r="1.1" />
+                  <circle cx="4.5" cy="8" r="1.1" />
+                </svg>
+              </div>
+            </>
           )}
         </div>
       </motion.div>
