@@ -707,7 +707,11 @@ function App() {
 
       let rafId: number;
       function raf(time: number) {
-        lenis?.raf(time);
+        // Only step Lenis RAF if the page actually has scrollable content
+        // (sparing continuous 60-120fps CPU/GPU overhead on 100dvh map canvas views)
+        if (document.documentElement.scrollHeight > window.innerHeight + 10) {
+          lenis?.raf(time);
+        }
         rafId = requestAnimationFrame(raf);
       }
       rafId = requestAnimationFrame(raf);

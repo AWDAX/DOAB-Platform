@@ -351,7 +351,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }:
                   </h3>
                 </div>
 
-                <div className="text-xs font-semibold text-[var(--color-brand-accent)]">
+                <div className="text-xs font-bold tracking-tight team-member-role-gradient">
                   {member.title}
                 </div>
                 <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] mt-0.5 mb-3">
@@ -483,7 +483,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }:
                 <h2 className="text-xl font-extrabold tracking-tight team-member-name-gradient">
                   {lightboxMember.name}
                 </h2>
-                <div className="text-xs font-semibold text-[var(--color-brand-accent)]">
+                <div className="text-xs font-bold tracking-tight team-member-role-gradient">
                   {lightboxMember.title}
                 </div>
               </div>
