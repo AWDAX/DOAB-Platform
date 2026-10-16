@@ -11,10 +11,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from .config import REPO_ROOT, SERVICE_ROOT
+from .config import REPO_ROOT, SERVICE_ROOT, Z_PLUS_DATASET_DIR
 
 def _find_curated_csv() -> Path:
     candidates = [
+        Z_PLUS_DATASET_DIR / "WaterLogging Dataset" / "Clean" / "curated_waterlogging_clean.csv",
         REPO_ROOT / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Clean" / "curated_waterlogging_clean.csv",
         Path("/home/ubuntu/Muncipal corp Dataset/WaterLogging Dataset/Clean/curated_waterlogging_clean.csv"),
         SERVICE_ROOT / "data" / "raw" / "curated_waterlogging_clean.csv",

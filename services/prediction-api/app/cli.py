@@ -23,6 +23,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("build-dataset", help="Build the case-control training table.")
     sub.add_parser("train", help="Train and evaluate the model.")
     sub.add_parser("national-report", help="Quality report for weak national labels (no network).")
+    sub.add_parser("national-atlas", help="Inspect and profile national flood atlas & river gauges (CWC + INDOFLOODS).")
     args = parser.parse_args(argv)
 
     source = get_settings().incident_csv or DEFAULT_INCIDENT_CSV
@@ -42,6 +43,12 @@ def main(argv: list[str] | None = None) -> int:
 
         _, report = clean_national_labels()
         print(json.dumps(report, indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "national-atlas":
+        from .national_dataset import build_national_flood_atlas
+
+        atlas = build_national_flood_atlas()
+        print(json.dumps(atlas.report, indent=2, default=str, ensure_ascii=False))
         return 0
     if args.command == "train":
         from .model import train_and_save
