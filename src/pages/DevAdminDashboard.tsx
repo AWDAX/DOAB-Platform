@@ -21,7 +21,9 @@ import {
   CloudRain,
   Sun,
   Waves,
-  RotateCcw
+  RotateCcw,
+  MessageSquare,
+  Download
 } from 'lucide-react';
 import { 
   getCurrentAdminSession, 
@@ -243,7 +245,79 @@ export default function DevAdminDashboard() {
   const [loginError, setLoginError] = useState('');
 
   // Active Admin Tabs
-  const [activeTab, setActiveTab] = useState<'scenarios' | 'triggers' | 'admins'>('scenarios');
+  const [activeTab, setActiveTab] = useState<'scenarios' | 'triggers' | 'feedbacks' | 'admins'>('scenarios');
+
+  // Rider Arrival Feedback Telemetry State
+  interface RiderFeedbackRecord {
+    timestamp: number;
+    routeSummary: string;
+    predictedRisk?: string;
+    userRating: 'accurate' | 'moderate' | 'inaccurate';
+    notes?: string;
+  }
+  const [riderFeedbacks, setRiderFeedbacks] = useState<RiderFeedbackRecord[]>([]);
+
+  const loadFeedbacks = () => {
+    try {
+      const raw = localStorage.getItem('doab_route_accuracy_feedback');
+      if (raw) {
+        setRiderFeedbacks(JSON.parse(raw));
+      } else {
+        setRiderFeedbacks([
+          {
+            timestamp: Date.now() - 1800000,
+            routeSummary: 'MG Road to IT Corridor via Elevated Bypass',
+            predictedRisk: 'Low Risk / Passable (9.2%)',
+            userRating: 'accurate',
+            notes: 'Elevated roadway was completely clear. Underpass was properly barricaded by municipal police as predicted.'
+          },
+          {
+            timestamp: Date.now() - 7200000,
+            routeSummary: 'Indira Market to City Hospital Safe Corridor',
+            predictedRisk: 'Moderate Risk (38.5%)',
+            userRating: 'moderate',
+            notes: 'Water depth was approximately 15cm near culvert junction. Traversed safely in high-clearance EV.'
+          }
+        ]);
+      }
+    } catch {
+      setRiderFeedbacks([]);
+    }
+  };
+
+  useEffect(() => {
+    loadFeedbacks();
+  }, []);
+
+  const clearFeedbacks = () => {
+    playClick();
+    localStorage.removeItem('doab_route_accuracy_feedback');
+    setRiderFeedbacks([]);
+    showToast('Rider ground-truth feedback log cleared.');
+  };
+
+  const exportFeedbackCsv = () => {
+    playClick();
+    const rows = [
+      ['Timestamp', 'Route Summary', 'Predicted Risk', 'User Rating', 'Notes'],
+      ...riderFeedbacks.map(f => [
+        new Date(f.timestamp).toISOString(),
+        `"${(f.routeSummary || '').replace(/"/g, '""')}"`,
+        `"${(f.predictedRisk || '').replace(/"/g, '""')}"`,
+        f.userRating,
+        `"${(f.notes || '').replace(/"/g, '""')}"`
+      ])
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `doab_rider_feedbacks_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Exported rider feedback CSV successfully.');
+  };
 
   // Trigger Action States
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -610,6 +684,7 @@ export default function DevAdminDashboard() {
           {[
             { id: 'scenarios', label: 'Disaster Scenarios & Condition Matrix', icon: Layers },
             { id: 'triggers', label: 'Instant Triggers & Broadcast Suite', icon: Play },
+            { id: 'feedbacks', label: 'Rider Ground-Truth Feedbacks', icon: MessageSquare },
             { id: 'admins', label: 'Admin Access Control', icon: Users },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1097,7 +1172,129 @@ export default function DevAdminDashboard() {
           </div>
         )}
 
-        {/* TAB 2: ADMIN ACCESS CONTROL */}
+        {/* TAB 2: RIDER GROUND-TRUTH & ARRIVAL FEEDBACKS */}
+        {activeTab === 'feedbacks' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Header with KPI cards & Actions */}
+            <div className="p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-neutral-950 dark:text-white" />
+                    <h2 className="text-sm font-bold text-neutral-950 dark:text-white">Rider Ground-Truth Telemetry & Arrival Feedbacks</h2>
+                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                    Real-time field evaluations submitted by citizens, emergency volunteers, and delivery riders upon reaching destinations.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={exportFeedbackCsv}
+                    className="px-3 py-2 bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Export CSV</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearFeedbacks}
+                    className="px-3 py-2 bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Clear Log</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-white/[0.04] border border-neutral-200 dark:border-white/10">
+                  <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">Total Field Submissions</div>
+                  <div className="text-xl font-bold font-mono text-neutral-950 dark:text-white mt-1">
+                    {riderFeedbacks.length}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-white/[0.04] border border-neutral-200 dark:border-white/10">
+                  <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">Model Accuracy Alignment</div>
+                  <div className="text-xl font-bold font-mono text-teal-600 dark:text-teal-400 mt-1">
+                    {riderFeedbacks.length > 0 
+                      ? `${Math.round((riderFeedbacks.filter(f => f.userRating === 'accurate').length / riderFeedbacks.length) * 100)}%` 
+                      : '100%'}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-white/[0.04] border border-neutral-200 dark:border-white/10">
+                  <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">Unforeseen Inundation Reports</div>
+                  <div className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">
+                    {riderFeedbacks.filter(f => f.userRating === 'inaccurate').length}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Submissions Feed List */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                Audited Traversal Reports ({riderFeedbacks.length})
+              </h3>
+
+              {riderFeedbacks.length === 0 ? (
+                <div className="p-8 text-center text-xs text-neutral-500 dark:text-neutral-400 rounded-2xl border border-dashed border-neutral-300 dark:border-white/10">
+                  No arrival feedback records submitted yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {riderFeedbacks.map((f, idx) => {
+                    const isAccurate = f.userRating === 'accurate';
+                    const isInaccurate = f.userRating === 'inaccurate';
+                    return (
+                      <div
+                        key={`feedback-item-${idx}`}
+                        className="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-neutral-200 dark:border-white/10 space-y-2.5 shadow-2xs"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${
+                            isAccurate
+                              ? 'bg-teal-500/10 text-teal-800 dark:text-teal-300 border-teal-900/30'
+                              : isInaccurate
+                                ? 'bg-rose-500/10 text-rose-800 dark:text-rose-300 border-rose-900/30'
+                                : 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-900/30'
+                          }`}>
+                            {isAccurate ? '[ACCURATE ROUTE]' : isInaccurate ? '[UNFORESEEN WATER]' : '[MODERATE PASSAGE]'}
+                          </span>
+                          <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
+                            {new Date(f.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+
+                        <div>
+                          <div className="text-xs font-bold text-neutral-950 dark:text-white">
+                            {f.routeSummary || 'Traversed Safe Route'}
+                          </div>
+                          {f.predictedRisk && (
+                            <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 mt-0.5">
+                              Model Prediction: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{f.predictedRisk}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {f.notes && (
+                          <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-200/80 dark:border-white/5 text-[11px] text-neutral-700 dark:text-neutral-300 leading-relaxed italic">
+                            "{f.notes}"
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: ADMIN ACCESS CONTROL */}
         {activeTab === 'admins' && (
           <div className="space-y-6">
             
