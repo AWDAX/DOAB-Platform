@@ -354,12 +354,20 @@ function AppContent({
   useEffect(() => {
     const handleOpenPermissions = () => setIsPermissionsOpen(true);
     const handleTriggerDanger = (e?: CustomEvent) => {
+      // Suppress full-screen modal takeover on the Admin Console itself so the admin can continue controlling the dashboard
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+        return;
+      }
       if (e?.detail) {
         setDangerPayload(e.detail);
       } else {
         setDangerPayload(undefined);
       }
       setIsDangerBroadcastOpen(true);
+    };
+    const handleClearDanger = () => {
+      setIsDangerBroadcastOpen(false);
+      setDangerPayload(undefined);
     };
     const handleOpenTour = (e?: CustomEvent) => {
       setActiveTourType(e?.detail?.pageKey || 'global');
@@ -384,6 +392,7 @@ function AppContent({
 
     window.addEventListener('doab:open-permissions', handleOpenPermissions);
     window.addEventListener('doab:trigger-danger-broadcast', handleTriggerDanger as EventListener);
+    window.addEventListener('doab:clear-danger-broadcast', handleClearDanger as EventListener);
     window.addEventListener('doab:open-tour', handleOpenTour as EventListener);
     window.addEventListener('doab:start-tour', handleOpenTour as EventListener);
     window.addEventListener('doab:start-page-tour', handleOpenPageTour as EventListener);
@@ -396,6 +405,7 @@ function AppContent({
     return () => {
       window.removeEventListener('doab:open-permissions', handleOpenPermissions);
       window.removeEventListener('doab:trigger-danger-broadcast', handleTriggerDanger as EventListener);
+      window.removeEventListener('doab:clear-danger-broadcast', handleClearDanger as EventListener);
       window.removeEventListener('doab:open-tour', handleOpenTour as EventListener);
       window.removeEventListener('doab:start-tour', handleOpenTour as EventListener);
       window.removeEventListener('doab:start-page-tour', handleOpenPageTour as EventListener);

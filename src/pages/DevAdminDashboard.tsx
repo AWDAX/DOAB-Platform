@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Radio, 
   MapPin, 
@@ -34,7 +35,7 @@ import {
   removeAuthorizedAdmin,
   type AdminUser 
 } from '../lib/adminAuth';
-import { playClick, playAlertAlarm } from '../utils/soundFx';
+import { playClick } from '../utils/soundFx';
 import { NativeService } from '../utils/nativeService';
 import { RemoteAdminChannel } from '../services/remoteAdminChannel';
 
@@ -322,6 +323,49 @@ export default function DevAdminDashboard() {
   // Trigger Action States
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
 
+  // Active Simulated Broadcast State (tracks live hazard sent to field devices)
+  const [activeBroadcast, setActiveBroadcast] = useState<{
+    active?: boolean;
+    scenarioId?: string;
+    isSimCustom?: boolean;
+    title?: string;
+    ward?: string;
+    waterDepthCm?: number;
+    severity?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const handleStatus = (e: any) => {
+      if (e?.detail?.active) {
+        setActiveBroadcast(e.detail.payload || { title: 'Emergency Simulation Active' });
+      } else {
+        setActiveBroadcast(null);
+      }
+    };
+    window.addEventListener('doab:admin-broadcast-status', handleStatus as EventListener);
+    return () => window.removeEventListener('doab:admin-broadcast-status', handleStatus as EventListener);
+  }, []);
+
+  const handleStandDown = () => {
+    playClick();
+    RemoteAdminChannel.broadcast('clear_alarm', { reason: 'Admin stood down simulation' });
+    setActiveBroadcast(null);
+    showToast('All-Clear broadcasted: Silenced siren & stood down alert across all remote devices.', 'info');
+  };
+
+  const handleResetBaseline = () => {
+    playClick();
+    setSimRainfall(14);
+    setSimWaterDepth(8);
+    setSimTemp(28);
+    setSimGroundwaterDeficit(0.4);
+    if (activeBroadcast) {
+      handleStandDown();
+    } else {
+      showToast('Reset conditions to baseline normal synoptic parameters.');
+    }
+  };
+
   // Interactive Rule Engine Threshold Simulator State
   const [simRainfall, setSimRainfall] = useState(48);
   const [simWaterDepth, setSimWaterDepth] = useState(38);
@@ -426,14 +470,25 @@ export default function DevAdminDashboard() {
     showToast('Cleared all custom admin alerts.');
   };
 
-  // 1. Broadcast Pre-calibrated Disaster Scenario
+  // 1. Broadcast Pre-calibrated Disaster Scenario (Toggle ON/OFF)
   const handleBroadcastScenario = (scen: DisasterScenario) => {
     playClick();
-    playAlertAlarm();
-    NativeService.triggerSosHaptics();
 
-    // Broadcast through RemoteAdminChannel to all connected devices & native APK
-    RemoteAdminChannel.broadcast('custom_alert', scen.payload);
+    // Toggle OFF if this scenario is already active
+    if (activeBroadcast && activeBroadcast.scenarioId === scen.id) {
+      handleStandDown();
+      return;
+    }
+
+    const payload = {
+      ...scen.payload,
+      scenarioId: scen.id
+    };
+
+    setActiveBroadcast(payload);
+
+    // Broadcast through RemoteAdminChannel to all connected field devices & native APK
+    RemoteAdminChannel.broadcast('custom_alert', payload);
 
     if (scen.severity === 'Critical') {
       RemoteAdminChannel.broadcast('sos_danger', {
@@ -443,10 +498,11 @@ export default function DevAdminDashboard() {
         description: scen.payload.description,
         distanceAhead: '150 meters',
         isCritical: true,
+        scenarioId: scen.id,
       });
     }
 
-    showToast(`Dispatched test case: [${scen.name}] across all live user screens & devices.`);
+    showToast(`Dispatched test case: [${scen.name}] to all remote devices (Admin console unaffected).`);
   };
 
   // 2. Compute dynamic severity from threshold simulator
@@ -487,12 +543,14 @@ export default function DevAdminDashboard() {
 
   const simResult = computeSimulatedSeverity();
 
-  // 3. Broadcast custom simulated threshold condition
+  // 3. Broadcast custom simulated threshold condition (Toggle ON/OFF)
   const handleBroadcastSimulatedThreshold = () => {
     playClick();
-    if (simResult.severity === 'Critical') {
-      playAlertAlarm();
-      NativeService.triggerSosHaptics();
+
+    // Toggle OFF if simulator is already actively broadcasting
+    if (activeBroadcast && activeBroadcast.isSimCustom) {
+      handleStandDown();
+      return;
     }
 
     const payload = {
@@ -508,8 +566,10 @@ export default function DevAdminDashboard() {
       updatedTime: 'Just now (Rule Engine Trigger)',
       description: `Threshold rule triggered: ${simResult.reason}. Conditions: Rain ${simRainfall}mm/h, Inundation ${simWaterDepth}cm, Temp ${simTemp}°C.`,
       isMockup: false,
+      isSimCustom: true,
     };
 
+    setActiveBroadcast(payload);
     RemoteAdminChannel.broadcast('custom_alert', payload);
     if (simResult.severity === 'Critical') {
       RemoteAdminChannel.broadcast('sos_danger', {
@@ -519,10 +579,11 @@ export default function DevAdminDashboard() {
         description: payload.description,
         distanceAhead: '200 meters',
         isCritical: true,
+        isSimCustom: true,
       });
     }
 
-    showToast(`Broadcasted ${simResult.severity} threshold breach to all connected users.`);
+    showToast(`Broadcasted ${simResult.severity} threshold breach to all connected devices.`);
   };
 
   // 4. Register New Sub-Admin
@@ -679,8 +740,8 @@ export default function DevAdminDashboard() {
           </div>
         )}
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-white/10 pb-2 overflow-x-auto">
+        {/* Navigation Tabs (Framer Motion Shared-Layout Sliding Pill) */}
+        <div className="relative flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] overflow-x-auto">
           {[
             { id: 'scenarios', label: 'Disaster Scenarios & Condition Matrix', icon: Layers },
             { id: 'triggers', label: 'Instant Triggers & Broadcast Suite', icon: Play },
@@ -693,14 +754,23 @@ export default function DevAdminDashboard() {
               <button
                 key={tab.id}
                 onClick={() => { playClick(); setActiveTab(tab.id as any); }}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
                   active
-                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5'
+                    ? 'text-[var(--bg-canvas)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{tab.label}</span>
+                {active && (
+                  <motion.div
+                    layoutId="adminDashboardActiveTabPill"
+                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                    className="absolute inset-0 rounded-xl bg-[var(--text-main)] -z-10 pointer-events-none shadow-xs"
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{tab.label}</span>
+                </span>
               </button>
             );
           })}
@@ -710,6 +780,39 @@ export default function DevAdminDashboard() {
         {activeTab === 'scenarios' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             
+            {/* Live Active Alert Command Banner (Visible when a scenario or simulation is currently broadcasted) */}
+            {activeBroadcast && (
+              <div className="p-4 sm:p-5 rounded-3xl border-2 border-rose-600/50 bg-rose-500/[0.08] dark:bg-rose-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 neo-glass-card shadow-lg animate-in fade-in duration-200">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-rose-700 text-white flex items-center justify-center shrink-0 shadow-sm animate-pulse">
+                    <Radio className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-rose-700 text-white uppercase tracking-wider">
+                        [BROADCAST ACTIVE]
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-[var(--text-main)]">
+                        {activeBroadcast.title || 'Simulated Disaster Condition'}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-mono text-[var(--text-muted)] block mt-0.5">
+                      Siren, notification and evacuation bypass active across all field phones & connected clients.
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleStandDown}
+                  className="px-4 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-mono font-bold uppercase tracking-wider active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 shadow-sm"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>[STAND DOWN / REVOKE ALL ALARMS]</span>
+                </button>
+              </div>
+            )}
+
             {/* Header & Notice */}
             <div className="p-5 sm:p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
@@ -720,11 +823,22 @@ export default function DevAdminDashboard() {
                   </h2>
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-3xl">
-                  Standardized test suites for all 6 extreme hazard events. Broadcasting any scenario instantly transmits verified telemetry to all active desktop browsers, mobile PWAs, and native Android APK devices via DOAB's pub/sub beacon.
+                  Standardized test suites for all 6 extreme hazard events. Broadcasting any scenario transmits live telemetry to all field devices and mobile APKs. The Admin Console remains completely interactive with zero screen hijacking.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {activeBroadcast && (
+                  <button
+                    type="button"
+                    onClick={handleStandDown}
+                    className="px-3.5 py-1.5 text-xs font-mono font-bold uppercase rounded-xl bg-rose-700 hover:bg-rose-800 text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>[STAND DOWN]</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={clearAdminAlerts}
@@ -882,14 +996,39 @@ export default function DevAdminDashboard() {
                   <span className="font-semibold text-neutral-900 dark:text-neutral-100">{simResult.reason}</span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleBroadcastSimulatedThreshold}
-                  className="px-4 py-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 shrink-0 font-sans"
-                >
-                  <Send className="h-3.5 w-3.5" />
-                  <span>Broadcast Condition Trigger to All Devices</span>
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleResetBaseline}
+                    className="px-3 py-2 rounded-xl border border-neutral-300 dark:border-white/15 text-neutral-700 dark:text-neutral-300 font-bold text-xs hover:bg-neutral-100 dark:hover:bg-white/5 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5 font-sans"
+                    title="Reset sliders back to dry/safe baseline"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>[Reset Baseline]</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleBroadcastSimulatedThreshold}
+                    className={`px-4 py-2 rounded-xl font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 font-sans ${
+                      activeBroadcast?.isSimCustom
+                        ? 'bg-rose-700 hover:bg-rose-800 text-white'
+                        : 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950'
+                    }`}
+                  >
+                    {activeBroadcast?.isSimCustom ? (
+                      <>
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span>[ACTIVE — STAND DOWN ALARM]</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-3.5 w-3.5" />
+                        <span>Broadcast Condition Trigger</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -908,68 +1047,102 @@ export default function DevAdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {DISASTER_SCENARIOS.map((scen) => (
-                  <div
-                    key={scen.id}
-                    className="p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-sm flex flex-col justify-between gap-3 transition-all hover:border-neutral-400 dark:hover:border-white/20"
-                  >
-                    <div className="space-y-2.5">
-                      {/* Top Badges */}
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
-                          [{scen.envMode === 'flood' ? 'FLOOD MODE' : 'DROUGHT MODE'}]
-                        </span>
-                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border ${
-                          scen.severity === 'Critical'
-                            ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30'
-                            : scen.severity === 'High'
-                              ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
-                              : 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30'
-                        }`}>
-                          [{scen.severity.toUpperCase()}]
-                        </span>
-                      </div>
+                {DISASTER_SCENARIOS.map((scen) => {
+                  const isCurrentActive = activeBroadcast?.active && activeBroadcast?.scenarioId === scen.id;
+                  return (
+                    <div
+                      key={scen.id}
+                      className={`p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border shadow-sm flex flex-col justify-between gap-3 transition-all ${
+                        isCurrentActive 
+                          ? 'border-rose-500/80 ring-2 ring-rose-500/20' 
+                          : 'border-neutral-300 dark:border-white/10 hover:border-neutral-400 dark:hover:border-white/20'
+                      }`}
+                    >
+                      <div className="space-y-2.5">
+                        {/* Top Badges */}
+                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+                              [{scen.envMode === 'flood' ? 'FLOOD MODE' : 'DROUGHT MODE'}]
+                            </span>
+                            <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                              scen.severity === 'Critical'
+                                ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30'
+                                : scen.severity === 'High'
+                                  ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                                  : 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30'
+                            }`}>
+                              [{scen.severity.toUpperCase()}]
+                            </span>
+                          </div>
+                          {isCurrentActive && (
+                            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/40 animate-pulse flex items-center gap-1">
+                              <AlertTriangle className="h-2.5 w-2.5" />
+                              <span>[BROADCASTING LIVE]</span>
+                            </span>
+                          )}
+                        </div>
 
-                      {/* Title & Location */}
-                      <div>
-                        <h4 className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white leading-snug">
-                          {scen.name}
-                        </h4>
-                        <div className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono mt-0.5">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{scen.location}</span>
+                        {/* Title & Location */}
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white leading-snug">
+                            {scen.name}
+                          </h4>
+                          <div className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono mt-0.5">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{scen.location}</span>
+                          </div>
+                        </div>
+
+                        {/* Measured Conditions */}
+                        <div className="p-2.5 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300/80 dark:border-white/10 space-y-1 text-[10px] font-mono">
+                          <span className="text-[8.5px] uppercase tracking-wider text-neutral-400 block font-semibold">Active Measurements:</span>
+                          {Object.entries(scen.conditions).map(([k, v]) => (
+                            <div key={k} className="flex items-center justify-between text-neutral-800 dark:text-neutral-200">
+                              <span className="capitalize text-neutral-500">{k.replace(/([A-Z])/g, ' $1')}:</span>
+                              <span className="font-semibold">{v}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Trigger Rule */}
+                        <div className="text-[9.5px] text-neutral-600 dark:text-neutral-400 leading-snug font-sans bg-neutral-100 dark:bg-white/5 p-2 rounded-xl">
+                          <strong className="text-neutral-950 dark:text-white block font-mono text-[9px] uppercase mb-0.5">Threshold Rule:</strong>
+                          {scen.triggerThreshold}
                         </div>
                       </div>
 
-                      {/* Measured Conditions */}
-                      <div className="p-2.5 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300/80 dark:border-white/10 space-y-1 text-[10px] font-mono">
-                        <span className="text-[8.5px] uppercase tracking-wider text-neutral-400 block font-semibold">Active Measurements:</span>
-                        {Object.entries(scen.conditions).map(([k, v]) => (
-                          <div key={k} className="flex items-center justify-between text-neutral-800 dark:text-neutral-200">
-                            <span className="capitalize text-neutral-500">{k.replace(/([A-Z])/g, ' $1')}:</span>
-                            <span className="font-semibold">{v}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Trigger Rule */}
-                      <div className="text-[9.5px] text-neutral-600 dark:text-neutral-400 leading-snug font-sans bg-neutral-100 dark:bg-white/5 p-2 rounded-xl">
-                        <strong className="text-neutral-950 dark:text-white block font-mono text-[9px] uppercase mb-0.5">Threshold Rule:</strong>
-                        {scen.triggerThreshold}
-                      </div>
+                      {/* Broadcast Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isCurrentActive) {
+                            handleStandDown();
+                          } else {
+                            handleBroadcastScenario(scen);
+                          }
+                        }}
+                        className={`w-full mt-2 py-2 px-3 rounded-xl text-xs font-bold active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 font-sans ${
+                          isCurrentActive
+                            ? 'bg-rose-700 hover:bg-rose-800 text-white'
+                            : 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 hover:opacity-90'
+                        }`}
+                      >
+                        {isCurrentActive ? (
+                          <>
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            <span>[ACTIVE — CLICK TO STAND DOWN]</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-3.5 w-3.5" />
+                            <span>Broadcast Scenario to All Users</span>
+                          </>
+                        )}
+                      </button>
                     </div>
-
-                    {/* Broadcast Button */}
-                    <button
-                      type="button"
-                      onClick={() => handleBroadcastScenario(scen)}
-                      className="w-full mt-2 py-2 px-3 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-bold hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 font-sans"
-                    >
-                      <Play className="h-3.5 w-3.5" />
-                      <span>Broadcast Scenario to All Users</span>
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -1057,40 +1230,51 @@ export default function DevAdminDashboard() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  playClick();
-                  playAlertAlarm();
-                  NativeService.triggerSosHaptics();
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    NativeService.triggerSosHaptics();
 
-                  const alertTitle = `🚨 ${sosTitle || 'DOAB EMERGENCY SOS ALERT'}`;
-                  const alertBody = `${sosWard ? `[${sosWard}] ` : ''}${sosDesc || 'Severe flash waterlogging reported. Immediate high-ground bypass advised.'}`;
+                    const alertTitle = `DOAB EMERGENCY SOS ALERT: ${sosTitle || 'Critical Hazard Alert'}`;
+                    const alertBody = `${sosWard ? `[${sosWard}] ` : ''}${sosDesc || 'Severe flash waterlogging reported. Immediate high-ground bypass advised.'}`;
 
-                  // 1. Broadcast 'sos_danger' (the exact event type required by the downloaded native APK)
-                  RemoteAdminChannel.broadcast('sos_danger', {
-                    title: alertTitle,
-                    ward: sosWard,
-                    waterDepthCm: 85,
-                    description: alertBody,
-                    distanceAhead: '200 meters',
-                    isCritical: true,
-                  });
+                    // 1. Broadcast 'sos_danger' (triggers emergency siren, overlay, and haptics on field/remote devices)
+                    RemoteAdminChannel.broadcast('sos_danger', {
+                      title: alertTitle,
+                      ward: sosWard,
+                      waterDepthCm: 85,
+                      description: alertBody,
+                      distanceAhead: '200 meters',
+                      isCritical: true,
+                    });
 
-                  // 2. Also broadcast push_notification for generic listeners
-                  RemoteAdminChannel.broadcast('push_notification' as any, {
-                    title: alertTitle,
-                    body: alertBody,
-                    isCritical: true,
-                  });
+                    // 2. Also broadcast push_notification for generic listeners
+                    RemoteAdminChannel.broadcast('push_notification' as any, {
+                      title: alertTitle,
+                      body: alertBody,
+                      isCritical: true,
+                    });
 
-                  showToast('Dispatched Instant Push Notification (SOS) to all active devices.');
-                }}
-                className="w-full py-3 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 font-sans"
-              >
-                <Send className="h-4 w-4" />
-                <span>Dispatch Instant Push Notification (SOS)</span>
-              </button>
+                    showToast('Dispatched Instant SOS Broadcast to all active field devices.');
+                  }}
+                  className="flex-1 w-full py-3 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 font-sans"
+                >
+                  <Send className="h-4 w-4" />
+                  <span>Dispatch Instant Push Notification (SOS)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleStandDown}
+                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 font-sans shrink-0"
+                  title="Stands down all sirens and closes emergency danger screens across all connected devices"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>[Stand Down / All-Clear]</span>
+                </button>
+              </div>
             </div>
 
             {/* Action 4: Inject Live Alert Stream Item */}

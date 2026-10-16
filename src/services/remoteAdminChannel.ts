@@ -5,11 +5,11 @@
  */
 
 import { NativeService } from '../utils/nativeService';
-import { playEmergencyBuzzingAlarm, playCivicNotificationChime, playArrivalSuccessChime } from '../utils/soundFx';
+import { playEmergencyBuzzingAlarm, playCivicNotificationChime, playArrivalSuccessChime, stopAlertAlarm } from '../utils/soundFx';
 
 export interface RemoteAdminBeacon {
   id: string;
-  type: 'sos_danger' | 'destination_arrival' | 'custom_alert';
+  type: 'sos_danger' | 'destination_arrival' | 'custom_alert' | 'clear_alarm' | 'push_notification';
   timestamp: number;
   payload: any;
 }
@@ -41,9 +41,17 @@ export const RemoteAdminChannel = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Title': type === 'sos_danger' ? '🚨 DOAB SOS ALARM' : 'DOAB Mission Telemetry',
+          'Title': type === 'sos_danger' 
+            ? '🚨 DOAB SOS ALARM' 
+            : type === 'clear_alarm'
+            ? '✅ DOAB ALL-CLEAR (STAND DOWN)'
+            : 'DOAB Mission Telemetry',
           'Priority': type === 'sos_danger' ? 'urgent' : 'default',
-          'Tags': type === 'sos_danger' ? 'warning,rotating_light' : 'information_source'
+          'Tags': type === 'sos_danger' 
+            ? 'warning,rotating_light' 
+            : type === 'clear_alarm'
+            ? 'white_check_mark,bell'
+            : 'information_source'
         },
         body: JSON.stringify(beacon)
       });
@@ -62,7 +70,18 @@ export const RemoteAdminChannel = {
       localStorage.setItem(LAST_BEACON_KEY, beacon.id);
 
       if (beacon.type === 'sos_danger') {
-        // High-urgency aggressive buzzing alarm & haptics
+        // Dispatch admin broadcast state indicator to the Admin Console
+        window.dispatchEvent(new CustomEvent('doab:admin-broadcast-status', {
+          detail: { active: true, payload: beacon.payload }
+        }));
+
+        const isOnAdminDashboard = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+        if (isOnAdminDashboard) {
+          // Do not blast siren or mount takeover modal on the Admin Control Console itself!
+          return;
+        }
+
+        // High-urgency aggressive buzzing alarm & haptics for field clients / remote phones
         playEmergencyBuzzingAlarm(3500);
         try {
           NativeService.triggerSosHaptics();
@@ -71,9 +90,18 @@ export const RemoteAdminChannel = {
             beacon.payload?.title || 'Severe Flash Flood Alert Dispatched.'
           );
         } catch {}
-        // Dispatch UI display immediately so full-screen alarm appears
+        // Dispatch UI display immediately so full-screen alarm appears on remote device
         window.dispatchEvent(new CustomEvent('doab:trigger-danger-broadcast', {
           detail: beacon.payload
+        }));
+      } else if (beacon.type === 'clear_alarm') {
+        // All-Clear / Stand-Down: stop active alarms and dismiss danger modal across all devices
+        stopAlertAlarm();
+        window.dispatchEvent(new CustomEvent('doab:clear-danger-broadcast', {
+          detail: beacon.payload
+        }));
+        window.dispatchEvent(new CustomEvent('doab:admin-broadcast-status', {
+          detail: { active: false, payload: beacon.payload }
         }));
       } else if (beacon.type === 'destination_arrival') {
         playArrivalSuccessChime();

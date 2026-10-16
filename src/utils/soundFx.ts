@@ -80,16 +80,29 @@ export function playCardSwiped() {
   } catch (err) {}
 }
 
+let activeAlarmCtx: AudioContext | null = null;
+
+export function stopAlertAlarm() {
+  if (activeAlarmCtx) {
+    try {
+      activeAlarmCtx.close();
+    } catch {}
+    activeAlarmCtx = null;
+  }
+}
+
 /**
  * High-urgency pulsing / buzzing emergency alarm for SOS & Life-Threatening Hazards.
  * Features a dual-frequency square/sawtooth warble with aggressive tremolo buzzer.
  */
 export function playEmergencyBuzzingAlarm(durationMs: number = 3200) {
   if (!isSoundEnabled() || typeof window === 'undefined') return;
+  stopAlertAlarm();
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
+    activeAlarmCtx = ctx;
     if (ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
     }
