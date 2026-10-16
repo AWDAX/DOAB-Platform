@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { History, Route, Camera, CheckCircle, Download, FileSpreadsheet, Sparkles, ChevronDown, ChevronUp, MapPin, Smartphone, Clock } from 'lucide-react';
+import { History, Route, Camera, CheckCircle, Download, FileSpreadsheet, ChevronDown, ChevronUp, MapPin, Smartphone, Clock, Upload } from 'lucide-react';
 import { PageTourButton } from '../components/GuidedTour';
 import { playClick } from '../utils/soundFx';
 import { parsePhotoMetadata, type ExifTelemetry } from '../utils/exifInspector';
@@ -69,6 +69,7 @@ export default function OldRoutesPage() {
   const [activePhotoUploadId, setActivePhotoUploadId] = useState<string | null>(null);
   const [verifiedSuccessToast, setVerifiedSuccessToast] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Load live user-submitted arrival feedbacks merged with baseline samples
   useEffect(() => {
@@ -113,12 +114,21 @@ export default function OldRoutesPage() {
     setExpandedTelemetryIds(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Trigger file selection for photo back-check
+  // Trigger file selection for photo back-check (Gallery)
   const handleOpenPhotoUpload = (id: string) => {
     playClick();
     setActivePhotoUploadId(id);
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  // Trigger native camera directly with capture="environment"
+  const handleOpenCameraCapture = (id: string) => {
+    playClick();
+    setActivePhotoUploadId(id);
+    if (cameraInputRef.current) {
+      cameraInputRef.current.click();
     }
   };
 
@@ -259,7 +269,7 @@ export default function OldRoutesPage() {
         </div>
       </div>
 
-      {/* Hidden file input for Photo Back-Check upload */}
+      {/* Hidden file input for Photo Back-Check upload (Gallery) */}
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -268,11 +278,21 @@ export default function OldRoutesPage() {
         onChange={handleFileChange} 
       />
 
+      {/* Hidden file input for Direct Native Camera Capture */}
+      <input 
+        type="file" 
+        ref={cameraInputRef} 
+        accept="image/*" 
+        capture="environment" 
+        className="hidden" 
+        onChange={handleFileChange} 
+      />
+
       {/* Success Notification Banner / Toast */}
       {verifiedSuccessToast && (
         <div className="mb-5 p-3.5 rounded-xl border border-[var(--border-color)] bg-neutral-500/10 text-[var(--text-main)] text-xs font-semibold flex items-center justify-between gap-3 animate-fade-in shadow-2xs">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
+            <CheckCircle className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
             <span>{verifiedSuccessToast}</span>
           </div>
           <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shrink-0">
@@ -411,20 +431,55 @@ export default function OldRoutesPage() {
                             {item.exifTelemetry?.deviceSource || 'EXIF Hardware Verified'}
                           </span>
                         </div>
+
+                        {/* AI & Synthetic Image Provenance Badge */}
+                        <div className="flex items-center justify-between pt-1 border-t border-[var(--border-color)]/40 text-[9px]">
+                          <span className="text-[var(--text-muted)]">AI Provenance:</span>
+                          <span className={`px-1.5 py-0.5 rounded font-mono font-bold ${
+                            item.exifTelemetry?.aiDetectionStatus === 'authentic_camera'
+                              ? 'bg-teal-500/10 text-teal-800 dark:text-teal-300 border border-teal-900/30'
+                              : item.exifTelemetry?.aiDetectionStatus === 'suspicious_synthetic'
+                                ? 'bg-rose-500/10 text-rose-800 dark:text-rose-300 border border-rose-900/30'
+                                : 'bg-neutral-500/10 text-neutral-800 dark:text-neutral-300 border border-[var(--border-color)]'
+                          }`}>
+                            {item.exifTelemetry?.aiDetectionStatus === 'authentic_camera'
+                              ? '[AUTHENTIC SENSOR]'
+                              : item.exifTelemetry?.aiDetectionStatus === 'suspicious_synthetic'
+                                ? '[SYNTHETIC RISK]'
+                                : '[METADATA STRIPPED]'}
+                          </span>
+                        </div>
+                        {item.exifTelemetry?.aiDetectionReason && (
+                          <p className="text-[8.5px] text-[var(--text-muted)] italic pt-0.5 leading-tight">
+                            {item.exifTelemetry.aiDetectionReason}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
                 </>
               ) : (
-                <button 
-                  id={index === 0 ? 'tour-history-camera' : undefined} 
-                  type="button"
-                  onClick={() => handleOpenPhotoUpload(item.id)}
-                  className="w-full py-2.5 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs group"
-                >
-                  <Camera className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors" />
-                  <span>Submit Photo Back-Check</span>
-                </button>
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  <button 
+                    id={index === 0 ? 'tour-history-camera' : undefined} 
+                    type="button"
+                    onClick={() => handleOpenCameraCapture(item.id)}
+                    className="py-2.5 px-2 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs group"
+                    title="Launch smartphone native camera with environmental back capture"
+                  >
+                    <Camera className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
+                    <span className="truncate">Camera</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleOpenPhotoUpload(item.id)}
+                    className="py-2.5 px-2 bg-[var(--bg-main)] hover:bg-[var(--text-main)] hover:text-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs group"
+                    title="Upload photo from device gallery"
+                  >
+                    <Upload className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
+                    <span className="truncate">Gallery</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>

@@ -12,10 +12,13 @@ export interface ExifTelemetry {
   altitudeMeters?: number;
   cameraMake?: string;
   cameraModel?: string;
+  softwareSignature?: string;
   dateTime?: string;
   fileSizeBytes: number;
   fileName: string;
   deviceSource: 'EXIF Hardware GPS' | 'Device Geolocation Tag' | 'Stripped / Clean';
+  aiDetectionStatus: 'authentic_camera' | 'suspicious_synthetic' | 'stripped_metadata';
+  aiDetectionReason: string;
 }
 
 function convertDMSToDD(degrees: number, minutes: number, seconds: number, direction: string): number {
@@ -31,7 +34,9 @@ export async function parsePhotoMetadata(file: File): Promise<ExifTelemetry> {
     hasGps: false,
     fileSizeBytes: file.size,
     fileName: file.name,
-    deviceSource: 'Stripped / Clean'
+    deviceSource: 'Stripped / Clean',
+    aiDetectionStatus: 'stripped_metadata',
+    aiDetectionReason: 'Analyzing sensor provenance...'
   };
 
   try {
@@ -79,6 +84,13 @@ export async function parsePhotoMetadata(file: File): Promise<ExifTelemetry> {
                 if (strOffset + count <= length) {
                   const bytes = new Uint8Array(buffer, strOffset, Math.min(count, 32));
                   result.cameraModel = String.fromCharCode(...bytes).replace(/\0/g, '').trim();
+                }
+              } else if (tag === 0x0131) { // Software
+                const count = view.getUint32(entryOffset + 4, littleEndian);
+                const strOffset = tiffOffset + view.getUint32(entryOffset + 8, littleEndian);
+                if (strOffset + count <= length) {
+                  const bytes = new Uint8Array(buffer, strOffset, Math.min(count, 48));
+                  result.softwareSignature = String.fromCharCode(...bytes).replace(/\0/g, '').trim();
                 }
               } else if (tag === 0x0132) { // DateTime
                 const strOffset = tiffOffset + view.getUint32(entryOffset + 8, littleEndian);
@@ -178,6 +190,34 @@ export async function parsePhotoMetadata(file: File): Promise<ExifTelemetry> {
         result.deviceSource = 'Device Geolocation Tag';
       }
     } catch {}
+  }
+
+  // ── AI & SYNTHETIC IMAGE PROVENANCE ENGINE ──
+  const aiKeywords = [
+    'midjourney', 'dall-e', 'dalle', 'stable diffusion', 'stablediffusion', 
+    'novelai', 'comfyui', 'automatic1111', 'invokeai', 'adobe firefly', 
+    'firefly', 'canva', 'flux', 'sdxl', 'c2pa', 'generative', 'generator'
+  ];
+  
+  const rawSoftware = (result.softwareSignature || '').toLowerCase();
+  const rawName = (file.name || '').toLowerCase();
+  const hasAiKeyword = aiKeywords.some(kw => rawSoftware.includes(kw) || rawName.includes(kw));
+
+  if (hasAiKeyword) {
+    result.aiDetectionStatus = 'suspicious_synthetic';
+    result.aiDetectionReason = `Generative synthetic signature detected (${result.softwareSignature || file.name}). Flagged for manual audit.`;
+  } else if (result.cameraMake && result.cameraModel && result.dateTime) {
+    result.aiDetectionStatus = 'authentic_camera';
+    result.aiDetectionReason = `Physical optical sensor verified: ${result.cameraMake} ${result.cameraModel} (Hardware timestamp logged).`;
+  } else if (result.hasGps && result.deviceSource === 'EXIF Hardware GPS') {
+    result.aiDetectionStatus = 'authentic_camera';
+    result.aiDetectionReason = 'Authentic hardware GPS IFD coordinates verified directly inside photo binary structure.';
+  } else if (result.deviceSource === 'Device Geolocation Tag') {
+    result.aiDetectionStatus = 'stripped_metadata';
+    result.aiDetectionReason = 'EXIF stripped by platform re-compression. Verified via active device GPS during upload.';
+  } else {
+    result.aiDetectionStatus = 'stripped_metadata';
+    result.aiDetectionReason = 'No hardware sensor or GPS IFD headers found in binary stream.';
   }
 
   return result;

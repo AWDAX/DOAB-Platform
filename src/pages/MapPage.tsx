@@ -888,6 +888,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
   const [prioritizeRecent, setPrioritizeRecent] = useState<boolean>(true);
   const [prioritizeNearest, setPrioritizeNearest] = useState<boolean>(true);
+  const [isMultiClusterTourActive, setIsMultiClusterTourActive] = useState<boolean>(false);
   const [isMapFlying, setIsMapFlying] = useState(false);
 
   // Default Coordinates: National All-India Overview Center
@@ -2340,6 +2341,44 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     isMultiStateMode,
     selectedStates
   ]);
+
+  // ── MULTI-CLUSTER RELIEF & DISPATCH TOUR ENGINE ──
+  // Computes sequential cluster-to-cluster hopping for emergency relief workers / delivery supply drops
+  const multiClusterReliefTour = useMemo(() => {
+    if (recurringClusters.length < 2) return null;
+    const topClusters = recurringClusters.slice(0, 5);
+    
+    // Sequential tour starting from the highest priority cluster
+    const tourHops: Array<{
+      fromCluster: (typeof recurringClusters)[0];
+      toCluster: (typeof recurringClusters)[0];
+      legDistanceKm: number;
+    }> = [];
+
+    let totalCircuitDistanceKm = 0;
+    const pathPositions: [number, number][] = [[topClusters[0].lat, topClusters[0].lng]];
+
+    for (let i = 0; i < topClusters.length - 1; i++) {
+      const from = topClusters[i];
+      const to = topClusters[i + 1];
+      const legDist = haversineKm(from.lat, from.lng, to.lat, to.lng);
+      totalCircuitDistanceKm += legDist;
+      pathPositions.push([to.lat, to.lng]);
+      tourHops.push({
+        fromCluster: from,
+        toCluster: to,
+        legDistanceKm: legDist
+      });
+    }
+
+    return {
+      clusters: topClusters,
+      tourHops,
+      totalCircuitDistanceKm,
+      totalCases: topClusters.reduce((sum, c) => sum + c.count, 0),
+      pathPositions
+    };
+  }, [recurringClusters]);
 
   const handleSelectIncident = (incident: TelemetryIncident) => {
     playClick();
@@ -3818,29 +3857,43 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     {/* SECTION 1: Unified Hydrological Forecast Hub (Segmented Sliding Pill Tabs) */}
                     <div className="mt-1 p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-2 font-mono text-[10px]">
                       
-                      {/* Sub-Tab Switcher Pill Bar */}
-                      <div className="flex items-center p-0.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] select-none">
+                      {/* Sub-Tab Switcher Pill Bar (Framer Motion Shared Layout Spring) */}
+                      <div className="relative flex items-center p-0.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] select-none">
                         <button
                           type="button"
                           onClick={() => { playClick(); setForecastSubTab('inundation'); }}
-                          className={`flex-1 py-1 px-1.5 rounded-md font-bold text-[9px] transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                          className={`relative z-10 flex-1 py-1 px-1.5 rounded-md font-bold text-[9px] transition-colors duration-150 text-center flex items-center justify-center gap-1.5 cursor-pointer min-w-0 ${
                             forecastSubTab === 'inundation'
-                              ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
+                              ? 'text-[var(--bg-card)]'
                               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                           }`}
                         >
+                          {forecastSubTab === 'inundation' && (
+                            <motion.div
+                              layoutId="forecastSubTabPill"
+                              transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                              className="absolute inset-0 rounded-md bg-[var(--text-main)] shadow-xs -z-10 pointer-events-none"
+                            />
+                          )}
                           <Waves className="h-3 w-3 shrink-0" />
                           <span className="truncate">{envMode === 'drought' ? 'WATER DEFICIT' : 'DOAB AI INUNDATION'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => { playClick(); setForecastSubTab('imd'); }}
-                          className={`flex-1 py-1 px-1.5 rounded-md font-bold text-[9px] transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                          className={`relative z-10 flex-1 py-1 px-1.5 rounded-md font-bold text-[9px] transition-colors duration-150 text-center flex items-center justify-center gap-1.5 cursor-pointer min-w-0 ${
                             forecastSubTab === 'imd'
-                              ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
+                              ? 'text-[var(--bg-card)]'
                               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                           }`}
                         >
+                          {forecastSubTab === 'imd' && (
+                            <motion.div
+                              layoutId="forecastSubTabPill"
+                              transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                              className="absolute inset-0 rounded-md bg-[var(--text-main)] shadow-xs -z-10 pointer-events-none"
+                            />
+                          )}
                           <Radar className="h-3 w-3 shrink-0" />
                           <span className="truncate">IMD LIVE & 7D NWP</span>
                         </button>
@@ -4157,6 +4210,63 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     </div>
                   </div>
 
+                  {/* Multi-Cluster Relief Dispatch Circuit (Emergency Logistics) */}
+                  {recurringClusters.length >= 2 && (
+                    <div className="mb-2 p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-1.5 select-none">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Navigation2 className="h-3.5 w-3.5 text-[var(--color-brand-accent)] shrink-0" />
+                          <span className="font-bold text-[10px] truncate text-[var(--text-main)]">
+                            Multi-Cluster Relief Tour
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClick();
+                            setIsMultiClusterTourActive(!isMultiClusterTourActive);
+                          }}
+                          className={`py-0.5 px-2 rounded-md font-mono text-[9px] font-bold border transition-all cursor-pointer shrink-0 ${
+                            isMultiClusterTourActive
+                              ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-xs'
+                              : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--text-main)]/40'
+                          }`}
+                        >
+                          {isMultiClusterTourActive ? '[CIRCUIT ACTIVE]' : '[DISPATCH TOUR]'}
+                        </button>
+                      </div>
+
+                      {isMultiClusterTourActive && multiClusterReliefTour && (
+                        <div className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] space-y-1.5 font-mono text-[9px]">
+                          <div className="flex items-center justify-between text-[var(--text-main)] border-b border-[var(--border-color)]/60 pb-1">
+                            <span className="text-[var(--text-muted)]">Circuit Distance:</span>
+                            <span className="font-bold">{multiClusterReliefTour.totalCircuitDistanceKm.toFixed(1)} km</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[var(--text-main)]">
+                            <span className="text-[var(--text-muted)]">Priority Supply Targets:</span>
+                            <span className="font-bold">{multiClusterReliefTour.clusters.length} clusters ({multiClusterReliefTour.totalCases} cases)</span>
+                          </div>
+
+                          {/* Sequential Waypoint Legs */}
+                          <div className="pt-1 space-y-1">
+                            <span className="text-[8.5px] uppercase tracking-wider text-[var(--text-muted)] font-semibold">
+                              Cluster Hopping Legs:
+                            </span>
+                            {multiClusterReliefTour.tourHops.map((hop, hIdx) => (
+                              <div key={`tour-hop-${hIdx}`} className="flex items-center justify-between p-1 rounded bg-[var(--bg-main)] text-[8.5px]">
+                                <span className="truncate max-w-[155px] text-[var(--text-main)]">
+                                  {hIdx + 1}. {hop.fromCluster.ward.split(',')[0]} → {hop.toCluster.ward.split(',')[0]}
+                                </span>
+                                <span className="font-bold text-[var(--text-main)] shrink-0">
+                                  +{hop.legDistanceKm.toFixed(1)} km
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Micro Table of Hotspot Clusters */}
                   <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto custom-scrollbar pr-0.5">
@@ -4899,6 +5009,19 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     weight: 2,
                     dashArray: '4, 4',
                     className: 'focused-risk-halo-bloom',
+                  }}
+                />
+              )}
+
+              {/* Multi-Cluster Relief Dispatch Polyline */}
+              {isMultiClusterTourActive && multiClusterReliefTour && (
+                <Polyline
+                  positions={multiClusterReliefTour.pathPositions}
+                  pathOptions={{
+                    color: envMode === 'drought' ? '#D97706' : '#0D9488',
+                    weight: 3.5,
+                    dashArray: '8, 8',
+                    opacity: 0.9,
                   }}
                 />
               )}

@@ -345,6 +345,27 @@ in the same pass before/with the branch commit.
 
 ---
 
+## 🚀 Mandatory: AWS EC2 Backend Deployment & CI/CD Dispatch Rule (read first)
+
+**Absolute rule for Backend API availability & CI/CD synchronization:**
+
+1. **Path-Filtered Deployment Awareness:**
+   - Pushes to frontend files only trigger `Deploy Frontend to AWS S3 & CloudFront`.
+   - The backend deployment (`.github/workflows/deploy-backend.yml`) runs on AWS EC2 and is strictly **path-filtered** to `services/prediction-api/**` and `.github/workflows/deploy-backend.yml`. Pushing frontend code or documentation will **NEVER** automatically trigger an EC2 backend redeployment.
+2. **Proactive Manual Workflow Dispatch Trigger:**
+   - Whenever backend endpoints (`/api/forecast`, `/api/incidents`, `/api/boundaries`, `/api/telemetry`) return `502 Bad Gateway`, connection timeouts, or after resolving an upstream deployment interruption (e.g. SSH drop, exit code 255):
+   - The AI agent **MUST NOT** wait or assume that pushing frontend code will restart the backend.
+   - The AI agent **MUST proactively trigger** the backend deployment workflow via the GitHub CLI:
+     ```bash
+     gh workflow run deploy-backend.yml --ref main
+     ```
+3. **Verification & Active Monitoring:**
+   - After dispatching, the agent must check the run status (`gh run list` / `gh run view <run-id>`).
+   - Confirm that the `sudo systemctl restart zplus-backend` step executes and the health endpoint responds (`http://127.0.0.1:8000/health`).
+   - Only declare the backend operational after verified successful completion.
+
+---
+
 ## ⚡ Vercel Deployment Quota Optimization (100 Deployments/Day Limit)
 
 Vercel Hobby plan has a hard limit of **100 deployments per 24-hour rolling window**. Pushing to ANY tracked branch triggers a preview deployment that consumes this quota unless instructed otherwise.
