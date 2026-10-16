@@ -106,27 +106,50 @@ DOAB is engineered on a resilient, high-availability AWS Cloud infrastructure de
    - **2D Standard Engine (Leaflet)**: Ultra-low battery consumption, raster tile rendering, and instant responsiveness on low-bandwidth field mobile devices.
    - **3D Vector GPU Engine (MapLibre GL)**: Hardware-accelerated 3D terrain tilt, orbital angles, and real-time volumetric hazard clusters.
 
-2. **Safe Elevation Path & Bypass Routing**:
+2. **DOAB AI Inundation & Hydrological Risk Prediction Engine**:
+   - **1-Hour Forward Inundation Modeling**: Fuses Copernicus 201m DEM topography, soil runoff absorption, and sub-level sump passage geometry.
+   - **Dual-State Switcher**: Instant transition between Monsoon Inundation Mode and Scarcity Drought Mode.
+   - **Segmented Forecast Pill Tabs**: Zero-layout-shift switcher toggling between `[DOAB AI INUNDATION]` and `[IMD LIVE & 7D NWP]`.
+
+3. **India Meteorological Department (IMD) Live Telemetry & Doppler Radar**:
+   - Ingests official IMD Automatic Weather Station (AWS) observations, 24h accumulated rainfall, min/max surface temperatures, and Doppler Radar / Satellite Nowcasts.
+   - **7-Day Synoptic NWP Drawer**: Day-by-day numerical weather prediction outlook embedded inside the live forecast dock.
+
+4. **Multi-Zone Dynamic Resizable HUDs**:
+   - 3-zone edge resizing (East rail for width, South rail for height, South-East corner for diagonal scaling) across both `Live Risk Monitor` and `Create Safe Elevation Path` panels, preserving map panning gestures.
+
+5. **Safe Elevation Path & Bypass Routing**:
    - Multi-modal evacuation routing that weights elevation gain and avoids historical inundation points.
    - Interactive waypoint creation (**Point A Origin** and **Point B Destination**) directly on the live map or via address autocomplete.
    - **Offline Path Bookmarking**: Save emergency bypass paths to local device storage for guaranteed offline access during storm network blackouts.
 
-3. **Ground-Truth Arrival & Model Calibration**:
+6. **Dev Admin Disaster Condition Matrix & Rule Simulator (`/admin`)**:
+   - Standardized test suites for all 6 extreme hazard events: Cloudburst Inundation, Dam Overflow, Sump Submersion, Drought Logistics, Heatwave, and Water Contamination.
+   - **1-Click Broadcast**: Dispatches verified telemetry beacons across all connected desktop browsers, mobile PWAs, and native Android APK devices via pub/sub.
+   - **Interactive Rule Engine Simulator**: Real-time sliders for rainfall (mm/h), inundation depth (cm), temperature (°C), and water table drop (m).
+
+7. **Ground-Truth Arrival & Model Calibration**:
    - **"Reached Destination" Workflow**: Field users confirm arrival and rate model safety accuracy (**Accurate**, **Slight Water**, **Flooded/Blocked**).
    - Generates local telemetry verification loops that improve model precision over time.
 
-4. **EXIF Hardware Metadata Inspector (Route Back-Check)**:
+8. **EXIF Hardware Metadata Inspector (Route Back-Check)**:
    - Direct binary parsing of JPEG APP1/EXIF headers upon photo upload.
    - Extracts hardware GPS coordinates, shutter timestamps, and camera make/model for cryptographic ground-truth verification with fallback to privacy-preserving mode.
 
-5. **Live Remote Admin Telemetry & Cross-Device Sync**:
+9. **Live Remote Admin Telemetry & Cross-Device Sync**:
    - Web Dev Admin Console (`/admin` on laptop) broadcasts live emergency beacons, triggering native haptic alarms, high-priority phone notifications, and full-screen SOS takeovers on field Android devices in < 200ms.
 
-6. **Voice AI Operations Copilot**:
-   - Speech-synthesized civic operations assistant capable of querying nearby ward telemetry, reading route risks aloud, and guiding emergency evacuations.
+10. **Voice AI Operations Copilot**:
+    - Speech-synthesized civic operations assistant capable of querying nearby ward telemetry, reading route risks aloud, and guiding emergency evacuations.
 
-7. **Native Android APK (Capacitor + Google Play Services)**:
-   - Native debug APK with offline asset caching, background geolocation, native Google OAuth bottom-sheet login, and full SOS haptics.
+11. **Native Android APK (Capacitor + Google Play Services)**:
+    - Native debug APK with offline asset caching, background geolocation, native Google OAuth bottom-sheet login, and full SOS haptics.
+
+12. **Benchmarking & Competitive Analysis**:
+    - Full competitive whitepaper benchmarking DOAB against Google Flood Hub, NDMA Sachet, IMD Mausam, CWC India-WRIS, and Tomorrow.io:
+      - Markdown Report: [`docs/COMPETITIVE_ANALYSIS.md`](./docs/COMPETITIVE_ANALYSIS.md)
+      - Word Document: [`docs/COMPETITIVE_ANALYSIS.docx`](./docs/COMPETITIVE_ANALYSIS.docx)
+      - System Flowchart: [`docs/COMPETITOR_LANDSCAPE_FLOWCHART.jpg`](./docs/COMPETITOR_LANDSCAPE_FLOWCHART.jpg)
 
 ---
 
