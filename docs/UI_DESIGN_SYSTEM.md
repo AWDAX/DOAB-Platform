@@ -19,6 +19,11 @@ This document is the **single source of truth** for all design rules, color toke
 > - **STRICT BAN ON HACKATHON TRACK TAGS / PILLS / BANNERS**:
 >   - **NEVER ADD HACKATHON TRACK PILLS OR TAGS ON UI SURFACES** (e.g. `Track 02: Heat & Water • Environmental Civic Grid`, `Track 02`, `Built for Environmental Hacks`).
 >   - Keep hero sections, headers, and footers clean, uncluttered, and strictly product-focused. DOAB is a real-world civic life-safety and dispatch platform.
+> - **MANDATORY FRAMER MOTION SHARED-LAYOUT SLIDING PILLS**:
+>   - **NEVER use static CSS background swaps or abrupt jump cuts for active states in tabs, segmented controls, or button groups.**
+>   - Whenever creating or modifying ANY background pill, segmented tab switcher, toggle group, sub-navigation pill, or active indicator, **YOU MUST ALWAYS implement Framer Motion's shared-layout sliding pill** (`<motion.div layoutId="..." transition={{ type: "spring", stiffness: 420, damping: 34 }} />`).
+>   - Structure: parent button/tab with `relative`, active pill element with `absolute inset-0 rounded-* -z-10 pointer-events-none`, and label/icon wrapped in `relative z-10`.
+>   - Scoped `layoutId`: Every sliding toolbar must have a unique, domain-prefixed identifier to prevent cross-component morph collisions.
 > - **STRICT DESIGN CONSISTENCY ACROSS ALL PAGES**:
 >   - All platform cards must use `.neo-glass-card` with `rounded-2xl` and `border-[var(--border-color)]`.
 >   - All inputs must use `rounded-xl`, `border-[var(--border-color)]`, and zero browser focus rings (`focus:outline-none focus:ring-1 focus:ring-[var(--text-main)]`).
@@ -124,12 +129,53 @@ className="... text-white bg-[image:var(--danger-btn-gradient)]
 - Do not use `Shield`, `ShieldCheck`, or `ShieldAlert` icons across routing, alerts, or telemetry surfaces.
 - Use semantic precision icons: `CheckCircle2` (verified low-risk corridor), `AlertTriangle` (critical hazard), `Radio` (high-severity broadcast), `Activity` (moderate telemetry), `Radar`, `Navigation2`, and `Compass`.
 
-### 4.4 Shared-Layout Sliding Pill Toolbars (Zero Layout Shift)
-- **All Alerts Filter Bar (`NotificationPage.tsx`)**: Uses a single container (`overflow-x-hidden`) with `layoutId="alertsSeveritySlidingPill"` and fixed font weights so switching between `All Alerts`, `Critical`, `High`, and `Medium` never shifts toolbar width or triggers horizontal scrollbars on mobile.
-- **Live Risk Monitor Tabs (`MapPage.tsx`)**: Segmented switcher between `Search`, `Forecast`, `Clusters`, and `Hazard` utilizes a Framer Motion shared-layout sliding pill (`layoutId="liveRiskActiveTabPill"` with `transition={{ type: 'spring', stiffness: 420, damping: 34 }}`). Content sits at `relative z-10` with truncated labels to guarantee zero layout shift.
-- **Map Rendering Engine Switcher (`MapPage.tsx`)**: Enlarged `2D Lite` and `3D GPU` pill buttons (`px-3 py-1.5 text-[11px]`) for effortless touch switching.
-- **Desktop Sidebar Navigation (`GlobalSidebar.tsx`)**: Vertical sliding pill with `layoutId="desktopSidebarVerticalPill"`.
-- **Dual Climate Mode Selector (`LandingPage.tsx`)**: Shared pill toggle between `Monsoon (Flood)` and `Scarcity (Drought)` with `layoutId="landingModePill"`.
+### 4.4 Shared-Layout Sliding Pill Toolbars (Mandatory Standard)
+Whenever rendering an active selection state across tabs, segmented button bars, or toggle switchers, **YOU MUST ALWAYS** use Framer Motion's shared-layout sliding pill (`layoutId` + spring physics). Never use static background swaps (`bg-blue-600` vs `bg-transparent`) or abrupt jump cuts.
+
+#### Canonical Implementation Template
+```tsx
+import { motion } from 'framer-motion';
+
+// Container: relative flex with subtle border & background
+<div className="relative flex items-center p-1 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
+  {tabs.map((tab) => {
+    const isActive = activeTab === tab.id;
+    return (
+      <button
+        key={tab.id}
+        onClick={() => setActiveTab(tab.id)}
+        className={`relative px-3 py-1.5 text-xs font-medium transition-colors ${
+          isActive ? 'text-[var(--bg-canvas)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+        }`}
+      >
+        {/* Active sliding pill element */}
+        {isActive && (
+          <motion.div
+            layoutId="scopedUniquePillId"
+            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            className="absolute inset-0 rounded-lg bg-[var(--text-main)] -z-10 pointer-events-none shadow-xs"
+          />
+        )}
+        {/* Text & icons wrapped in relative z-10 */}
+        <span className="relative z-10 flex items-center gap-1.5">
+          <tab.icon className="w-3.5 h-3.5" />
+          {tab.label}
+        </span>
+      </button>
+    );
+  })}
+</div>
+```
+
+#### Official Sliding Pill Registry across DOAB
+- **Live Risk Monitor Tabs (`MapPage.tsx`)**: `layoutId="liveRiskActiveTabPill"` (`Search`, `Forecast`, `Clusters`, `Hazard`).
+- **Hydrological Forecast Sub-Tabs (`MapPage.tsx`)**: `layoutId="forecastSubTabPill"` (`DOAB AI INUNDATION` vs `IMD LIVE & 7D NWP`).
+- **Map Rendering Engine Switcher (`MapPage.tsx`)**: `layoutId="mapEnginePill"` (`2D Lite` vs `3D GPU`).
+- **Admin Dashboard Navigation (`DevAdminDashboard.tsx`)**: `layoutId="adminDashboardActiveTabPill"` (`Live Condition Matrix`, `Incident Hotspots`, `System Alerts`, `Rider Ground-Truth Feedbacks`).
+- **All Alerts Severity Filter Bar (`NotificationPage.tsx`)**: `layoutId="alertsSeveritySlidingPill"` (`All Alerts`, `Critical`, `High`, `Medium`).
+- **Desktop Sidebar Navigation (`GlobalSidebar.tsx`)**: `layoutId="desktopSidebarVerticalPill"` (vertical sliding indicator across navigation routes).
+- **Dual Climate Mode Selector (`LandingPage.tsx`)**: `layoutId="landingModePill"` (`Monsoon (Flood)` vs `Scarcity (Drought)`).
+- **Voice Assistant Mode Switcher (`VoiceAssistant.tsx`)**: `layoutId="assistantModePill"` (`Voice Input` vs `Text Console`).
 
 ### 4.5 Framer Motion "Flying Outside Pill" Defect: Root Cause & Resolution
 When implementing Framer Motion shared layout sliding backgrounds (`layoutId="myPill"`), buttons or tabs can occasionally exhibit a defect where the background pill appears to "fly in from outside" the screen (usually top-left `(0, 0)`) or jump jarringly across components.
