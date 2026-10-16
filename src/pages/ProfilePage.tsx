@@ -111,9 +111,9 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="py-2.5 px-3 sm:px-4 max-w-3xl mx-auto w-full overflow-y-auto custom-scrollbar flex flex-col items-center">
+    <div className="py-2.5 px-3 sm:px-4 max-w-3xl mx-auto w-full overflow-y-auto custom-scrollbar flex flex-col items-center sm:snap-none snap-y snap-mandatory scroll-smooth">
       {/* Header */}
-      <div className="mb-2 sm:mb-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full max-w-3xl mx-auto">
+      <div className="mb-2 sm:mb-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full max-w-3xl mx-auto sm:snap-align-none snap-start">
         <div className="min-w-0 flex-1">
           <h1 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2">
             <User className="h-4.5 w-4.5 text-[var(--text-main)] dark:text-neutral-200 shrink-0" />
@@ -141,7 +141,7 @@ export default function ProfilePage() {
       </div>
       
       {/* Authentication Card (Centered Profile Identity) */}
-      <div id="tour-profile-auth" className="neo-glass-card p-3 sm:p-4 rounded-xl w-full max-w-3xl mx-auto mb-2 sm:mb-2.5 border border-[var(--border-color)] shadow-sm">
+      <div id="tour-profile-auth" className="neo-glass-card p-3 sm:p-4 rounded-xl w-full max-w-3xl mx-auto mb-2 sm:mb-2.5 border border-[var(--border-color)] shadow-sm sm:snap-align-none snap-start">
         <h2 className="text-[10px] font-mono uppercase tracking-wider font-bold text-[var(--text-muted)] mb-2 text-left">
           Authentication Status
         </h2>
@@ -233,7 +233,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Your Role Card (Compact & Well Contained) */}
-      <div id="tour-profile-roles" className="neo-glass-card p-3 sm:p-4 rounded-xl w-full max-w-3xl mx-auto border border-[var(--border-color)] shadow-sm">
+      <div id="tour-profile-roles" className="neo-glass-card p-3 sm:p-4 rounded-xl w-full max-w-3xl mx-auto border border-[var(--border-color)] shadow-sm sm:snap-align-none snap-start">
         <h2 className="text-[10px] font-mono uppercase tracking-wider font-bold text-[var(--text-muted)] mb-2 text-left">
           Your Role
         </h2>
@@ -388,7 +388,7 @@ export default function ProfilePage() {
       </div>
 
       {/* ── Mobile-Only / Touch-Friendly Quick Action Grid (DOAB Standard) ── */}
-      <div className="w-full max-w-3xl mx-auto flex flex-col gap-2 sm:hidden my-2">
+      <div className="w-full max-w-3xl mx-auto flex flex-col gap-2 sm:hidden my-2 sm:snap-align-none snap-start">
         {/* Civic Standing & Trust Score Card */}
         <div className="w-full p-2.5 rounded-xl neo-glass-card border border-[var(--border-color)] flex flex-col items-center justify-center text-center gap-1 shadow-2xs">
           <div className="inline-flex items-center justify-center gap-1.5 max-w-full">

@@ -331,8 +331,8 @@ export default function AssistantPage() {
         {isFullScreen && <div className="hidden md:block w-10 z-10" />}
 
         {/* Action Controls Toolbar (Full-width balanced pills on Mobile/Touch, Right-aligned on Desktop) */}
-        <div id="tour-assistant-actions" className="w-full md:w-auto [@media(pointer:coarse)]:w-full flex items-center justify-between md:justify-end gap-2 shrink-0 z-10">
-          <PageTourButton pageKey="assistant" label="Assistant Guide" className="flex-1 sm:flex-initial justify-center" />
+        <div id="tour-assistant-actions" className="w-full md:w-auto [@media(pointer:coarse)]:w-full flex items-center justify-between md:justify-end gap-1.5 sm:gap-2 shrink-0 z-10 overflow-x-auto no-scrollbar">
+          <PageTourButton pageKey="assistant" label="Assistant Guide" className="flex-1 sm:flex-initial justify-center text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2" />
 
           <button
             type="button"
@@ -342,11 +342,12 @@ export default function AssistantPage() {
               newChat();
               setTimeout(() => inputRef.current?.focus(), 80);
             }}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-[var(--text-main)] text-[var(--bg-card)] hover:opacity-90 transition-all duration-200 cursor-pointer shadow-xs select-none whitespace-nowrap"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold bg-[var(--text-main)] text-[var(--bg-card)] hover:opacity-90 transition-all duration-200 cursor-pointer shadow-xs select-none whitespace-nowrap"
             title="Start New Session"
           >
-            <Plus size={15} className="shrink-0" />
-            <span>New Session</span>
+            <Plus size={14} className="shrink-0" />
+            <span className="hidden xs:inline sm:inline">New Session</span>
+            <span className="xs:hidden">New</span>
           </button>
 
           <button
@@ -355,17 +356,17 @@ export default function AssistantPage() {
               playClick();
               setIsHistoryOpen(prev => !prev);
             }}
-            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer select-none whitespace-nowrap ${
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold border transition-all duration-200 cursor-pointer select-none whitespace-nowrap ${
               isHistoryOpen
                 ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-950 dark:border-white shadow-xs'
                 : 'border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] hover:border-[var(--text-main)]/40'
             }`}
             title="Past Sessions"
           >
-            <Clock size={15} className="shrink-0" />
+            <Clock size={14} className="shrink-0" />
             <span>Sessions</span>
             {sessions.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-current/15 font-mono font-semibold leading-none">
+              <span className="px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] bg-current/15 font-mono font-semibold leading-none">
                 {sessions.length}
               </span>
             )}

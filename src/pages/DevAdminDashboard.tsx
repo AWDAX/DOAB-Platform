@@ -725,7 +725,7 @@ export default function DevAdminDashboard({
   // 2. AUTHENTICATED DEV / ADMIN DASHBOARD (Pure Obsidian & Porcelain Monochromatic Architecture)
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] p-4 sm:p-6 md:p-8 flex flex-col items-center font-sans selection:bg-[var(--color-brand-accent)] selection:text-white transition-colors duration-300">
+    <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] p-4 sm:p-6 md:p-8 flex flex-col items-center font-sans selection:bg-[var(--color-brand-accent)] selection:text-white transition-colors duration-300 [scrollbar-gutter:stable]">
       <div className="w-full max-w-5xl space-y-6">
         
         {/* Top Header Bar */}
@@ -745,9 +745,9 @@ export default function DevAdminDashboard({
                 <p className="text-xs text-[var(--text-muted)] font-mono">
                   Operator: <span className="font-semibold text-[var(--text-main)]">{session.username}</span> ({session.email})
                 </p>
-                <span className="text-[10px] font-mono text-[var(--text-muted)] hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-color)]">
-                  <span className={`w-1.5 h-1.5 rounded-full ${statusMsg?.type === 'error' ? 'bg-rose-500' : 'bg-teal-500'}`} />
-                  <span className="truncate max-w-[280px]">Status: <strong className="text-[var(--text-main)]">{statusMsg ? statusMsg.text : 'Nominal (Standing By)'}</strong></span>
+                <span className="w-[280px] shrink-0 text-[10px] font-mono text-[var(--text-muted)] hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-color)] overflow-hidden">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusMsg?.type === 'error' ? 'bg-rose-500' : 'bg-teal-500'}`} />
+                  <span className="truncate flex-1">Status: <strong className="text-[var(--text-main)]">{statusMsg ? statusMsg.text : 'Nominal (Standing By)'}</strong></span>
                 </span>
               </div>
             </div>
@@ -1481,7 +1481,7 @@ export default function DevAdminDashboard({
 
         {/* TAB 2: RIDER GROUND-TRUTH & ARRIVAL FEEDBACKS */}
         {activeTab === 'feedbacks' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-in fade-in duration-200 min-h-[55vh] [scrollbar-gutter:stable]">
             {/* Header with KPI cards & Actions */}
             <div className="p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-4 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1603,7 +1603,7 @@ export default function DevAdminDashboard({
 
         {/* TAB 3: ADMIN ACCESS CONTROL */}
         {activeTab === 'admins' && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in duration-200 min-h-[55vh] [scrollbar-gutter:stable]">
             
             {/* Add Admin Form */}
             {session.role === 'super_admin' ? (
