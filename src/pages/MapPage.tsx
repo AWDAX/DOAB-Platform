@@ -87,7 +87,8 @@ import {
   ArrowRight,
   ShieldCheck,
   CloudRain,
-  Waves
+  Waves,
+  Clock
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { playClick } from '../utils/soundFx';
@@ -792,17 +793,19 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     const startY = e.clientY;
     const startW = liveRiskWidth;
     const startH = liveRiskMaxHeight;
+    let currentW = startW;
+    let currentH = startH;
 
     const onPointerMove = (moveEvent: PointerEvent) => {
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
       if (direction === 'e' || direction === 'se') {
-        const newW = Math.min(Math.max(startW + dx, 360), Math.min(680, window.innerWidth - 32));
-        setLiveRiskWidth(newW);
+        currentW = Math.min(Math.max(startW + dx, 360), Math.min(680, window.innerWidth - 32));
+        setLiveRiskWidth(currentW);
       }
       if (direction === 's' || direction === 'se') {
-        const newH = Math.min(Math.max(startH + dy, 380), Math.min(850, window.innerHeight - 80));
-        setLiveRiskMaxHeight(newH);
+        currentH = Math.min(Math.max(startH + dy, 380), Math.min(850, window.innerHeight - 80));
+        setLiveRiskMaxHeight(currentH);
       }
     };
 
@@ -810,8 +813,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       try {
-        localStorage.setItem('doab_live_risk_w', String(liveRiskWidth));
-        localStorage.setItem('doab_live_risk_h', String(liveRiskMaxHeight));
+        localStorage.setItem('doab_live_risk_w', String(currentW));
+        localStorage.setItem('doab_live_risk_h', String(currentH));
       } catch {}
     };
 
@@ -3169,8 +3172,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           }}
           className={`rounded-2xl pointer-events-auto shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] dark:border-white/15 bg-[var(--bg-card)] ${
             envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
-          } transition-all duration-200 relative ${
-            isStateDropdownOpen || alsSuggestions.length > 0 ? 'overflow-visible' : isMobileCollapsed ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'
+          } transition-colors duration-150 relative ${
+            isMobileCollapsed ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'
           }`}
         >
           
@@ -3303,7 +3306,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className={isStateDropdownOpen || alsSuggestions.length > 0 || (isSearchFocused && recentSearches.length > 0) ? 'overflow-visible' : 'overflow-hidden'}
+                className="overflow-visible"
               >
                 <div className="p-3 flex flex-col gap-2.5">
                   
@@ -4153,19 +4156,18 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           playClick();
                           setPrioritizeRecent(!prioritizeRecent);
                         }}
-                        className={`h-6 w-[106px] px-2 rounded-md text-[9px] font-mono font-bold border transition-all cursor-pointer inline-flex items-center justify-between gap-1 select-none shrink-0 ${
+                        className={`h-6 px-2.5 rounded-md text-[9px] font-mono font-bold border transition-all cursor-pointer inline-flex items-center gap-1.5 select-none shrink-0 ${
                           prioritizeRecent
                             ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-xs'
                             : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--text-main)]/30'
                         }`}
                         title="Filter / Rank: prioritize recent incidents"
                       >
+                        <Clock size={11} className={`shrink-0 ${prioritizeRecent ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)]'}`} />
                         <span className="whitespace-nowrap">Recent Cases</span>
-                        <span className={`w-2.5 h-2.5 flex items-center justify-center shrink-0 transition-opacity ${
-                          prioritizeRecent ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                        }`}>
-                          <Check size={10} strokeWidth={3} />
-                        </span>
+                        {prioritizeRecent && (
+                          <Check size={10} strokeWidth={3} className="shrink-0 ml-0.5" />
+                        )}
                       </button>
 
                       <button
@@ -4174,19 +4176,18 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           playClick();
                           setPrioritizeNearest(!prioritizeNearest);
                         }}
-                        className={`h-6 w-[106px] px-2 rounded-md text-[9px] font-mono font-bold border transition-all cursor-pointer inline-flex items-center justify-between gap-1 select-none shrink-0 ${
+                        className={`h-6 px-2.5 rounded-md text-[9px] font-mono font-bold border transition-all cursor-pointer inline-flex items-center gap-1.5 select-none shrink-0 ${
                           prioritizeNearest
                             ? 'bg-[var(--text-main)] text-[var(--bg-card)] border-[var(--text-main)] shadow-xs'
                             : 'bg-[var(--bg-main)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--text-main)]/30'
                         }`}
                         title="Filter / Rank: prioritize clusters closest to your location or selected state"
                       >
+                        <Navigation2 size={11} className={`shrink-0 ${prioritizeNearest ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)]'}`} />
                         <span className="whitespace-nowrap">Nearest Cases</span>
-                        <span className={`w-2.5 h-2.5 flex items-center justify-center shrink-0 transition-opacity ${
-                          prioritizeNearest ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                        }`}>
-                          <Check size={10} strokeWidth={3} />
-                        </span>
+                        {prioritizeNearest && (
+                          <Check size={10} strokeWidth={3} className="shrink-0 ml-0.5" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -4456,19 +4457,30 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             )}
           </AnimatePresence>
 
-          {/* Single South-East Corner Resize Grip (Clean 2D Panel Resizing) */}
+          {/* Multi-zone Resize Handles (East rail, South rail, and South-East Corner Grip) */}
           {!isMobileCollapsed && (
-            <div
-              onPointerDown={(e) => handleLiveRiskResizeStart(e, 'se')}
-              className="absolute bottom-1 right-1 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
-              title="Drag corner to resize Live Risk Monitor"
-            >
-              <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
-                <circle cx="8" cy="8" r="1.1" />
-                <circle cx="8" cy="4.5" r="1.1" />
-                <circle cx="4.5" cy="8" r="1.1" />
-              </svg>
-            </div>
+            <>
+              {/* Bottom Edge Rail (S) */}
+              <div
+                onPointerDown={(e) => handleLiveRiskResizeStart(e, 's')}
+                className="absolute -bottom-1 left-6 right-6 h-2.5 cursor-ns-resize z-40 select-none touch-none"
+                title="Resize (Bottom)"
+              />
+              {/* Right Edge Rail (E) */}
+              <div
+                onPointerDown={(e) => handleLiveRiskResizeStart(e, 'e')}
+                className="absolute top-6 bottom-6 -right-1 w-2.5 cursor-ew-resize z-40 select-none touch-none"
+                title="Resize (Right)"
+              />
+              {/* Bottom-Right Corner (SE) */}
+              <div
+                onPointerDown={(e) => handleLiveRiskResizeStart(e, 'se')}
+                className="absolute -bottom-1 -right-1 w-6 h-6 cursor-nwse-resize z-50 flex items-end justify-end p-1.5 group/corner select-none touch-none"
+                title="Resize (Bottom-Right)"
+              >
+                <div className="w-2.5 h-2.5 border-b-2 border-r-2 rounded-br-sm border-transparent group-hover/corner:border-[var(--color-brand-accent)] transition-all opacity-40 group-hover/corner:opacity-100" />
+              </div>
+            </>
           )}
         </div>
       </motion.div>

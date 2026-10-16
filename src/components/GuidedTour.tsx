@@ -753,7 +753,6 @@ export default function GuidedTour({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [spotlightCoords, setSpotlightCoords] = useState<SpotlightRect | null>(null);
   const [popoverPos, setPopoverPos] = useState<PopoverPos>({ top: 0, left: 0, isTop: false, arrowLeft: 175 });
-  const [isScrolling, setIsScrolling] = useState(false);
   const [hasTarget, setHasTarget] = useState(false);
 
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -817,27 +816,50 @@ export default function GuidedTour({
       setSpotlightCoords({ x, y, w, h, rx: radius, ry: radius });
       setHasTarget(true);
 
-      // Auto-flipping popover calculation
-      let isTop = false;
-      let top = rect.bottom + padY + gap;
-
-      if (currentStep.preferredPosition === 'top' || top + cardHeight > viewportHeight - screenPadding) {
-        if (rect.top - padY - gap - cardHeight >= screenPadding) {
-          top = rect.top - padY - gap - cardHeight;
-          isTop = true;
-        } else if (top + cardHeight > viewportHeight - screenPadding) {
-          top = Math.max(screenPadding, viewportHeight - cardHeight - screenPadding);
-        }
-      }
-
-      // Center horizontally on target, clamped within screen margins
       const effectiveCardWidth = Math.min(cardWidth, viewportWidth - screenPadding * 2);
-      const targetCenterX = rect.left + rect.width / 2;
-      let left = targetCenterX - effectiveCardWidth / 2;
-      left = Math.max(screenPadding, Math.min(viewportWidth - effectiveCardWidth - screenPadding, left));
+      let isTop = false;
+      let top = 0;
+      let left = 0;
+      let arrowLeft = effectiveCardWidth / 2;
 
-      // Calculate relative pointer arrow X offset so notch points directly at target element
-      const arrowLeft = Math.max(20, Math.min(effectiveCardWidth - 20, targetCenterX - left));
+      // Handle preferred positions (including 'right' for sidebar elements)
+      if (currentStep.preferredPosition === 'right') {
+        left = rect.right + padX + gap;
+        top = Math.max(screenPadding, Math.min(viewportHeight - cardHeight - screenPadding, rect.top - 8));
+        if (left + effectiveCardWidth > viewportWidth - screenPadding) {
+          // If insufficient room on the right rail, fallback to underneath target
+          left = Math.max(screenPadding, (viewportWidth - effectiveCardWidth) / 2);
+          top = rect.bottom + padY + gap;
+          isTop = false;
+        }
+        arrowLeft = 24;
+      } else if (currentStep.preferredPosition === 'left') {
+        left = rect.left - padX - gap - effectiveCardWidth;
+        top = Math.max(screenPadding, Math.min(viewportHeight - cardHeight - screenPadding, rect.top - 8));
+        if (left < screenPadding) {
+          left = Math.max(screenPadding, (viewportWidth - effectiveCardWidth) / 2);
+          top = rect.bottom + padY + gap;
+          isTop = false;
+        }
+        arrowLeft = effectiveCardWidth - 24;
+      } else {
+        // Vertical Auto-Flipping (Top / Bottom)
+        top = rect.bottom + padY + gap;
+
+        if (currentStep.preferredPosition === 'top' || top + cardHeight > viewportHeight - screenPadding) {
+          if (rect.top - padY - gap - cardHeight >= screenPadding) {
+            top = rect.top - padY - gap - cardHeight;
+            isTop = true;
+          } else if (top + cardHeight > viewportHeight - screenPadding) {
+            top = Math.max(screenPadding, viewportHeight - cardHeight - screenPadding);
+          }
+        }
+
+        const targetCenterX = rect.left + rect.width / 2;
+        left = targetCenterX - effectiveCardWidth / 2;
+        left = Math.max(screenPadding, Math.min(viewportWidth - effectiveCardWidth - screenPadding, left));
+        arrowLeft = Math.max(20, Math.min(effectiveCardWidth - 20, targetCenterX - left));
+      }
 
       setPopoverPos({ top, left, isTop, arrowLeft });
     } else {
@@ -872,12 +894,13 @@ export default function GuidedTour({
 
     const rect = targetEl.getBoundingClientRect();
     const isInViewport = (
-      rect.top >= 70 &&
-      rect.bottom <= window.innerHeight - 70
+      rect.top >= 0 &&
+      rect.bottom <= window.innerHeight &&
+      rect.left >= 0 &&
+      rect.right <= window.innerWidth
     );
 
     if (!isInViewport) {
-      setIsScrolling(true);
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
       let lastScrollY = window.scrollY;
@@ -897,7 +920,6 @@ export default function GuidedTour({
         if (settleCount < 5) {
           rafRef.current = requestAnimationFrame(trackScroll);
         } else {
-          setIsScrolling(false);
           updateTargetPosition();
         }
       };
@@ -907,7 +929,6 @@ export default function GuidedTour({
 
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
         updateTargetPosition();
       }, 700);
     } else {
@@ -919,12 +940,16 @@ export default function GuidedTour({
   useEffect(() => {
     if (isOpen) {
       scrollToTarget();
+      const mountTimer = setTimeout(() => {
+        updateTargetPosition();
+      }, 40);
+      return () => clearTimeout(mountTimer);
     }
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
-  }, [isOpen, currentStepIndex, scrollToTarget]);
+  }, [isOpen, currentStepIndex, scrollToTarget, updateTargetPosition]);
 
   // Handle window resize and scroll listeners
   useEffect(() => {
@@ -1060,9 +1085,8 @@ export default function GuidedTour({
 
       {/* ── COLLISION-AWARE POPOVER CARD ── */}
       <AnimatePresence mode="wait">
-        {!isScrolling && (
-          <motion.div
-            key={currentStep.id}
+        <motion.div
+          key={currentStep.id}
             ref={popoverRef}
             initial={{ 
               opacity: 0, 
@@ -1227,7 +1251,6 @@ export default function GuidedTour({
               </div>
             </div>
           </motion.div>
-        )}
       </AnimatePresence>
     </div>,
     document.body

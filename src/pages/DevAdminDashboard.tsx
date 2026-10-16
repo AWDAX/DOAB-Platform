@@ -756,6 +756,11 @@ export default function DevAdminDashboard({
                 className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] text-[10.5px] font-mono font-bold hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
                 title={`Current Mode: ${envMode.toUpperCase()} - Click to switch climate mode`}
               >
+                {envMode === 'flood' ? (
+                  <Waves className="h-3.5 w-3.5 text-teal-500 shrink-0" />
+                ) : (
+                  <Sun className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                )}
                 <span>[{envMode === 'flood' ? 'FLOOD MODE' : 'DROUGHT MODE'}]</span>
               </button>
             )}

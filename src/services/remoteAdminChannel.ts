@@ -79,9 +79,9 @@ export const RemoteAdminChannel = {
         headers: {
           'Content-Type': 'application/json',
           'Title': type === 'sos_danger' 
-            ? '🚨 DOAB SOS ALARM' 
+            ? '[EMERGENCY SOS] DOAB ALARM' 
             : type === 'clear_alarm'
-            ? '✅ DOAB ALL-CLEAR (STAND DOWN)'
+            ? '[ALL-CLEAR] DOAB STAND DOWN'
             : 'DOAB Mission Telemetry',
           'Priority': type === 'sos_danger' ? 'urgent' : 'default',
           'Tags': type === 'sos_danger' 
@@ -130,7 +130,7 @@ export const RemoteAdminChannel = {
         try {
           NativeService.triggerSosHaptics();
           NativeService.sendEmergencyNotification(
-            '🚨 CRITICAL INUNDATION ALERT',
+            '[CRITICAL ALERT] INUNDATION WARNING',
             beacon.payload?.title || 'Severe Flash Flood Alert Dispatched.'
           );
         } catch {}
@@ -166,7 +166,7 @@ export const RemoteAdminChannel = {
           
           // Trigger system push notification for the injected municipal alert
           NativeService.sendEmergencyNotification(
-            `⚠️ ${beacon.payload?.severity || 'Civic'} Alert: ${beacon.payload?.ward || 'Flood Zone'}`,
+            `[ALERT] ${beacon.payload?.severity || 'Civic'} Alert: ${beacon.payload?.ward || 'Flood Zone'}`,
             beacon.payload?.title || 'New municipal alert reported.',
             'civic_chime.wav'
           );
@@ -222,10 +222,11 @@ export const RemoteAdminChannel = {
       console.warn('[RemoteAdminChannel] SSE not supported, falling back to polling');
     }
 
-    // B. Fast Polling Redundancy (every 3 seconds for bulletproof delivery across mobile sleep states)
+    // B. Polling Redundancy Fallback (every 15 seconds to ensure delivery while preserving bandwidth/CPU)
     const pollBeacons = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       try {
-        const sinceSeconds = Math.floor(Date.now() / 1000) - 15; // Last 15 seconds
+        const sinceSeconds = Math.floor(Date.now() / 1000) - 25; // Last 25 seconds
         const res = await fetch(`${NTFY_URL}/json?since=${sinceSeconds}&poll=1`, {
           headers: { 'Accept': 'application/json' }
         });
@@ -249,7 +250,7 @@ export const RemoteAdminChannel = {
       } catch {}
     };
 
-    pollInterval = setInterval(pollBeacons, 3500);
+    pollInterval = setInterval(pollBeacons, 15000);
 
     return () => {
       if (eventSource) eventSource.close();

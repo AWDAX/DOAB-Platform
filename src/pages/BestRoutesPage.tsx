@@ -714,9 +714,7 @@ export default function BestRoutesPage() {
                 <Bookmark className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-current transition-colors shrink-0" />
               )}
               <span className="whitespace-nowrap">Saved Offline</span>
-              <span className={`px-1.5 py-0.5 min-w-[20px] text-center tabular-nums rounded-full text-[10px] font-mono font-bold leading-none transition-opacity ${
-                savedOfflineRoutes.length > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              } ${
+              <span className={`px-1.5 py-0.5 min-w-[20px] text-center tabular-nums rounded-full text-[10px] font-mono font-bold leading-none transition-opacity opacity-100 ${
                 showSavedOnly
                   ? 'bg-white/20 dark:bg-neutral-900/20 text-current'
                   : 'bg-[var(--border-color)] text-[var(--text-muted)] group-hover:bg-white/20 group-hover:text-current'
