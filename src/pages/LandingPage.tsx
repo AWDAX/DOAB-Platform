@@ -376,7 +376,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
       </AnimatePresence>
 
       {/* ── HERO SECTION ── */}
-      <section className="relative pt-24 sm:pt-32 pb-12 px-4 sm:px-6 max-w-[1200px] mx-auto flex flex-col items-center text-center min-h-[100dvh] justify-center">
+      <section className="relative pt-16 sm:pt-20 pb-16 sm:pb-20 px-4 sm:px-6 max-w-[1200px] mx-auto flex flex-col items-center text-center min-h-[100dvh] justify-center -mt-6 sm:-mt-10">
         
         {/* Soft Atmospheric Background Ambient Halo behind Headline */}
         <div

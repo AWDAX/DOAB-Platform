@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
+import Lenis from 'lenis';
 import { 
   Users2, 
   ArrowUpRight, 
@@ -54,9 +55,35 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }:
   const isDrought = envMode === 'drought' || (typeof document !== 'undefined' && document.documentElement.classList.contains('theme-drought'));
 
   useEffect(() => {
-    // Ensure viewport immediately resets to absolute top when entering team page
-    if ((window as any).lenis) {
-      (window as any).lenis.scrollTo(0, { immediate: true });
+    let localLenis: Lenis | null = null;
+    let lenisInstance = (window as any).lenis as Lenis | null;
+    let rafId = 0;
+
+    if (!lenisInstance) {
+      try {
+        localLenis = new Lenis({
+          duration: 1.2,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          touchMultiplier: 1.5,
+          infinite: false,
+        });
+        (window as any).lenis = localLenis;
+        lenisInstance = localLenis;
+
+        const raf = (time: number) => {
+          localLenis?.raf(time);
+          rafId = requestAnimationFrame(raf);
+        };
+        rafId = requestAnimationFrame(raf);
+      } catch (err) {
+        console.warn('Lenis initialization in TeamPage:', err);
+      }
+    }
+
+    // Reset scroll to top and recalculate page layout
+    if (lenisInstance) {
+      lenisInstance.scrollTo(0, { immediate: true });
+      lenisInstance.resize();
     }
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     document.documentElement.scrollTop = 0;
@@ -68,7 +95,24 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }:
     };
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    // Also bind directly to Lenis scroll event for fluid header transitions
+    const onLenisScroll = (e: any) => {
+      setScrolled(e.scroll > 24);
+    };
+    lenisInstance?.on('scroll', onLenisScroll);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', handleScroll);
+      lenisInstance?.off('scroll', onLenisScroll);
+      if (localLenis) {
+        localLenis.destroy();
+        if ((window as any).lenis === localLenis) {
+          (window as any).lenis = null;
+        }
+      }
+    };
   }, []);
 
   // Keyboard navigation for lightbox
@@ -302,7 +346,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }:
                 </div>
 
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="font-extrabold text-base sm:text-lg text-[var(--text-main)] tracking-tight group-hover:text-[var(--color-brand-accent)] transition-colors duration-200">
+                  <h3 className="font-extrabold text-base sm:text-lg tracking-tight team-member-name-gradient group-hover:scale-[1.01] transition-transform duration-200">
                     {member.name}
                   </h3>
                 </div>
@@ -436,7 +480,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }:
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)] inline-block mb-1">
                   {lightboxMember.role}
                 </span>
-                <h2 className="text-lg font-extrabold text-[var(--text-main)] tracking-tight">
+                <h2 className="text-xl font-extrabold tracking-tight team-member-name-gradient">
                   {lightboxMember.name}
                 </h2>
                 <div className="text-xs font-semibold text-[var(--color-brand-accent)]">

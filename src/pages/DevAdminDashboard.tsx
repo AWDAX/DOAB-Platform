@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Radio, 
   MapPin, 
@@ -24,8 +24,12 @@ import {
   Waves,
   RotateCcw,
   MessageSquare,
-  Download
+  Download,
+  ChevronDown,
+  ChevronUp,
+  Info
 } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 import { 
   getCurrentAdminSession, 
   verifyAdminCredentials, 
@@ -88,7 +92,7 @@ export const DISASTER_SCENARIOS: DisasterScenario[] = [
     triggerThreshold: 'Rainfall > 60mm/h AND Sump Depth > 45cm → Critical Life-Safety Alarm',
     impactAdvisory: 'Immediate bypass engaged. 80ft Road completely submerged. Low-clearance transit halted.',
     payload: {
-      title: '🚨 CRITICAL FLASH FLOOD: 80ft Road Inundation',
+      title: '[ALERT] CRITICAL FLASH FLOOD: 80ft Road Inundation',
       ward: 'Ward 14 (Koramangala)',
       severity: 'Critical',
       waterDepthCm: 95,
@@ -115,7 +119,7 @@ export const DISASTER_SCENARIOS: DisasterScenario[] = [
     triggerThreshold: 'Reservoir Level > 100% FRL AND Discharge > 35,000 cusecs → Riverine Evacuation',
     impactAdvisory: 'Spillway release active. Riparian settlements alerted. Emergency high-elevation corridors deployed.',
     payload: {
-      title: '🌊 RESERVOIR CREST DISCHARGE WARNING: +1.85m Surge',
+      title: '[SURGE] RESERVOIR CREST DISCHARGE WARNING: +1.85m Surge',
       ward: 'Cauvery Riverine Lowlands (Zone 4)',
       severity: 'Critical',
       waterDepthCm: 120,
@@ -142,7 +146,7 @@ export const DISASTER_SCENARIOS: DisasterScenario[] = [
     triggerThreshold: 'Underpass Inundation > 40cm OR Pump Failure → Traffic Interlock Engagement',
     impactAdvisory: 'Automatic barrier deployment advised. Two-wheelers and sedans redirected via elevated flyover.',
     payload: {
-      title: '⚠️ URBAN SUMP HAZARD: Domlur Underpass Submerged',
+      title: '[WARNING] URBAN SUMP HAZARD: Domlur Underpass Submerged',
       ward: 'Domlur (Ward 72)',
       severity: 'High',
       waterDepthCm: 68,
@@ -169,7 +173,7 @@ export const DISASTER_SCENARIOS: DisasterScenario[] = [
     triggerThreshold: 'Borewell Yield < 15% AND Deficit > 75% → Logistics Emergency Reroute',
     impactAdvisory: 'Emergency water distribution protocol initiated. Fleet priority assigned to community health clinics.',
     payload: {
-      title: '🚰 ACUTE WATER LOGISTICS DEFICIT: 86% Depletion',
+      title: '[DEFICIT] ACUTE WATER LOGISTICS DEFICIT: 86% Depletion',
       ward: 'Ward 85 (Varthur Sub-basin)',
       severity: 'Critical',
       waterDepthCm: 0,
@@ -196,7 +200,7 @@ export const DISASTER_SCENARIOS: DisasterScenario[] = [
     triggerThreshold: 'Ambient > 42°C AND Wet-Bulb > 31°C → Red Advisory for Delivery Fleets & Outdoor Crews',
     impactAdvisory: 'Mandatory hydration halts for Swiggy/Zomato fleets. Shaded hydration stations activated.',
     payload: {
-      title: '☀️ SEVERE THERMAL HEAT STRESS: 44.8°C Wet-Bulb Alert',
+      title: '[HEAT] SEVERE THERMAL HEAT STRESS: 44.8°C Wet-Bulb Alert',
       ward: 'Central Commercial Corridor',
       severity: 'High',
       waterDepthCm: 0,
@@ -223,7 +227,7 @@ export const DISASTER_SCENARIOS: DisasterScenario[] = [
     triggerThreshold: 'Turbidity > 10 NTU OR Cross-Pipeline Pressure Inversion → Boil Water Notice',
     impactAdvisory: 'Precautionary municipal boil-water advisory. Automated chlorination booster dosing initiated.',
     payload: {
-      title: '☣️ CIVIC POTABLE WATER QUALITY ADVISORY: Boil Water',
+      title: '[CONTAMINATION] CIVIC POTABLE WATER QUALITY ADVISORY: Boil Water',
       ward: 'Indiranagar (Ward 80)',
       severity: 'High',
       waterDepthCm: 42,
@@ -237,9 +241,47 @@ export const DISASTER_SCENARIOS: DisasterScenario[] = [
   }
 ];
 
-export default function DevAdminDashboard() {
+interface DevAdminDashboardProps {
+  isDarkMode?: boolean;
+  toggleTheme?: () => void;
+  envMode?: 'flood' | 'drought';
+  toggleEnvMode?: () => void;
+}
+
+export default function DevAdminDashboard({
+  isDarkMode,
+  toggleTheme,
+  envMode = 'flood',
+  toggleEnvMode
+}: DevAdminDashboardProps) {
   const [session, setSession] = useState<AdminUser | null>(() => getCurrentAdminSession());
   
+  // Internal fallback theme state if not injected via props
+  const [internalDark, setInternalDark] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return true;
+  });
+
+  const effectiveDarkMode = isDarkMode ?? internalDark;
+
+  const handleToggleTheme = () => {
+    if (toggleTheme) {
+      toggleTheme();
+    } else {
+      const next = !effectiveDarkMode;
+      setInternalDark(next);
+      if (next) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    }
+  };
+
   // Login Form State
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -247,6 +289,10 @@ export default function DevAdminDashboard() {
 
   // Active Admin Tabs
   const [activeTab, setActiveTab] = useState<'scenarios' | 'triggers' | 'feedbacks' | 'admins'>('scenarios');
+
+  // Disaster Scenarios Accordion & Filtering
+  const [expandedScenarioId, setExpandedScenarioId] = useState<string | null>(null);
+  const [scenarioFilter, setScenarioFilter] = useState<'all' | 'flood' | 'drought'>('all');
 
   // Rider Arrival Feedback Telemetry State
   interface RiderFeedbackRecord {
@@ -606,28 +652,32 @@ export default function DevAdminDashboard() {
   // ─────────────────────────────────────────────────────────────
   if (!session) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center p-4 bg-white dark:bg-[#080808] text-neutral-900 dark:text-neutral-100 font-sans selection:bg-neutral-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
-        <div className="w-full max-w-md p-6 sm:p-8 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-2xl space-y-6">
+      <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[var(--bg-main)] text-[var(--text-main)] font-sans selection:bg-[var(--color-brand-accent)] selection:text-white transition-colors duration-300">
+        <div className="w-full max-w-md p-6 sm:p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl space-y-6">
+          <div className="flex justify-end">
+            <ThemeToggle darkMode={effectiveDarkMode} toggleTheme={handleToggleTheme} />
+          </div>
+          
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 mx-auto flex items-center justify-center shadow-md">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--text-main)] text-[var(--bg-card)] mx-auto flex items-center justify-center shadow-md">
               <Terminal className="h-6 w-6 stroke-[2]" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white">DOAB Developer Console</h1>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
+            <h1 className="text-xl font-bold tracking-tight text-[var(--text-main)]">DOAB Developer Console</h1>
+            <p className="text-xs text-[var(--text-muted)] font-mono">
               [RESTRICTED] Operations Dispatch & Demo Simulation
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             {loginError && (
-              <div className="p-3 rounded-xl bg-neutral-200/80 dark:bg-white/10 border border-neutral-400 dark:border-white/20 text-neutral-950 dark:text-white text-xs font-mono font-medium flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-mono font-medium flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 <span>{loginError}</span>
               </div>
             )}
 
             <div className="space-y-1">
-              <label className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block font-semibold">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] block font-semibold">
                 Admin Username / Email
               </label>
               <input
@@ -637,12 +687,12 @@ export default function DevAdminDashboard() {
                 placeholder="Enter username or email"
                 autoComplete="off"
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white placeholder:text-neutral-400 font-mono transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] placeholder:text-[var(--text-muted)] font-mono transition-colors"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block font-semibold">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] block font-semibold">
                 Password
               </label>
               <input
@@ -651,19 +701,19 @@ export default function DevAdminDashboard() {
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white placeholder:text-neutral-400 font-mono transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] placeholder:text-[var(--text-muted)] font-mono transition-colors"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer font-sans"
+              className="w-full py-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer font-sans"
             >
               Sign In to Dev Console
             </button>
           </form>
 
-          <div className="pt-2 border-t border-neutral-200 dark:border-white/10 text-center text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
+          <div className="pt-2 border-t border-[var(--border-color)] text-center text-[10px] font-mono text-[var(--text-muted)]">
             <span>[INTERNAL USE ONLY] • AUTHENTICATED ACCESS REQUIRED</span>
           </div>
         </div>
@@ -675,43 +725,58 @@ export default function DevAdminDashboard() {
   // 2. AUTHENTICATED DEV / ADMIN DASHBOARD (Pure Obsidian & Porcelain Monochromatic Architecture)
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen w-full bg-white dark:bg-[#080808] text-neutral-900 dark:text-neutral-100 p-4 sm:p-6 md:p-8 flex flex-col items-center font-sans selection:bg-neutral-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
+    <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] p-4 sm:p-6 md:p-8 flex flex-col items-center font-sans selection:bg-[var(--color-brand-accent)] selection:text-white transition-colors duration-300">
       <div className="w-full max-w-5xl space-y-6">
         
         {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-md transition-colors">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-11 h-11 rounded-2xl bg-[var(--text-main)] text-[var(--bg-card)] flex items-center justify-center shrink-0 shadow-sm">
               <Terminal className="h-5 w-5 stroke-[2]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight text-neutral-950 dark:text-white">Developer Operations Center</h1>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-white/20 uppercase tracking-wider">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-main)]">Developer Operations Center</h1>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)] uppercase tracking-wider">
                   {session.role === 'super_admin' ? '[SUPER ADMIN]' : '[DEV ADMIN]'}
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
-                Operator: <span className="font-semibold text-neutral-950 dark:text-white">{session.username}</span> ({session.email})
+              <p className="text-xs text-[var(--text-muted)] font-mono">
+                Operator: <span className="font-semibold text-[var(--text-main)]">{session.username}</span> ({session.email})
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+            {/* Climate Mode Toggle (Flood vs Drought) */}
+            {toggleEnvMode && (
+              <button
+                type="button"
+                onClick={toggleEnvMode}
+                className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] text-[10.5px] font-mono font-bold hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                title={`Current Mode: ${envMode.toUpperCase()} - Click to switch climate mode`}
+              >
+                <span>[{envMode === 'flood' ? 'FLOOD MODE' : 'DROUGHT MODE'}]</span>
+              </button>
+            )}
+
+            {/* Theme Toggle for Dev Admin Dashboard */}
+            <ThemeToggle darkMode={effectiveDarkMode} toggleTheme={handleToggleTheme} />
+
             <button
               onClick={() => {
                 window.open('/', '_blank');
               }}
-              className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-white/15 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] text-xs font-semibold hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer flex items-center gap-1.5 text-[var(--text-main)]"
             >
-              <Activity className="h-3.5 w-3.5" />
-              <span>Open Public App</span>
+              <Activity className="h-3.5 w-3.5 text-[var(--color-brand-accent)]" />
+              <span>Public App</span>
             </button>
             <button
               onClick={handleLogout}
-              className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-white/15 bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white text-xs font-semibold hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] text-xs font-semibold hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-3.5 w-3.5 text-[var(--danger-text)]" />
               <span>Log Out</span>
             </button>
           </div>
@@ -719,14 +784,14 @@ export default function DevAdminDashboard() {
 
         {/* Global Action Toast */}
         {statusMsg && (
-          <div className="p-3.5 rounded-2xl border border-neutral-400 dark:border-white/20 bg-neutral-100 dark:bg-[#18181b] text-neutral-950 dark:text-white text-xs font-mono font-medium flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <div className="p-3.5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] text-xs font-mono font-medium flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--color-brand-accent)]" />
             <span>{statusMsg.text}</span>
           </div>
         )}
 
         {/* Navigation Tabs (Framer Motion Shared-Layout Sliding Pill) */}
-        <div className="relative flex items-center gap-1.5 p-1 rounded-2xl bg-neutral-100 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 overflow-x-auto">
+        <div className="relative flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] overflow-x-auto shadow-xs">
           {[
             { id: 'scenarios', label: 'Disaster Scenarios & Condition Matrix', icon: Layers },
             { id: 'triggers', label: 'Instant Triggers & Broadcast Suite', icon: Play },
@@ -741,15 +806,15 @@ export default function DevAdminDashboard() {
                 onClick={() => { playClick(); setActiveTab(tab.id as any); }}
                 className={`relative px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
                   active
-                    ? 'text-white dark:text-neutral-950 font-extrabold'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                    ? 'text-[var(--bg-card)] font-extrabold'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }`}
               >
                 {active && (
                   <motion.div
                     layoutId="adminDashboardActiveTabPill"
                     transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                    className="absolute inset-0 rounded-xl bg-neutral-950 dark:bg-white -z-10 pointer-events-none shadow-xs"
+                    className="absolute inset-0 rounded-xl bg-[var(--text-main)] shadow-sm z-0 pointer-events-none"
                   />
                 )}
                 <span className="relative z-10 flex items-center gap-2">
@@ -799,15 +864,15 @@ export default function DevAdminDashboard() {
             )}
 
             {/* Header & Notice */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="p-5 sm:p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5 text-neutral-950 dark:text-white" />
-                  <h2 className="text-sm sm:text-base font-bold text-neutral-950 dark:text-white">
+                  <ShieldAlert className="h-5 w-5 text-[var(--color-brand-accent)]" />
+                  <h2 className="text-sm sm:text-base font-bold text-[var(--text-main)]">
                     Operational Disaster Test Cases & Threshold Rules
                   </h2>
                 </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-3xl">
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed max-w-3xl">
                   Standardized test suites for all 6 extreme hazard events. Broadcasting any scenario transmits live telemetry to all field devices and mobile APKs. The Admin Console remains completely interactive with zero screen hijacking.
                 </p>
               </div>
@@ -827,7 +892,7 @@ export default function DevAdminDashboard() {
                 <button
                   type="button"
                   onClick={clearAdminAlerts}
-                  className="px-3 py-1.5 text-xs font-mono rounded-xl border border-neutral-300 dark:border-white/15 text-neutral-600 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="px-3 py-1.5 text-xs font-mono rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   <span>Clear All Custom Alerts</span>
@@ -836,17 +901,17 @@ export default function DevAdminDashboard() {
             </div>
 
             {/* Interactive Environmental Threshold Rule Engine Simulator */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-3">
+            <div className="p-5 sm:p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950">
+                  <div className="p-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)]">
                     <Sliders className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
+                    <h3 className="text-sm font-bold text-[var(--text-main)]">
                       Live Environmental Threshold Rule Simulator
                     </h3>
-                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                    <p className="text-[10px] text-[var(--text-muted)] font-mono">
                       [CALIBRATION SANDBOX] Dynamically test alert condition rules by modulating live inputs
                     </p>
                   </div>
@@ -873,13 +938,13 @@ export default function DevAdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                 
                 {/* 1. Rainfall */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 space-y-2">
+                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-2">
                   <div className="flex items-center justify-between text-[11px] font-mono">
-                    <span className="flex items-center gap-1 font-semibold text-neutral-700 dark:text-neutral-300">
+                    <span className="flex items-center gap-1 font-semibold text-[var(--text-main)]">
                       <CloudRain className="h-3.5 w-3.5 text-sky-500" />
                       <span>Rainfall Rate</span>
                     </span>
-                    <span className="font-bold text-neutral-950 dark:text-white">{simRainfall} mm/h</span>
+                    <span className="font-bold text-[var(--text-main)]">{simRainfall} mm/h</span>
                   </div>
                   <input
                     type="range"
@@ -888,7 +953,7 @@ export default function DevAdminDashboard() {
                     step="1"
                     value={simRainfall}
                     onChange={(e) => setSimRainfall(Number(e.target.value))}
-                    className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
+                    className="w-full accent-[var(--color-brand-accent)] cursor-pointer"
                   />
                   <div className="flex justify-between text-[8.5px] font-mono text-neutral-400">
                     <span>0 (Dry)</span>
@@ -898,13 +963,13 @@ export default function DevAdminDashboard() {
                 </div>
 
                 {/* 2. Inundation Depth */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 space-y-2">
+                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-2">
                   <div className="flex items-center justify-between text-[11px] font-mono">
-                    <span className="flex items-center gap-1 font-semibold text-neutral-700 dark:text-neutral-300">
+                    <span className="flex items-center gap-1 font-semibold text-[var(--text-main)]">
                       <Waves className="h-3.5 w-3.5 text-teal-500" />
                       <span>Sump Inundation</span>
                     </span>
-                    <span className="font-bold text-neutral-950 dark:text-white">{simWaterDepth} cm</span>
+                    <span className="font-bold text-[var(--text-main)]">{simWaterDepth} cm</span>
                   </div>
                   <input
                     type="range"
@@ -913,9 +978,9 @@ export default function DevAdminDashboard() {
                     step="1"
                     value={simWaterDepth}
                     onChange={(e) => setSimWaterDepth(Number(e.target.value))}
-                    className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
+                    className="w-full accent-[var(--color-brand-accent)] cursor-pointer"
                   />
-                  <div className="flex justify-between text-[8.5px] font-mono text-neutral-400">
+                  <div className="flex justify-between text-[8.5px] font-mono text-[var(--text-muted)]">
                     <span>0cm (Dry)</span>
                     <span>35cm (Halt Low)</span>
                     <span>60cm+ (Closure)</span>
@@ -923,13 +988,13 @@ export default function DevAdminDashboard() {
                 </div>
 
                 {/* 3. Ambient Temperature */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 space-y-2">
+                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-2">
                   <div className="flex items-center justify-between text-[11px] font-mono">
-                    <span className="flex items-center gap-1 font-semibold text-neutral-700 dark:text-neutral-300">
+                    <span className="flex items-center gap-1 font-semibold text-[var(--text-main)]">
                       <Sun className="h-3.5 w-3.5 text-amber-500" />
                       <span>Ambient Temp</span>
                     </span>
-                    <span className="font-bold text-neutral-950 dark:text-white">{simTemp}°C</span>
+                    <span className="font-bold text-[var(--text-main)]">{simTemp}°C</span>
                   </div>
                   <input
                     type="range"
@@ -938,9 +1003,9 @@ export default function DevAdminDashboard() {
                     step="0.5"
                     value={simTemp}
                     onChange={(e) => setSimTemp(Number(e.target.value))}
-                    className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
+                    className="w-full accent-[var(--color-brand-accent)] cursor-pointer"
                   />
-                  <div className="flex justify-between text-[8.5px] font-mono text-neutral-400">
+                  <div className="flex justify-between text-[8.5px] font-mono text-[var(--text-muted)]">
                     <span>25°C (Cool)</span>
                     <span>40°C (Stress)</span>
                     <span>44°C+ (Red Alert)</span>
@@ -948,13 +1013,13 @@ export default function DevAdminDashboard() {
                 </div>
 
                 {/* 4. Groundwater Table Deficit */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 space-y-2">
+                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-2">
                   <div className="flex items-center justify-between text-[11px] font-mono">
-                    <span className="flex items-center gap-1 font-semibold text-neutral-700 dark:text-neutral-300">
+                    <span className="flex items-center gap-1 font-semibold text-[var(--text-main)]">
                       <Droplets className="h-3.5 w-3.5 text-orange-500" />
                       <span>Water Table Drop</span>
                     </span>
-                    <span className="font-bold text-neutral-950 dark:text-white">-{simGroundwaterDeficit}m</span>
+                    <span className="font-bold text-[var(--text-main)]">-{simGroundwaterDeficit}m</span>
                   </div>
                   <input
                     type="range"
@@ -963,9 +1028,9 @@ export default function DevAdminDashboard() {
                     step="0.1"
                     value={simGroundwaterDeficit}
                     onChange={(e) => setSimGroundwaterDeficit(Number(e.target.value))}
-                    className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
+                    className="w-full accent-[var(--color-brand-accent)] cursor-pointer"
                   />
-                  <div className="flex justify-between text-[8.5px] font-mono text-neutral-400">
+                  <div className="flex justify-between text-[8.5px] font-mono text-[var(--text-muted)]">
                     <span>0m (Recharged)</span>
                     <span>2m (Mild)</span>
                     <span>4m+ (Acute)</span>
@@ -975,17 +1040,17 @@ export default function DevAdminDashboard() {
               </div>
 
               {/* Dynamic Evaluation Diagnostic Banner & Broadcast Trigger Button */}
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+              <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
                 <div className="space-y-0.5">
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Rule Engine Evaluation:</span>
-                  <span className="font-semibold text-neutral-900 dark:text-neutral-100">{simResult.reason}</span>
+                  <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block">Rule Engine Evaluation:</span>
+                  <span className="font-semibold text-[var(--text-main)]">{simResult.reason}</span>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={handleResetBaseline}
-                    className="px-3 py-2 rounded-xl border border-neutral-300 dark:border-white/15 text-neutral-700 dark:text-neutral-300 font-bold text-xs hover:bg-neutral-100 dark:hover:bg-white/5 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5 font-sans"
+                    className="px-3 py-2 rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] font-bold text-xs hover:bg-[var(--text-main)]/5 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5 font-sans"
                     title="Reset sliders back to dry/safe baseline"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
@@ -998,7 +1063,7 @@ export default function DevAdminDashboard() {
                     className={`px-4 py-2 rounded-xl font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 font-sans ${
                       activeBroadcast?.isSimCustom
                         ? 'bg-rose-700 hover:bg-rose-800 text-white'
-                        : 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950'
+                        : 'bg-[var(--text-main)] text-[var(--bg-card)]'
                     }`}
                   >
                     {activeBroadcast?.isSimCustom ? (
@@ -1018,37 +1083,70 @@ export default function DevAdminDashboard() {
             </div>
 
             {/* 6 Pre-calibrated Standard Disaster Scenarios Grid */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-neutral-950 dark:text-white" />
-                  <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
+                  <Flame className="h-4 w-4 text-[var(--color-brand-accent)]" />
+                  <h3 className="text-sm font-bold text-[var(--text-main)]">
                     Pre-Calibrated Disaster Test Case Matrix (6 Major Hazards)
                   </h3>
                 </div>
-                <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
-                  Click to broadcast exact simulated conditions to all testers
-                </span>
+
+                {/* Filter Pills */}
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] self-start sm:self-auto shadow-2xs">
+                  {(['all', 'flood', 'drought'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => { playClick(); setScenarioFilter(filter); }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer uppercase ${
+                        scenarioFilter === filter
+                          ? 'bg-[var(--text-main)] text-[var(--bg-card)] shadow-xs'
+                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      {filter === 'all' ? 'All (6)' : filter === 'flood' ? 'Flood (4)' : 'Drought/Heat (2)'}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {DISASTER_SCENARIOS.map((scen) => {
+                {DISASTER_SCENARIOS.filter(s => {
+                  if (scenarioFilter === 'flood') return s.envMode === 'flood';
+                  if (scenarioFilter === 'drought') return s.envMode === 'drought';
+                  return true;
+                }).map((scen) => {
                   const isCurrentActive = activeBroadcast?.active && activeBroadcast?.scenarioId === scen.id;
+                  const isExpanded = expandedScenarioId === scen.id;
+                  
+                  const CategoryIcon = 
+                    scen.category === 'cloudburst' ? CloudRain :
+                    scen.category === 'dam_overflow' ? Waves :
+                    scen.category === 'sump_waterlogging' ? Droplets :
+                    scen.category === 'drought_deficit' ? Flame :
+                    scen.category === 'heatwave' ? Sun : ShieldAlert;
+
+                  const conditionEntries = Object.entries(scen.conditions);
+
                   return (
                     <div
                       key={scen.id}
-                      className={`p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border shadow-sm flex flex-col justify-between gap-3 transition-all ${
+                      className={`p-4 sm:p-5 rounded-3xl bg-[var(--bg-card)] border shadow-sm flex flex-col justify-between gap-3 transition-all ${
                         isCurrentActive 
                           ? 'border-rose-500/80 ring-2 ring-rose-500/20' 
-                          : 'border-neutral-300 dark:border-white/10 hover:border-neutral-400 dark:hover:border-white/20'
+                          : 'border-[var(--border-color)] hover:border-[var(--color-brand-accent)]/50'
                       }`}
                     >
-                      <div className="space-y-2.5">
-                        {/* Top Badges */}
+                      <div className="space-y-3">
+                        {/* Top Badges & Category Icon */}
                         <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
-                              [{scen.envMode === 'flood' ? 'FLOOD MODE' : 'DROUGHT MODE'}]
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center shrink-0">
+                              <CategoryIcon className="h-4 w-4 text-[var(--color-brand-accent)]" />
+                            </div>
+                            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)] uppercase tracking-wider">
+                              [{scen.envMode === 'flood' ? 'FLOOD' : 'DROUGHT'}]
                             </span>
                             <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border ${
                               scen.severity === 'Critical'
@@ -1060,44 +1158,88 @@ export default function DevAdminDashboard() {
                               [{scen.severity.toUpperCase()}]
                             </span>
                           </div>
+
                           {isCurrentActive && (
                             <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/40 animate-pulse flex items-center gap-1">
                               <AlertTriangle className="h-2.5 w-2.5" />
-                              <span>[BROADCASTING LIVE]</span>
+                              <span>[LIVE]</span>
                             </span>
                           )}
                         </div>
 
                         {/* Title & Location */}
                         <div>
-                          <h4 className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white leading-snug">
+                          <h4 className="text-xs sm:text-sm font-bold text-[var(--text-main)] leading-snug">
                             {scen.name}
                           </h4>
-                          <div className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono mt-0.5">
-                            <MapPin className="h-3 w-3 shrink-0" />
+                          <div className="flex items-center gap-1 text-[10.5px] text-[var(--text-muted)] font-mono mt-0.5">
+                            <MapPin className="h-3 w-3 shrink-0 text-[var(--color-brand-accent)]" />
                             <span className="truncate">{scen.location}</span>
                           </div>
                         </div>
 
-                        {/* Measured Conditions */}
-                        <div className="p-2.5 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300/80 dark:border-white/10 space-y-1 text-[10px] font-mono">
-                          <span className="text-[8.5px] uppercase tracking-wider text-neutral-400 block font-semibold">Active Measurements:</span>
-                          {Object.entries(scen.conditions).map(([k, v]) => (
-                            <div key={k} className="flex items-center justify-between text-neutral-800 dark:text-neutral-200">
-                              <span className="capitalize text-neutral-500">{k.replace(/([A-Z])/g, ' $1')}:</span>
-                              <span className="font-semibold">{v}</span>
-                            </div>
+                        {/* Clean Compact Metric Highlights (1-liner chips) */}
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {conditionEntries.slice(0, 2).map(([k, v]) => (
+                            <span key={k} className="text-[9.5px] font-mono px-2 py-1 rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)]">
+                              <span className="text-[var(--text-muted)] mr-1 capitalize">{k.replace(/([A-Z])/g, ' $1')}:</span>
+                              <span className="font-semibold">{v.split('(')[0].trim()}</span>
+                            </span>
                           ))}
                         </div>
 
-                        {/* Trigger Rule */}
-                        <div className="text-[9.5px] text-neutral-600 dark:text-neutral-400 leading-snug font-sans bg-neutral-100 dark:bg-white/5 p-2 rounded-xl">
-                          <strong className="text-neutral-950 dark:text-white block font-mono text-[9px] uppercase mb-0.5">Threshold Rule:</strong>
-                          {scen.triggerThreshold}
+                        {/* Collapsible Progressive Disclosure */}
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              playClick();
+                              setExpandedScenarioId(isExpanded ? null : scen.id);
+                            }}
+                            className="w-full flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)] hover:text-[var(--text-main)] p-1.5 rounded-lg hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                          >
+                            <span className="flex items-center gap-1">
+                              <Info className="h-3 w-3" />
+                              <span>{isExpanded ? 'Hide Trigger Rule & Advisory' : 'View Threshold Rule & Impact'}</span>
+                            </span>
+                            {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          </button>
+
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden space-y-2 pt-2"
+                              >
+                                <div className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[10px] font-mono space-y-1">
+                                  <span className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-bold block">All Measurements:</span>
+                                  {conditionEntries.map(([k, v]) => (
+                                    <div key={k} className="flex justify-between text-[var(--text-main)]">
+                                      <span className="text-[var(--text-muted)] capitalize">{k.replace(/([A-Z])/g, ' $1')}:</span>
+                                      <span className="font-semibold text-right">{v}</span>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[10px] space-y-1">
+                                  <span className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-bold font-mono block">Threshold Condition:</span>
+                                  <p className="text-[var(--text-main)] leading-relaxed font-sans">{scen.triggerThreshold}</p>
+                                </div>
+
+                                <div className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[10px] space-y-1">
+                                  <span className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-bold font-mono block">Impact Advisory:</span>
+                                  <p className="text-[var(--text-muted)] leading-relaxed font-sans">{scen.impactAdvisory}</p>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
 
-                      {/* Broadcast Button */}
+                      {/* Broadcast CTA Button */}
                       <button
                         type="button"
                         onClick={() => {
@@ -1110,7 +1252,7 @@ export default function DevAdminDashboard() {
                         className={`w-full mt-2 py-2 px-3 rounded-xl text-xs font-bold active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 font-sans ${
                           isCurrentActive
                             ? 'bg-rose-700 hover:bg-rose-800 text-white'
-                            : 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 hover:opacity-90'
+                            : 'bg-[var(--text-main)] text-[var(--bg-card)] hover:opacity-90'
                         }`}
                       >
                         {isCurrentActive ? (
@@ -1121,7 +1263,7 @@ export default function DevAdminDashboard() {
                         ) : (
                           <>
                             <Play className="h-3.5 w-3.5" />
-                            <span>Broadcast Scenario to All Users</span>
+                            <span>Broadcast Scenario</span>
                           </>
                         )}
                       </button>
@@ -1139,27 +1281,27 @@ export default function DevAdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             {/* Action 1: Destination Arrival Modal Trigger */}
-            <div className="p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-3">
+            <div className="p-5 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-3 shadow-sm">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20">
+                <div className="p-2 rounded-xl bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)]">
                   <MapPin className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Simulate Destination Reached</h3>
-                  <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                  <h3 className="text-sm font-bold text-[var(--text-main)]">Simulate Destination Reached</h3>
+                  <p className="text-[10px] text-[var(--text-muted)] font-mono">
                     [TELEMETRY] Trigger Arrival & AI Accuracy Verification Modal
                   </p>
                 </div>
               </div>
 
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+              <p className="text-xs text-[var(--text-muted)] leading-relaxed font-sans">
                 During 3-minute hackathon evaluations, testers cannot walk across the city. This dispatches the destination arrival flow with AI model feedback and bookmarking across desktop and connected phones.
               </p>
 
               <button
                 type="button"
                 onClick={triggerDestinationArrival}
-                className="w-full py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 font-sans"
               >
                 <Play className="h-3.5 w-3.5" />
                 <span>Trigger Destination Reached Modal</span>
@@ -1167,50 +1309,50 @@ export default function DevAdminDashboard() {
             </div>
 
             {/* Section 2: Direct Emergency SOS Push Notification Dispatcher */}
-            <div className="md:col-span-2 p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 shadow-md space-y-4">
+            <div className="md:col-span-2 p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-md space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm">
+                  <div className="p-2 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] shadow-sm">
                     <Radio className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Emergency SOS Alert Broadcast</h3>
-                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                    <h3 className="text-sm font-bold text-[var(--text-main)]">Emergency SOS Alert Broadcast</h3>
+                    <p className="text-[10px] text-[var(--text-muted)] font-mono">
                       [CRITICAL SIREN & HAPTICS] Dispatches emergency push notification overriding silent/vibrate mode
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20 font-bold uppercase tracking-wider">
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)] font-bold uppercase tracking-wider">
                   HIGH PRIORITY SOS
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Alert Title</label>
+                  <label className="font-mono text-[10px] text-[var(--text-muted)] block mb-1">Alert Title</label>
                   <input
                     type="text"
                     value={sosTitle}
                     onChange={(e) => setSosTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                   />
                 </div>
                 <div>
-                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Ward / Location</label>
+                  <label className="font-mono text-[10px] text-[var(--text-muted)] block mb-1">Ward / Location</label>
                   <input
                     type="text"
                     value={sosWard}
                     onChange={(e) => setSosWard(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400 block mb-1">Advisory Description</label>
+                  <label className="font-mono text-[10px] text-[var(--text-muted)] block mb-1">Advisory Description</label>
                   <input
                     type="text"
                     value={sosDesc}
                     onChange={(e) => setSosDesc(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                   />
                 </div>
               </div>
@@ -1237,7 +1379,7 @@ export default function DevAdminDashboard() {
 
                     showToast('Dispatched Instant SOS Broadcast to all active field devices.');
                   }}
-                  className="flex-1 w-full py-3 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 font-sans"
+                  className="flex-1 w-full py-3 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] font-bold text-xs hover:opacity-90 active:scale-98 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 font-sans"
                 >
                   <Send className="h-4 w-4" />
                   <span>Dispatch Instant Push Notification (SOS)</span>
@@ -1256,15 +1398,15 @@ export default function DevAdminDashboard() {
             </div>
 
             {/* Action 4: Inject Live Alert Stream Item */}
-            <div className="md:col-span-2 p-5 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-4">
+            <div className="md:col-span-2 p-5 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-neutral-200 dark:bg-white/10 text-neutral-950 dark:text-white border border-neutral-300 dark:border-white/20">
+                  <div className="p-2 rounded-xl bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)]">
                     <Bell className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">Simulate Municipal Hazard Alert</h3>
-                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                    <h3 className="text-sm font-bold text-[var(--text-main)]">Simulate Municipal Hazard Alert</h3>
+                    <p className="text-[10px] text-[var(--text-muted)] font-mono">
                       [INUNDATION STREAM] Injects instant live alert into All Alerts feed
                     </p>
                   </div>
@@ -1273,7 +1415,7 @@ export default function DevAdminDashboard() {
                 <button
                   type="button"
                   onClick={clearAdminAlerts}
-                  className="px-2.5 py-1 text-[10px] font-mono rounded-lg border border-neutral-300 dark:border-white/15 text-neutral-500 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 cursor-pointer"
+                  className="px-2.5 py-1 text-[10px] font-mono rounded-lg border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 cursor-pointer transition-colors"
                 >
                   Clear Custom Alerts
                 </button>
@@ -1281,29 +1423,29 @@ export default function DevAdminDashboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Title</label>
+                  <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Title</label>
                   <input
                     type="text"
                     value={alertTitle}
                     onChange={(e) => setAlertTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Ward / Location</label>
+                  <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Ward / Location</label>
                   <input
                     type="text"
                     value={alertWard}
                     onChange={(e) => setAlertWard(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Severity</label>
+                  <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Severity</label>
                   <select
                     value={alertSeverity}
                     onChange={(e: any) => setAlertSeverity(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                   >
                     <option value="Critical">Critical</option>
                     <option value="High">High</option>
@@ -1311,12 +1453,12 @@ export default function DevAdminDashboard() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Water Depth (cm)</label>
+                  <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Water Depth (cm)</label>
                   <input
                     type="number"
                     value={alertDepth}
                     onChange={(e) => setAlertDepth(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                   />
                 </div>
               </div>
@@ -1324,7 +1466,7 @@ export default function DevAdminDashboard() {
               <button
                 type="button"
                 onClick={injectMunicipalAlert}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] font-bold text-xs hover:opacity-90 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm font-sans"
               >
                 <Send className="h-3.5 w-3.5" />
                 <span>Inject Alert into Notifications Stream</span>
@@ -1338,14 +1480,14 @@ export default function DevAdminDashboard() {
         {activeTab === 'feedbacks' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             {/* Header with KPI cards & Actions */}
-            <div className="p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-4">
+            <div className="p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-4 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-neutral-950 dark:text-white" />
-                    <h2 className="text-sm font-bold text-neutral-950 dark:text-white">Rider Ground-Truth Telemetry & Arrival Feedbacks</h2>
+                    <MessageSquare className="h-4 w-4 text-[var(--text-main)]" />
+                    <h2 className="text-sm font-bold text-[var(--text-main)]">Rider Ground-Truth Telemetry & Arrival Feedbacks</h2>
                   </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1 font-sans">
                     Real-time field evaluations submitted by citizens, emergency volunteers, and delivery riders upon reaching destinations.
                   </p>
                 </div>
@@ -1353,7 +1495,7 @@ export default function DevAdminDashboard() {
                   <button
                     type="button"
                     onClick={exportFeedbackCsv}
-                    className="px-3 py-2 bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity"
+                    className="px-3 py-2 bg-[var(--text-main)] text-[var(--bg-card)] rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity font-sans"
                   >
                     <Download className="h-3.5 w-3.5" />
                     <span>Export CSV</span>
@@ -1361,7 +1503,7 @@ export default function DevAdminDashboard() {
                   <button
                     type="button"
                     onClick={clearFeedbacks}
-                    className="px-3 py-2 bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                    className="px-3 py-2 bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-rose-600 dark:hover:text-rose-400 border border-[var(--border-color)] rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors font-sans"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     <span>Clear Log</span>
@@ -1371,15 +1513,15 @@ export default function DevAdminDashboard() {
 
               {/* KPI Metrics */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-white/[0.04] border border-neutral-200 dark:border-white/10">
-                  <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">Total Field Submissions</div>
-                  <div className="text-xl font-bold font-mono text-neutral-950 dark:text-white mt-1">
+                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)]">
+                  <div className="text-[10px] font-mono text-[var(--text-muted)]">Total Field Submissions</div>
+                  <div className="text-xl font-bold font-mono text-[var(--text-main)] mt-1">
                     {riderFeedbacks.length}
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-white/[0.04] border border-neutral-200 dark:border-white/10">
-                  <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">Model Accuracy Alignment</div>
+                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)]">
+                  <div className="text-[10px] font-mono text-[var(--text-muted)]">Model Accuracy Alignment</div>
                   <div className="text-xl font-bold font-mono text-teal-600 dark:text-teal-400 mt-1">
                     {riderFeedbacks.length > 0 
                       ? `${Math.round((riderFeedbacks.filter(f => f.userRating === 'accurate').length / riderFeedbacks.length) * 100)}%` 
@@ -1387,8 +1529,8 @@ export default function DevAdminDashboard() {
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-white/[0.04] border border-neutral-200 dark:border-white/10">
-                  <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">Unforeseen Inundation Reports</div>
+                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)]">
+                  <div className="text-[10px] font-mono text-[var(--text-muted)]">Unforeseen Inundation Reports</div>
                   <div className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">
                     {riderFeedbacks.filter(f => f.userRating === 'inaccurate').length}
                   </div>
@@ -1398,12 +1540,12 @@ export default function DevAdminDashboard() {
 
             {/* Submissions Feed List */}
             <div className="space-y-3">
-              <h3 className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <h3 className="text-xs font-mono font-bold text-[var(--text-muted)] uppercase tracking-wider">
                 Audited Traversal Reports ({riderFeedbacks.length})
               </h3>
 
               {riderFeedbacks.length === 0 ? (
-                <div className="p-8 text-center text-xs text-neutral-500 dark:text-neutral-400 rounded-2xl border border-dashed border-neutral-300 dark:border-white/10">
+                <div className="p-8 text-center text-xs text-[var(--text-muted)] rounded-2xl border border-dashed border-[var(--border-color)] font-mono">
                   No arrival feedback records submitted yet.
                 </div>
               ) : (
@@ -1414,7 +1556,7 @@ export default function DevAdminDashboard() {
                     return (
                       <div
                         key={`feedback-item-${idx}`}
-                        className="p-4 rounded-2xl bg-white dark:bg-[#121214] border border-neutral-200 dark:border-white/10 space-y-2.5 shadow-2xs"
+                        className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-2.5 shadow-2xs"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${
@@ -1426,24 +1568,24 @@ export default function DevAdminDashboard() {
                           }`}>
                             {isAccurate ? '[ACCURATE ROUTE]' : isInaccurate ? '[UNFORESEEN WATER]' : '[MODERATE PASSAGE]'}
                           </span>
-                          <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
+                          <span className="text-[10px] font-mono text-[var(--text-muted)]">
                             {new Date(f.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
 
                         <div>
-                          <div className="text-xs font-bold text-neutral-950 dark:text-white">
+                          <div className="text-xs font-bold text-[var(--text-main)] font-sans">
                             {f.routeSummary || 'Traversed Safe Route'}
                           </div>
                           {f.predictedRisk && (
-                            <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 mt-0.5">
-                              Model Prediction: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{f.predictedRisk}</span>
+                            <div className="text-[10px] font-mono text-[var(--text-muted)] mt-0.5">
+                              Model Prediction: <span className="font-semibold text-[var(--text-main)]">{f.predictedRisk}</span>
                             </div>
                           )}
                         </div>
 
                         {f.notes && (
-                          <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-200/80 dark:border-white/5 text-[11px] text-neutral-700 dark:text-neutral-300 leading-relaxed italic">
+                          <div className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[11px] text-[var(--text-muted)] leading-relaxed italic">
                             "{f.notes}"
                           </div>
                         )}
@@ -1462,59 +1604,59 @@ export default function DevAdminDashboard() {
             
             {/* Add Admin Form */}
             {session.role === 'super_admin' ? (
-              <div className="p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-4">
+              <div className="p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-4 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-neutral-950 dark:text-white" />
-                  <h2 className="text-sm font-bold text-neutral-950 dark:text-white">Register New Dev Admin</h2>
+                  <UserPlus className="h-4 w-4 text-[var(--text-main)]" />
+                  <h2 className="text-sm font-bold text-[var(--text-main)]">Register New Dev Admin</h2>
                 </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="text-xs text-[var(--text-muted)] font-sans">
                   Only the Super Admin ({session.username}) can grant access to team members to operate this dashboard.
                 </p>
 
                 {adminMgmtMsg && (
-                  <div className="p-3 rounded-xl bg-neutral-200 dark:bg-white/10 border border-neutral-300 dark:border-white/20 text-neutral-950 dark:text-white text-xs font-mono">
+                  <div className="p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-mono">
                     {adminMgmtMsg}
                   </div>
                 )}
 
                 <form onSubmit={handleAddAdmin} className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Username</label>
+                    <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Username</label>
                     <input
                       type="text"
                       placeholder="e.g. dev_alex"
                       value={newAdminUsername}
                       onChange={(e) => setNewAdminUsername(e.target.value)}
                       required
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Email Address</label>
+                    <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Email Address</label>
                     <input
                       type="email"
                       placeholder="alex@example.com"
                       value={newAdminEmail}
                       onChange={(e) => setNewAdminEmail(e.target.value)}
                       required
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 block mb-1">Initial Password</label>
+                    <label className="text-[10px] font-mono text-[var(--text-muted)] block mb-1">Initial Password</label>
                     <input
                       type="text"
                       placeholder="Secret password"
                       value={newAdminPassword}
                       onChange={(e) => setNewAdminPassword(e.target.value)}
                       required
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#18181b] border border-neutral-300 dark:border-white/15 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white font-mono"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--color-brand-accent)] font-mono"
                     />
                   </div>
                   <div className="sm:col-span-3 flex justify-end">
                     <button
                       type="submit"
-                      className="px-5 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-sm font-sans"
+                      className="px-5 py-2.5 rounded-xl bg-[var(--text-main)] text-[var(--bg-card)] font-bold text-xs hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-sm font-sans"
                     >
                       Grant Admin Credentials
                     </button>
@@ -1522,14 +1664,14 @@ export default function DevAdminDashboard() {
                 </form>
               </div>
             ) : (
-              <div className="p-4 rounded-2xl bg-neutral-100 dark:bg-white/5 border border-neutral-300 dark:border-white/15 text-neutral-700 dark:text-neutral-300 text-xs font-mono">
+              <div className="p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-muted)] text-xs font-mono">
                 [NOTICE] You are logged in as a Dev Admin. Only Super Admin has permission to invite or remove administrators.
               </div>
             )}
 
             {/* Admin Table */}
-            <div className="p-6 rounded-3xl bg-neutral-50/80 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 space-y-4">
-              <h3 className="text-sm font-bold flex items-center gap-2 text-neutral-950 dark:text-white">
+            <div className="p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-4 shadow-sm">
+              <h3 className="text-sm font-bold flex items-center gap-2 text-[var(--text-main)]">
                 <Users className="h-4 w-4" />
                 <span>Authorized Dashboard Operators</span>
               </h3>
@@ -1537,7 +1679,7 @@ export default function DevAdminDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-neutral-200 dark:border-white/10 text-[10px] font-mono uppercase text-neutral-500 dark:text-neutral-400">
+                    <tr className="border-b border-[var(--border-color)] text-[10px] font-mono uppercase text-[var(--text-muted)]">
                       <th className="py-2.5 px-3">Username</th>
                       <th className="py-2.5 px-3">Email</th>
                       <th className="py-2.5 px-3">Role</th>
@@ -1545,17 +1687,17 @@ export default function DevAdminDashboard() {
                       <th className="py-2.5 px-3 text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-200 dark:border-white/10">
+                  <tbody className="divide-y divide-[var(--border-color)]">
                     {adminsList.map((a) => (
-                      <tr key={a.username} className="hover:bg-neutral-100/50 dark:hover:bg-white/5 transition-colors">
-                        <td className="py-3 px-3 font-bold text-neutral-950 dark:text-white">{a.username}</td>
-                        <td className="py-3 px-3 text-neutral-500 dark:text-neutral-400 font-mono">{a.email}</td>
+                      <tr key={a.username} className="hover:bg-[var(--text-main)]/5 transition-colors">
+                        <td className="py-3 px-3 font-bold text-[var(--text-main)]">{a.username}</td>
+                        <td className="py-3 px-3 text-[var(--text-muted)] font-mono">{a.email}</td>
                         <td className="py-3 px-3">
-                          <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-100 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 uppercase">
+                          <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] uppercase">
                             [{a.role}]
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
+                        <td className="py-3 px-3 text-[10px] font-mono text-[var(--text-muted)]">
                           {new Date(a.addedAt).toLocaleDateString()}
                         </td>
                         <td className="py-3 px-3 text-right">
@@ -1563,7 +1705,7 @@ export default function DevAdminDashboard() {
                             <button
                               type="button"
                               onClick={() => handleRemoveAdmin(a.username)}
-                              className="p-1 rounded-lg text-neutral-500 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                              className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-colors cursor-pointer"
                               title="Revoke Admin Access"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
