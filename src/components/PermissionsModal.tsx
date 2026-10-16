@@ -153,10 +153,10 @@ export default function PermissionsModal({ isOpen, onClose }: PermissionsModalPr
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="relative w-full max-w-lg neo-glass-card rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl overflow-hidden p-4 sm:p-7 flex flex-col max-h-[88dvh]"
+        className="relative w-full max-w-2xl lg:max-w-3xl neo-glass-card rounded-2xl sm:rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-2xl p-4 sm:p-6 flex flex-col max-h-[92vh] sm:max-h-[90vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 mb-5 pb-3 border-b border-[var(--border-color)] dark:border-white/10">
+        <div className="flex items-center justify-between gap-3 mb-4 sm:mb-5 pb-3 border-b border-[var(--border-color)] dark:border-white/10 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="h-9 w-9 rounded-xl bg-neutral-900/5 dark:bg-white/10 text-[var(--text-main)] dark:text-neutral-200 border border-[var(--border-color)] dark:border-white/10 flex items-center justify-center shrink-0">
               <SlidersHorizontal className="h-5 w-5 text-[var(--text-main)] dark:text-neutral-200" />
@@ -180,20 +180,20 @@ export default function PermissionsModal({ isOpen, onClose }: PermissionsModalPr
           </button>
         </div>
 
-        {/* Permission Cards Stack */}
-        <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
+        {/* Permission Cards Grid - 2x2 Grid on desktop/tablet to eliminate overflow-y */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5 max-h-[75vh] sm:max-h-none overflow-y-auto sm:overflow-visible custom-scrollbar pr-0.5 sm:pr-0">
           {PERMISSION_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.id}
-                className={`p-4 rounded-2xl border transition-all ${
+                className={`p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all flex flex-col justify-between gap-2.5 ${
                   item.enabled
                     ? 'border-neutral-900/20 dark:border-white/20 bg-neutral-900/[0.03] dark:bg-white/[0.04]'
                     : 'border-[var(--border-color)] dark:border-white/10 bg-[var(--bg-main)]/40'
                 }`}
               >
-                <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 border ${
                       item.enabled 
@@ -204,7 +204,7 @@ export default function PermissionsModal({ isOpen, onClose }: PermissionsModalPr
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-bold text-xs text-[var(--text-main)] truncate">{item.title}</h3>
-                      <span className="text-[10px] font-mono text-[var(--text-muted)] block truncate">
+                      <span className="text-[9.5px] font-mono text-[var(--text-muted)] block truncate">
                         {item.category}
                       </span>
                     </div>
@@ -212,7 +212,7 @@ export default function PermissionsModal({ isOpen, onClose }: PermissionsModalPr
 
                   {/* Clean Enable / Disable Switch */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-[10px] font-mono font-bold ${
+                    <span className={`text-[9.5px] font-mono font-bold ${
                       item.enabled ? 'text-[var(--text-main)] dark:text-neutral-200' : 'text-[var(--text-muted)]'
                     }`}>
                       {item.enabled ? 'Enabled' : 'Disabled'}
@@ -225,12 +225,26 @@ export default function PermissionsModal({ isOpen, onClose }: PermissionsModalPr
                   </div>
                 </div>
 
-                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed pl-10.5">
+                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
                   {item.description}
                 </p>
               </div>
             );
           })}
+        </div>
+
+        {/* Footer Action */}
+        <div className="mt-4 pt-3 border-t border-[var(--border-color)] dark:border-white/10 flex items-center justify-between gap-3 shrink-0">
+          <span className="text-[10px] font-mono text-[var(--text-muted)]">
+            Changes save instantly to browser & telemetry service
+          </span>
+          <button
+            type="button"
+            onClick={handleComplete}
+            className="px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 border border-neutral-950/20 dark:border-white/20 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-98"
+          >
+            Done
+          </button>
         </div>
       </motion.div>
     </div>

@@ -159,8 +159,19 @@ export const RemoteAdminChannel = {
       } else if (beacon.type === 'custom_alert') {
         playCivicNotificationChime();
         try {
+          const ONE_HOUR_MS = 60 * 60 * 1000;
+          const now = Date.now();
+          const alertPayload = {
+            ...beacon.payload,
+            createdAt: beacon.payload?.createdAt || now,
+          };
           const existing = JSON.parse(localStorage.getItem('doab_admin_custom_alerts') || '[]');
-          localStorage.setItem('doab_admin_custom_alerts', JSON.stringify([beacon.payload, ...existing]));
+          // Purge alerts older than 1 hour
+          const freshAlerts = [alertPayload, ...existing].filter((a: any) => {
+            const created = a.createdAt || (a.updatedTime ? Date.parse(a.updatedTime) : null);
+            return created ? now - created < ONE_HOUR_MS : true;
+          });
+          localStorage.setItem('doab_admin_custom_alerts', JSON.stringify(freshAlerts));
           localStorage.setItem('doab_notifications_read', 'false');
           window.dispatchEvent(new CustomEvent('doab:admin-alerts-updated'));
           

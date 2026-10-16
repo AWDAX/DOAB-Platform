@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Menu, Search, Compass, Settings, X, MapPin, Route as RouteIcon, Bell, User, 
-  Droplets, Activity, Radio, ArrowRight, Bot, Navigation2, SlidersHorizontal, Sparkles
+  Droplets, Activity, Radio, ArrowRight, Bot, Navigation2, SlidersHorizontal, Sparkles, CheckCircle2
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +9,7 @@ import Tooltip from './Tooltip';
 import BrandLogo from './BrandLogo';
 import ThemeToggle from './ThemeToggle';
 import { playClick } from '../utils/soundFx';
-import { CIVIC_INCIDENTS, ALL_REGIONS } from '../pages/MapPage';
+import { CIVIC_INCIDENTS, ALL_REGIONS, haversineKm, mapSessionState, getStoredUserCoords } from '../pages/MapPage';
 
 interface NavbarProps {
   isDarkMode: boolean;
@@ -64,6 +64,96 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Synchronize live GPS location and state combobox filter for smart alerts sorting
+  const [userLocation, setUserLocation] = useState<{ coords: [number, number]; hasReal: boolean }>(() => getStoredUserCoords());
+  const [activeState, setActiveState] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem('doab_selected_state') || mapSessionState.selectedState || 'all';
+    } catch {
+      return 'all';
+    }
+  });
+
+  useEffect(() => {
+    const handleStateSync = (e: any) => {
+      if (e.detail?.selectedState) {
+        setActiveState(e.detail.selectedState);
+      } else {
+        try {
+          setActiveState(sessionStorage.getItem('doab_selected_state') || mapSessionState.selectedState || 'all');
+        } catch {}
+      }
+    };
+    const handleCoordsSync = () => {
+      setUserLocation(getStoredUserCoords());
+    };
+    window.addEventListener('doab:state-changed', handleStateSync);
+    window.addEventListener('storage', handleCoordsSync);
+    window.addEventListener('doab:user-coords-updated', handleCoordsSync);
+    return () => {
+      window.removeEventListener('doab:state-changed', handleStateSync);
+      window.removeEventListener('storage', handleCoordsSync);
+      window.removeEventListener('doab:user-coords-updated', handleCoordsSync);
+    };
+  }, []);
+
+  // Dev/Admin custom alerts and live forecast cells for strict real-time stream (1-Hour Auto-Purge)
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+
+  const loadFreshAdminAlerts = () => {
+    try {
+      const saved = localStorage.getItem('doab_admin_custom_alerts');
+      if (!saved) return [];
+      const now = Date.now();
+      const parsed = JSON.parse(saved);
+      const fresh = parsed.filter((a: any) => {
+        const created = a.createdAt || (a.updatedTime ? Date.parse(a.updatedTime) : null);
+        return created ? now - created < ONE_HOUR_MS : true;
+      });
+      if (fresh.length !== parsed.length) {
+        localStorage.setItem('doab_admin_custom_alerts', JSON.stringify(fresh));
+      }
+      return fresh;
+    } catch {
+      return [];
+    }
+  };
+
+  const [adminCustomAlerts, setAdminCustomAlerts] = useState<any[]>(loadFreshAdminAlerts);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setAdminCustomAlerts(loadFreshAdminAlerts());
+    };
+    window.addEventListener('doab:admin-alerts-updated', handleUpdate);
+    const pruneTimer = setInterval(() => {
+      setAdminCustomAlerts(loadFreshAdminAlerts());
+    }, 60000); // Check for expired alerts every 60s
+
+    return () => {
+      window.removeEventListener('doab:admin-alerts-updated', handleUpdate);
+      clearInterval(pruneTimer);
+    };
+  }, []);
+
+  // Strict Real-Time Mode: Sort active real-time alerts dynamically by proximity to user GPS
+  const nearbyIncidents = useMemo(() => {
+    // Only real-time admin dispatches and live events are permitted
+    const withDistance = adminCustomAlerts.map((inc) => {
+      const distKm = userLocation.coords && inc.lat && inc.lng
+        ? haversineKm(userLocation.coords[0], userLocation.coords[1], inc.lat, inc.lng)
+        : undefined;
+      return { ...inc, distKm };
+    });
+
+    return [...withDistance].sort((a, b) => {
+      if (a.distKm != null && b.distKm != null) {
+        return a.distKm - b.distKm;
+      }
+      return 0;
+    }).slice(0, 4);
+  }, [adminCustomAlerts, userLocation]);
 
   // Compute filtered search results: Command, Telemetry & Region Focus instead of static page duplicates
   const results = React.useMemo(() => {
@@ -383,11 +473,13 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                     aria-expanded={isAlertsOpen}
                   >
                     <Bell strokeWidth={2.2} className="h-[17px] w-[17px] text-neutral-700 dark:text-neutral-200 group-hover:text-[var(--text-main)] transition-colors" />
-                    {/* Subtle, refined monochromatic notification badge */}
-                    <span className="absolute top-1 right-1 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--text-main)] dark:bg-neutral-300 opacity-50 transition-colors" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--text-main)] dark:bg-neutral-300 transition-colors" />
-                    </span>
+                    {/* Subtle, refined monochromatic notification badge: only when active real-time alerts exist */}
+                    {nearbyIncidents.length > 0 && (
+                      <span className="absolute top-1 right-1 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--text-main)] dark:bg-neutral-300 opacity-50 transition-colors" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--text-main)] dark:bg-neutral-300 transition-colors" />
+                      </span>
+                    )}
                   </button>
                 </Tooltip>
 
@@ -406,6 +498,9 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
                         <div className="flex items-center gap-2">
                           <Bell className="h-4 w-4 text-[var(--text-main)] dark:text-neutral-200" />
                           <span className="text-xs font-bold text-[var(--text-main)]">Recent Alerts</span>
+                          <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded-md border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)]">
+                            {userLocation.hasReal ? 'Nearby GPS' : activeState !== 'all' ? activeState.toUpperCase() : 'National'}
+                          </span>
                         </div>
                         <button
                           type="button"
@@ -422,50 +517,71 @@ export default function Navbar({ isDarkMode, toggleTheme, envMode, toggleEnvMode
 
                       {/* Quick Items List */}
                       <div className="p-1.5 flex flex-col gap-1 max-h-72 overflow-y-auto custom-scrollbar">
-                        {CIVIC_INCIDENTS.slice(0, 4).map((inc) => {
-                          const isCrit = inc.severity === 'Critical';
-                          const isHigh = inc.severity === 'High';
-                          return (
-                            <Link
-                              key={inc.id}
-                              to={`/notifications?alertId=${encodeURIComponent(inc.id)}&title=${encodeURIComponent(inc.title)}`}
-                              onClick={() => {
-                                playClick();
-                                setIsAlertsOpen(false);
-                              }}
-                              className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] transition-colors flex items-start gap-2.5 group cursor-pointer border border-transparent hover:border-[var(--border-color)]"
-                            >
-                              <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 transition-colors ${
-                                isCrit
-                                  ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
-                                  : isHigh
-                                    ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
-                                    : 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 border-teal-600/25 dark:border-teal-400/25'
-                              }`}>
-                                {isCrit ? <Radio className="h-3.5 w-3.5" /> : <Activity className="h-3.5 w-3.5" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-1">
-                                  <span className="text-xs font-semibold text-[var(--text-main)] truncate transition-colors">
-                                    {inc.title}
-                                  </span>
-                                  <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded-full border shrink-0 ${
-                                    isCrit
-                                      ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
-                                      : isHigh
-                                        ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
-                                        : 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 border-teal-600/25 dark:border-teal-400/25'
-                                  }`}>
-                                    {inc.severity}
+                        {nearbyIncidents.length === 0 ? (
+                          <div className="py-6 px-4 text-center flex flex-col items-center justify-center gap-1.5">
+                            <div className="w-8 h-8 rounded-full border border-[var(--border-color)] bg-[var(--bg-main)] flex items-center justify-center text-[var(--text-main)] mb-0.5">
+                              <CheckCircle2 className="h-4 w-4" />
+                            </div>
+                            <div className="font-bold text-xs text-[var(--text-main)]">
+                              All Clear • No Active Hazard Alerts
+                            </div>
+                            <div className="text-[10px] font-mono text-[var(--text-muted)]">
+                              No real-time alerts in this sector.
+                            </div>
+                          </div>
+                        ) : (
+                          nearbyIncidents.map((inc) => {
+                            const isCrit = inc.severity === 'Critical';
+                            const isHigh = inc.severity === 'High';
+                            return (
+                              <Link
+                                key={inc.id}
+                                to={`/notifications?alertId=${encodeURIComponent(inc.id)}&title=${encodeURIComponent(inc.title)}`}
+                                onClick={() => {
+                                  playClick();
+                                  setIsAlertsOpen(false);
+                                }}
+                                className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] transition-colors flex items-start gap-2.5 group cursor-pointer border border-transparent hover:border-[var(--border-color)]"
+                              >
+                                <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 transition-colors ${
+                                  isCrit
+                                    ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
+                                    : isHigh
+                                      ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
+                                      : 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 border-teal-600/25 dark:border-teal-400/25'
+                                }`}>
+                                  {isCrit ? <Radio className="h-3.5 w-3.5" /> : <Activity className="h-3.5 w-3.5" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="text-xs font-semibold text-[var(--text-main)] truncate transition-colors">
+                                      {inc.title}
+                                    </span>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      {typeof inc.distKm === 'number' && (
+                                        <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)]">
+                                          {inc.distKm < 10 ? `${inc.distKm.toFixed(1)} km` : `${Math.round(inc.distKm)} km`}
+                                        </span>
+                                      )}
+                                      <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded-full border shrink-0 ${
+                                        isCrit
+                                          ? 'bg-rose-950/[0.06] dark:bg-rose-500/[0.12] text-rose-700 dark:text-rose-300 border-rose-600/25 dark:border-rose-400/25'
+                                          : isHigh
+                                            ? 'bg-amber-950/[0.06] dark:bg-amber-500/[0.12] text-amber-700 dark:text-amber-300 border-amber-600/25 dark:border-amber-400/25'
+                                            : 'bg-teal-950/[0.06] dark:bg-teal-500/[0.12] text-teal-700 dark:text-teal-300 border-teal-600/25 dark:border-teal-400/25'
+                                      }`}>
+                                        {inc.severity}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] text-[var(--text-muted)] font-mono block truncate mt-0.5">
+                                    {inc.ward} • {typeof inc.distKm === 'number' ? `${inc.distKm < 10 ? inc.distKm.toFixed(1) : Math.round(inc.distKm)} km away • ` : ''}{inc.waterDepthCm || 45} cm water
                                   </span>
                                 </div>
-                                <span className="text-[10px] text-[var(--text-muted)] font-mono block truncate mt-0.5">
-                                  {inc.ward} • {inc.waterDepthCm || 45} cm water
-                                </span>
-                              </div>
-                            </Link>
-                          );
-                        })}
+                              </Link>
+                            );
+                          })
+                        )}
                       </div>
 
                       {/* Footer View All Link (Strict Monochromatic) */}

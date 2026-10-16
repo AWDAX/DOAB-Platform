@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Bell, Clock, Activity, Radio, ExternalLink, RefreshCw } from 'lucide-react';
+import { Bell, Clock, Activity, Radio, ExternalLink, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useForecast } from '../hooks/useForecast';
 import { getPredictionCopy } from '../i18n/predictionCopy';
 import { PageTourButton } from '../components/GuidedTour';
-import { WATERLOGGING_DATASET_INCIDENTS } from '../data/waterloggingIncidents';
 import { playClick } from '../utils/soundFx';
+import { haversineKm, mapSessionState, getStoredUserCoords } from './MapPage';
 
 export default function NotificationPage() {
   const copy = getPredictionCopy();
@@ -16,26 +16,77 @@ export default function NotificationPage() {
   const { forecast, status, stale, reload } = useForecast();
   const [filterSeverity, setFilterSeverity] = useState<'all' | 'Critical' | 'High' | 'Medium'>('all');
 
-  // Dev/Admin simulated alerts from localStorage
-  const [adminCustomAlerts, setAdminCustomAlerts] = useState<any[]>(() => {
+  // Synchronize user live GPS coordinates and active state combobox
+  const [userLocation, setUserLocation] = useState<{ coords: [number, number]; hasReal: boolean }>(() => getStoredUserCoords());
+  const [activeState, setActiveState] = useState<string>(() => {
     try {
-      const saved = localStorage.getItem('doab_admin_custom_alerts');
-      return saved ? JSON.parse(saved) : [];
+      return sessionStorage.getItem('doab_selected_state') || mapSessionState.selectedState || 'all';
     } catch {
-      return [];
+      return 'all';
     }
   });
 
-  // Listen for admin custom alerts trigger
+  useEffect(() => {
+    const handleStateSync = (e: any) => {
+      if (e.detail?.selectedState) {
+        setActiveState(e.detail.selectedState);
+      } else {
+        try {
+          setActiveState(sessionStorage.getItem('doab_selected_state') || mapSessionState.selectedState || 'all');
+        } catch {}
+      }
+    };
+    const handleCoordsSync = () => {
+      setUserLocation(getStoredUserCoords());
+    };
+    window.addEventListener('doab:state-changed', handleStateSync);
+    window.addEventListener('storage', handleCoordsSync);
+    window.addEventListener('doab:user-coords-updated', handleCoordsSync);
+    return () => {
+      window.removeEventListener('doab:state-changed', handleStateSync);
+      window.removeEventListener('storage', handleCoordsSync);
+      window.removeEventListener('doab:user-coords-updated', handleCoordsSync);
+    };
+  }, []);
+
+  // Dev/Admin simulated alerts from localStorage (Auto-purges events older than 1 Hour)
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+
+  const loadFreshAdminAlerts = () => {
+    try {
+      const saved = localStorage.getItem('doab_admin_custom_alerts');
+      if (!saved) return [];
+      const now = Date.now();
+      const parsed = JSON.parse(saved);
+      const fresh = parsed.filter((a: any) => {
+        const created = a.createdAt || (a.updatedTime ? Date.parse(a.updatedTime) : null);
+        return created ? now - created < ONE_HOUR_MS : true;
+      });
+      if (fresh.length !== parsed.length) {
+        localStorage.setItem('doab_admin_custom_alerts', JSON.stringify(fresh));
+      }
+      return fresh;
+    } catch {
+      return [];
+    }
+  };
+
+  const [adminCustomAlerts, setAdminCustomAlerts] = useState<any[]>(loadFreshAdminAlerts);
+
+  // Listen for admin custom alerts trigger and periodically prune stale alerts
   useEffect(() => {
     const handleUpdate = () => {
-      try {
-        const saved = localStorage.getItem('doab_admin_custom_alerts');
-        setAdminCustomAlerts(saved ? JSON.parse(saved) : []);
-      } catch {}
+      setAdminCustomAlerts(loadFreshAdminAlerts());
     };
     window.addEventListener('doab:admin-alerts-updated', handleUpdate);
-    return () => window.removeEventListener('doab:admin-alerts-updated', handleUpdate);
+    const pruneTimer = setInterval(() => {
+      setAdminCustomAlerts(loadFreshAdminAlerts());
+    }, 60000); // Check for expired alerts every 60s
+
+    return () => {
+      window.removeEventListener('doab:admin-alerts-updated', handleUpdate);
+      clearInterval(pruneTimer);
+    };
   }, []);
 
   // Mark alerts as read when user visits Notification Page
@@ -46,70 +97,34 @@ export default function NotificationPage() {
     } catch (_) {}
   }, []);
 
-  // Ground truth / realistic flood and inundation alerts derived from municipal datasets
-  // Filter out non-flood, pipeline maintenance, and informal user complaints
-  const filteredDataset = WATERLOGGING_DATASET_INCIDENTS
-    .filter((inc) => {
-      const lowerTitle = (inc.title || '').toLowerCase();
-      const lowerDesc = (inc.description || '').toLowerCase();
-      const isUnwanted = 
-        lowerTitle.includes('leaking pipeline') ||
-        lowerTitle.includes('urinating') ||
-        lowerTitle.includes('shitting') ||
-        lowerTitle.includes('dangerous road condiyion') ||
-        lowerDesc.includes('urinat') ||
-        lowerDesc.includes('wine shop') ||
-        lowerTitle.includes('pipeline') ||
-        lowerTitle.includes('leak');
-      return !isUnwanted && (inc.severity !== 'Low' || inc.id === focusedAlertId);
-    });
-
-  // Ensure that if a specific alert was clicked in Recent Alerts, it is included in mockAlerts
-  const topSlice = filteredDataset.slice(0, 8);
-  const focusedIncident = focusedAlertId
-    ? WATERLOGGING_DATASET_INCIDENTS.find((inc) => inc.id === focusedAlertId || inc.title === focusedAlertTitle)
-    : null;
-  const combinedIncidents = focusedIncident && !topSlice.some((inc) => inc.id === focusedIncident.id)
-    ? [focusedIncident, ...topSlice]
-    : topSlice;
-
-  const mockAlerts = combinedIncidents.map((inc, i) => ({
-    id: inc.id,
-    lat: inc.lat,
-    lng: inc.lng,
-    title: inc.title,
-    ward: inc.ward,
-    severity: inc.severity,
-    waterDepthCm: inc.waterDepthCm || 45,
-    rainfallMmH: inc.rainfallMmH || 32,
-    probability: inc.severity === 'Critical' ? 0.88 - Math.min(i, 6) * 0.05 : inc.severity === 'High' ? 0.65 - Math.min(i, 6) * 0.04 : 0.42,
-    confidence: 'Historical sensor-backed ground truth',
-    updatedTime: inc.updatedTime,
-    isMockup: true,
-  }));
-
+  // Strict Real-Time Mode: Only active AI flood forecast cells and live admin dispatches are shown.
   const liveCells = (forecast?.cells ?? [])
     .filter((cell) => cell.probability != null && cell.probability >= 0.35)
     .sort((a, b) => (b.probability ?? 0) - (a.probability ?? 0))
-    .slice(0, 8)
-    .map((cell, idx) => ({
-      id: `live-cell-${idx}`,
-      lat: cell.lat,
-      lng: cell.lng,
-      title: `Grid Cell (${cell.lat.toFixed(2)}, ${cell.lng.toFixed(2)})`,
-      ward: 'Ward Inundation Zone',
-      severity: (cell.probability ?? 0) >= 0.7 ? ('Critical' as const) : (cell.probability ?? 0) >= 0.5 ? ('High' as const) : ('Medium' as const),
-      waterDepthCm: Math.round((cell.probability ?? 0) * 60),
-      rainfallMmH: 28,
-      probability: cell.probability ?? 0.5,
-      confidence: cell.confidence,
-      updatedTime: 'Next 60 min forecast',
-      isMockup: false,
-    }));
+    .slice(0, 16)
+    .map((cell, idx) => {
+      const distKm = userLocation.coords
+        ? haversineKm(userLocation.coords[0], userLocation.coords[1], cell.lat, cell.lng)
+        : undefined;
+      return {
+        id: `live-cell-${idx}`,
+        lat: cell.lat,
+        lng: cell.lng,
+        title: `Grid Cell (${cell.lat.toFixed(2)}, ${cell.lng.toFixed(2)})`,
+        ward: 'Ward Inundation Zone',
+        severity: (cell.probability ?? 0) >= 0.7 ? ('Critical' as const) : (cell.probability ?? 0) >= 0.5 ? ('High' as const) : ('Medium' as const),
+        waterDepthCm: Math.round((cell.probability ?? 0) * 60),
+        rainfallMmH: 28,
+        probability: cell.probability ?? 0.5,
+        confidence: cell.confidence,
+        updatedTime: 'Next 60 min forecast',
+        distKm,
+        isMockup: false,
+      };
+    });
 
-  const isModelResponding = status === 'ready' && liveCells.length > 0 && !focusedAlertId;
-  const baseAlerts = isModelResponding ? liveCells : mockAlerts;
-  const activeAlerts = [...adminCustomAlerts, ...baseAlerts];
+  // Strict Real-Time: Only real-time ML cells and active admin dispatches
+  const activeAlerts = [...adminCustomAlerts, ...liveCells];
 
   const filteredAlerts = activeAlerts.filter(
     (a) => filterSeverity === 'all' || a.severity === filterSeverity
@@ -138,6 +153,9 @@ export default function NotificationPage() {
               <Bell className="h-6 w-6 text-[var(--text-main)] dark:text-neutral-200" />
               All Alerts
             </h1>
+            <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)]">
+              {userLocation.hasReal ? 'Proximity Sorted' : activeState !== 'all' ? `Filter: ${activeState.toUpperCase()}` : 'National Stream'}
+            </span>
           </div>
           <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1 leading-relaxed">
             Real-time hydrological risk stream and verified municipal waterlogging telemetry.
@@ -217,8 +235,18 @@ export default function NotificationPage() {
 
         {/* Alerts Stream List */}
         {filteredAlerts.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[var(--text-muted)] font-mono bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)]">
-            No alerts found matching the selected severity filter.
+          <div className="p-8 sm:p-10 text-center bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center gap-2 shadow-2xs">
+            <div className="w-10 h-10 rounded-full border border-[var(--border-color)] bg-[var(--bg-main)] flex items-center justify-center text-[var(--text-main)] mb-1">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div className="font-bold text-sm text-[var(--text-main)]">
+              All Clear • No Active Hazard Alerts
+            </div>
+            <div className="text-xs font-mono text-[var(--text-muted)]">
+              {filterSeverity !== 'all'
+                ? `No active real-time events found matching ${filterSeverity} severity.`
+                : 'No real-time inundation or waterlogging breaches detected.'}
+            </div>
           </div>
         ) : (
           filteredAlerts.map((alert, index) => {
@@ -266,6 +294,11 @@ export default function NotificationPage() {
                         }`}>
                           {alert.severity}
                         </span>
+                        {typeof (alert as any).distKm === 'number' && (
+                          <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)]">
+                            {(alert as any).distKm < 10 ? `${(alert as any).distKm.toFixed(1)} km away` : `${Math.round((alert as any).distKm)} km away`}
+                          </span>
+                        )}
                         {isFocused && (
                           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-2xs">
                             Selected Alert
@@ -273,7 +306,7 @@ export default function NotificationPage() {
                         )}
                       </div>
                       <span className="text-[11px] font-mono text-[var(--text-muted)] mt-0.5 block">
-                        {alert.ward} • {alert.updatedTime}
+                        {alert.ward} • {typeof (alert as any).distKm === 'number' ? `${(alert as any).distKm < 10 ? (alert as any).distKm.toFixed(1) : Math.round((alert as any).distKm)} km away • ` : ''}{alert.updatedTime}
                       </span>
                     </div>
 
