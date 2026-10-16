@@ -3173,7 +3173,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           className={`rounded-2xl pointer-events-auto shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] dark:border-white/15 bg-[var(--bg-card)] ${
             envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
           } transition-colors duration-150 relative ${
-            isMobileCollapsed ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'
+            isMobileCollapsed ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden custom-scrollbar'
           }`}
         >
           
@@ -4457,30 +4457,19 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             )}
           </AnimatePresence>
 
-          {/* Multi-zone Resize Handles (East rail, South rail, and South-East Corner Grip) */}
+          {/* Single South-East Corner Resize Grip (Clean 2D Panel Resizing) */}
           {!isMobileCollapsed && (
-            <>
-              {/* Bottom Edge Rail (S) */}
-              <div
-                onPointerDown={(e) => handleLiveRiskResizeStart(e, 's')}
-                className="absolute -bottom-1 left-6 right-6 h-2.5 cursor-ns-resize z-40 select-none touch-none"
-                title="Resize (Bottom)"
-              />
-              {/* Right Edge Rail (E) */}
-              <div
-                onPointerDown={(e) => handleLiveRiskResizeStart(e, 'e')}
-                className="absolute top-6 bottom-6 -right-1 w-2.5 cursor-ew-resize z-40 select-none touch-none"
-                title="Resize (Right)"
-              />
-              {/* Bottom-Right Corner (SE) */}
-              <div
-                onPointerDown={(e) => handleLiveRiskResizeStart(e, 'se')}
-                className="absolute -bottom-1 -right-1 w-6 h-6 cursor-nwse-resize z-50 flex items-end justify-end p-1.5 group/corner select-none touch-none"
-                title="Resize (Bottom-Right)"
-              >
-                <div className="w-2.5 h-2.5 border-b-2 border-r-2 rounded-br-sm border-transparent group-hover/corner:border-[var(--color-brand-accent)] transition-all opacity-40 group-hover/corner:opacity-100" />
-              </div>
-            </>
+            <div
+              onPointerDown={(e) => handleLiveRiskResizeStart(e, 'se')}
+              className="absolute bottom-1 right-1 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
+              title="Drag corner to resize Live Risk Monitor"
+            >
+              <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
+                <circle cx="8" cy="8" r="1.1" />
+                <circle cx="8" cy="4.5" r="1.1" />
+                <circle cx="4.5" cy="8" r="1.1" />
+              </svg>
+            </div>
           )}
         </div>
       </motion.div>

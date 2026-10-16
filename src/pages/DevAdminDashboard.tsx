@@ -741,9 +741,15 @@ export default function DevAdminDashboard({
                   {session.role === 'super_admin' ? '[SUPER ADMIN]' : '[DEV ADMIN]'}
                 </span>
               </div>
-              <p className="text-xs text-[var(--text-muted)] font-mono">
-                Operator: <span className="font-semibold text-[var(--text-main)]">{session.username}</span> ({session.email})
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-xs text-[var(--text-muted)] font-mono">
+                  Operator: <span className="font-semibold text-[var(--text-main)]">{session.username}</span> ({session.email})
+                </p>
+                <span className="text-[10px] font-mono text-[var(--text-muted)] hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-color)]">
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusMsg?.type === 'error' ? 'bg-rose-500' : 'bg-teal-500'}`} />
+                  <span className="truncate max-w-[280px]">Status: <strong className="text-[var(--text-main)]">{statusMsg ? statusMsg.text : 'Nominal (Standing By)'}</strong></span>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -786,14 +792,6 @@ export default function DevAdminDashboard({
             </button>
           </div>
         </div>
-
-        {/* Global Action Toast */}
-        {statusMsg && (
-          <div className="p-3.5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] text-xs font-mono font-medium flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm">
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--color-brand-accent)]" />
-            <span>{statusMsg.text}</span>
-          </div>
-        )}
 
         {/* Navigation Tabs (Framer Motion Shared-Layout Sliding Pill) */}
         <div className="relative flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] overflow-x-auto shadow-xs">
@@ -1728,6 +1726,34 @@ export default function DevAdminDashboard({
         )}
 
       </div>
+
+      {/* Floating Action Feedback Toast (Zero Layout Shift, Fixed Bottom-Right) */}
+      <AnimatePresence>
+        {statusMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed bottom-6 right-6 z-50 max-w-md p-3.5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]/95 backdrop-blur-xl text-[var(--text-main)] text-xs font-mono font-medium flex items-center gap-3 shadow-2xl"
+          >
+            {statusMsg.type === 'error' ? (
+              <AlertTriangle className="h-4 w-4 shrink-0 text-[var(--danger-text)]" />
+            ) : statusMsg.type === 'info' ? (
+              <Info className="h-4 w-4 shrink-0 text-cyan-500" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--color-brand-accent)]" />
+            )}
+            <span className="flex-1 leading-snug">{statusMsg.text}</span>
+            <button
+              onClick={() => setStatusMsg(null)}
+              className="text-[10px] font-mono font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] px-1.5 py-0.5 rounded border border-[var(--border-color)] transition-colors cursor-pointer"
+            >
+              [DISMISS]
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
