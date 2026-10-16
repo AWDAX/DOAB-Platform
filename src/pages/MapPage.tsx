@@ -3112,26 +3112,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                 </div>
               )}
 
-              {/* Multi-Zone Perimeter Resize System (East rail, South rail, South-East Corner) */}
-              {/* East / Right Border Rail (Resize Width) */}
-              <div
-                onPointerDown={(e) => handleCreatePathResizeStart(e, 'e')}
-                className="absolute top-0 right-0 w-2.5 h-full cursor-e-resize select-none touch-none hover:bg-[var(--text-main)]/10 transition-colors z-30 group"
-                title="Drag edge to resize width"
-              >
-                <div className="absolute top-1/2 -translate-y-1/2 right-0.5 w-0.5 h-6 rounded-full bg-[var(--text-muted)] opacity-25 group-hover:opacity-100 transition-opacity" />
-              </div>
-
-              {/* South / Bottom Border Rail (Resize Height) */}
-              <div
-                onPointerDown={(e) => handleCreatePathResizeStart(e, 's')}
-                className="absolute bottom-0 left-0 w-full h-2.5 cursor-s-resize select-none touch-none hover:bg-[var(--text-main)]/10 transition-colors z-30 group"
-                title="Drag edge to resize height"
-              >
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-0.5 h-0.5 w-6 rounded-full bg-[var(--text-muted)] opacity-25 group-hover:opacity-100 transition-opacity" />
-              </div>
-
-              {/* South-East Corner Resize Grip */}
+              {/* Single South-East Corner Resize Grip (Clean 2D Panel Resizing) */}
               <div
                 onPointerDown={(e) => handleCreatePathResizeStart(e, 'se')}
                 className="absolute bottom-1.5 right-1.5 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
@@ -3189,7 +3170,7 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
           className={`rounded-2xl pointer-events-auto shadow-2xl backdrop-blur-2xl border border-[var(--border-color)] dark:border-white/15 bg-[var(--bg-card)] ${
             envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
           } transition-all duration-200 relative ${
-            isStateDropdownOpen || alsSuggestions.length > 0 || isSearchFocused ? 'overflow-visible' : isMobileCollapsed ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'
+            isStateDropdownOpen || alsSuggestions.length > 0 ? 'overflow-visible' : isMobileCollapsed ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'
           }`}
         >
           
@@ -4210,8 +4191,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                     </div>
                   </div>
 
-                  {/* Multi-Cluster Relief Dispatch Circuit (Emergency Logistics) */}
-                  {recurringClusters.length >= 2 && (
+                  {/* Multi-Cluster Relief Dispatch Circuit (Emergency Logistics & Fleets ONLY - hidden for Citizens) */}
+                  {recurringClusters.length >= 2 && userRole !== 'citizen' && (
                     <div className="mb-2 p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-1.5 select-none">
                       <div className="flex items-center justify-between gap-1.5">
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -4415,40 +4396,42 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           <span className="whitespace-nowrap">Avoid Hazard & Find Bypass</span>
                         </button>
                         
-                        {userRole === 'delivery' ? (
-                          <Tooltip content="Emergency Responder / Fleet: Direct dispatch navigation to crisis site" position="top">
-                            <a
-                              href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() => playClick()}
-                              className="px-2.5 py-1.5 rounded-lg bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-[10px] font-semibold flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap shrink-0"
-                            >
-                              <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
-                                <path d="M12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5Z" fill="#FFFFFF" />
-                              </svg>
-                              <span className="whitespace-nowrap">Fleet Dispatch</span>
-                              <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
-                            </a>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip content="Direct navigation to hazard for emergency crews / pump operators (Citizens: use Avoid Hazard)" position="top">
-                            <a
-                              href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() => playClick()}
-                              className="px-2 py-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] text-[10px] font-mono flex items-center gap-1 transition-all shadow-2xs whitespace-nowrap shrink-0"
-                            >
-                              <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
-                                <path d="M12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5Z" fill="#FFFFFF" />
-                              </svg>
-                              <span className="whitespace-nowrap">Crew Nav</span>
-                              <ExternalLink className="h-2 w-2 opacity-60 shrink-0" />
-                            </a>
-                          </Tooltip>
+                        {userRole !== 'citizen' && (
+                          userRole === 'delivery' ? (
+                            <Tooltip content="Emergency Responder / Fleet: Direct dispatch navigation to crisis site" position="top">
+                              <a
+                                href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => playClick()}
+                                className="px-2.5 py-1.5 rounded-lg bg-[image:var(--auth-btn-gradient,linear-gradient(180deg,#0f172a_0%,#1e293b_50%,#334155_100%))] text-white hover:opacity-95 dark:bg-none dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 text-[10px] font-semibold flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap shrink-0"
+                              >
+                                <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
+                                  <path d="M12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5Z" fill="#FFFFFF" />
+                                </svg>
+                                <span className="whitespace-nowrap">Fleet Dispatch</span>
+                                <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
+                              </a>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip content="Direct navigation to hazard for emergency crews / pump operators" position="top">
+                              <a
+                                href={`https://www.google.com/maps/dir/?api=1&origin=${userCoords[0]},${userCoords[1]}&destination=${selectedIncident.lat},${selectedIncident.lng}&travelmode=driving`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => playClick()}
+                                className="px-2 py-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] text-[10px] font-mono flex items-center gap-1 transition-all shadow-2xs whitespace-nowrap shrink-0"
+                              >
+                                <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
+                                  <path d="M12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5Z" fill="#FFFFFF" />
+                                </svg>
+                                <span className="whitespace-nowrap">Crew Nav</span>
+                                <ExternalLink className="h-2 w-2 opacity-60 shrink-0" />
+                              </a>
+                            </Tooltip>
+                          )
                         )}
 
                         <button
@@ -4473,40 +4456,19 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
             )}
           </AnimatePresence>
 
-          {/* Multi-Zone Perimeter Resize System (East rail, South rail, South-East Corner) */}
+          {/* Single South-East Corner Resize Grip (Clean 2D Panel Resizing) */}
           {!isMobileCollapsed && (
-            <>
-              {/* East / Right Border Rail (Resize Width) */}
-              <div
-                onPointerDown={(e) => handleLiveRiskResizeStart(e, 'e')}
-                className="absolute top-0 right-0 w-2.5 h-full cursor-e-resize select-none touch-none hover:bg-[var(--text-main)]/10 transition-colors z-30 group"
-                title="Drag edge to resize width"
-              >
-                <div className="absolute top-1/2 -translate-y-1/2 right-0.5 w-0.5 h-6 rounded-full bg-[var(--text-muted)] opacity-25 group-hover:opacity-100 transition-opacity" />
-              </div>
-
-              {/* South / Bottom Border Rail (Resize Height) */}
-              <div
-                onPointerDown={(e) => handleLiveRiskResizeStart(e, 's')}
-                className="absolute bottom-0 left-0 w-full h-2.5 cursor-s-resize select-none touch-none hover:bg-[var(--text-main)]/10 transition-colors z-30 group"
-                title="Drag edge to resize height"
-              >
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-0.5 h-0.5 w-6 rounded-full bg-[var(--text-muted)] opacity-25 group-hover:opacity-100 transition-opacity" />
-              </div>
-
-              {/* South-East Corner Resize Grip */}
-              <div
-                onPointerDown={(e) => handleLiveRiskResizeStart(e, 'se')}
-                className="absolute bottom-1 right-1 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
-                title="Drag corner to resize Live Risk Monitor"
-              >
-                <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
-                  <circle cx="8" cy="8" r="1.1" />
-                  <circle cx="8" cy="4.5" r="1.1" />
-                  <circle cx="4.5" cy="8" r="1.1" />
-                </svg>
-              </div>
-            </>
+            <div
+              onPointerDown={(e) => handleLiveRiskResizeStart(e, 'se')}
+              className="absolute bottom-1 right-1 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-se-resize select-none touch-none opacity-40 hover:opacity-100 transition-opacity z-30"
+              title="Drag corner to resize Live Risk Monitor"
+            >
+              <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="currentColor">
+                <circle cx="8" cy="8" r="1.1" />
+                <circle cx="8" cy="4.5" r="1.1" />
+                <circle cx="4.5" cy="8" r="1.1" />
+              </svg>
+            </div>
           )}
         </div>
       </motion.div>

@@ -16,8 +16,7 @@ import {
   Menu, 
   X, 
   Layers, 
-  HelpCircle,
-  Compass
+  HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '../components/ThemeToggle';
@@ -72,13 +71,6 @@ const DOAB_STEPS = [
   }
 ];
 
-const COVERAGE_STATS = [
-  { label: 'Active Grid', value: 'Bengaluru Pilot', detail: 'Verified ward complaint coordinates' },
-  { label: 'Horizon', value: '1 Hour', detail: 'Hydrological risk forecast window' },
-  { label: 'Terrain Model', value: 'SRTM 30m', detail: 'Digital elevation bypass routing' },
-  { label: 'Navigation', value: 'Safe Routes', detail: 'Risk-scored corridor alternatives' }
-];
-
 const FAQS = [
   {
     q: 'What is DOAB and how does the Dual-Climate framework work?',
@@ -105,10 +97,9 @@ interface LandingPageProps {
   toggleEnvMode?: () => void;
   user?: any;
   onOpenPreferences?: () => void;
-  onOpenTour?: () => void;
 }
 
-export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', toggleEnvMode, user, onOpenTour }: LandingPageProps) {
+export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood', toggleEnvMode, user }: LandingPageProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -270,23 +261,6 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
 
         {/* Right: Controls & Clean Sign In CTA */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          {/* Desktop Guided Tour */}
-          {onOpenTour && (
-            <div className="hidden md:block">
-              <Tooltip content="Start Guided Tour" shortcut="Shift+T" position="bottom">
-                <button
-                  type="button"
-                  id="tour-landing-guide-btn"
-                  onClick={() => { playClick(); onOpenTour(); }}
-                  className="w-8 h-8 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200 hover:text-[var(--text-main)] hover:bg-[var(--text-main)]/5 transition-colors flex items-center justify-center cursor-pointer shadow-2xs group"
-                  aria-label="Start Landing Page Guided Tour"
-                >
-                  <Compass className="h-4 w-4 text-neutral-700 dark:text-neutral-200 group-hover:text-[var(--text-main)] transition-transform duration-500 group-hover:rotate-45" />
-                </button>
-              </Tooltip>
-            </div>
-          )}
-
           {/* Theme Toggle (On mobile, grouped immediately with Hamburger) */}
           <div className="flex items-center">
             <Tooltip content={isDarkMode ? "Light" : "Dark"} shortcut="Shift+T" position="bottom">
@@ -384,20 +358,6 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
                   >
                     <BrandLogo size="sm" /> Team Contrarians
                   </Link>
-
-                  {onOpenTour && (
-                    <button 
-                      type="button" 
-                      onClick={() => { 
-                        playClick(); 
-                        setIsMobileMenuOpen(false); 
-                        onOpenTour(); 
-                      }} 
-                      className="p-2.5 rounded-xl hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-left flex items-center gap-2 cursor-pointer"
-                    >
-                      <Compass className="h-4 w-4 text-[var(--color-brand-accent)]" /> Start Guided Tour
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -416,7 +376,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
       </AnimatePresence>
 
       {/* ── HERO SECTION ── */}
-      <section className="relative pt-32 sm:pt-40 pb-16 px-4 sm:px-6 max-w-[1200px] mx-auto flex flex-col items-center text-center min-h-[85vh] justify-center">
+      <section className="relative pt-24 sm:pt-32 pb-12 px-4 sm:px-6 max-w-[1200px] mx-auto flex flex-col items-center text-center min-h-[100dvh] justify-center">
         
         {/* Soft Atmospheric Background Ambient Halo behind Headline */}
         <div
@@ -467,7 +427,7 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
         </div>
 
         {/* Primary Action Buttons (DOAB Standard) */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-14">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
             to={user ? "/" : "/login"}
             onClick={() => playClick()}
@@ -485,27 +445,10 @@ export default function LandingPage({ isDarkMode, toggleTheme, envMode = 'flood'
             <span>{user ? "Safe Routes" : "Access Safe Routes"}</span>
           </Link>
         </div>
-
-        {/* Hero 4-Stat Row */}
-        <div id="tour-landing-bento" className="grid grid-cols-2 md:grid-cols-4 gap-3.5 w-full max-w-4xl mx-auto">
-          {COVERAGE_STATS.map((stat, i) => (
-            <div key={i} className="neo-glass-card p-4 rounded-2xl border border-[var(--border-color)] text-left flex flex-col justify-between shadow-2xs">
-              <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
-                {stat.label}
-              </span>
-              <div className="text-sm sm:text-base font-extrabold text-[var(--text-main)] tracking-tight">
-                {stat.value}
-              </div>
-              <span className="text-[10px] font-mono text-[var(--text-muted)] mt-0.5 block">
-                {stat.detail}
-              </span>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* ── SECTION: THE DOAB 4-STAGE LOOP ── */}
-      <section id="loop" className="py-14 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
+      <section id="loop" className="py-24 sm:py-32 px-4 sm:px-6 max-w-[1200px] mx-auto border-t border-[var(--border-color)]">
         <div id="tour-landing-loop" className="mb-10 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-neutral-300 dark:border-white/20 bg-neutral-200/70 dark:bg-white/10 text-[10px] mono-badge text-neutral-900 dark:text-neutral-100 mb-2 font-bold">
             <span>Operating Framework</span>

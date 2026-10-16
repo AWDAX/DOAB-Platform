@@ -17,8 +17,45 @@ export interface RemoteAdminBeacon {
 const BEACON_TOPIC = 'doab-sentinel-beacon-live-grid';
 const NTFY_URL = `https://ntfy.sh/${BEACON_TOPIC}`;
 
-// Track last executed beacon ID so devices don't re-execute duplicates
-const LAST_BEACON_KEY = 'doab_last_executed_remote_beacon_id';
+// Track recent executed beacon IDs (up to 250) so fast-polling redundancy never replays past sirens
+const PROCESSED_BEACONS_KEY = 'doab_processed_beacon_ids_v2';
+const STAND_DOWN_TIME_KEY = 'doab_last_stand_down_timestamp';
+
+const processedBeaconsSet = new Set<string>();
+
+function loadProcessedBeacons(): void {
+  try {
+    const raw = localStorage.getItem(PROCESSED_BEACONS_KEY);
+    if (raw) {
+      const arr: string[] = JSON.parse(raw);
+      arr.forEach(id => processedBeaconsSet.add(id));
+    }
+  } catch {}
+}
+loadProcessedBeacons();
+
+function markBeaconProcessed(id: string): void {
+  processedBeaconsSet.add(id);
+  try {
+    const arr = Array.from(processedBeaconsSet).slice(-200);
+    localStorage.setItem(PROCESSED_BEACONS_KEY, JSON.stringify(arr));
+  } catch {}
+}
+
+function getLastStandDownTime(): number {
+  try {
+    const raw = localStorage.getItem(STAND_DOWN_TIME_KEY);
+    return raw ? Number(raw) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function setLastStandDownTime(ts: number): void {
+  try {
+    localStorage.setItem(STAND_DOWN_TIME_KEY, String(ts));
+  } catch {}
+}
 
 export const RemoteAdminChannel = {
   /**
@@ -65,11 +102,18 @@ export const RemoteAdminChannel = {
    */
   executeLocally: (beacon: RemoteAdminBeacon) => {
     try {
-      const lastId = localStorage.getItem(LAST_BEACON_KEY);
-      if (lastId === beacon.id) return;
-      localStorage.setItem(LAST_BEACON_KEY, beacon.id);
+      if (!beacon || !beacon.id) return;
+      if (processedBeaconsSet.has(beacon.id)) return;
+      markBeaconProcessed(beacon.id);
+
+      const lastStandDown = getLastStandDownTime();
 
       if (beacon.type === 'sos_danger') {
+        // Drop any buffered SOS messages if they occurred prior to the last stand-down
+        if (beacon.timestamp && beacon.timestamp <= lastStandDown) {
+          return;
+        }
+
         // Dispatch admin broadcast state indicator to the Admin Console
         window.dispatchEvent(new CustomEvent('doab:admin-broadcast-status', {
           detail: { active: true, payload: beacon.payload }
@@ -95,6 +139,10 @@ export const RemoteAdminChannel = {
           detail: beacon.payload
         }));
       } else if (beacon.type === 'clear_alarm') {
+        // Record stand-down timestamp to invalidate any past SOS packets in poll buffers
+        const standDownTs = beacon.timestamp || Date.now();
+        setLastStandDownTime(standDownTs);
+
         // All-Clear / Stand-Down: stop active alarms and dismiss danger modal across all devices
         stopAlertAlarm();
         window.dispatchEvent(new CustomEvent('doab:clear-danger-broadcast', {

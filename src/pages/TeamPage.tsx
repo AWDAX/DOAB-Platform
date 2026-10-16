@@ -19,7 +19,6 @@ import ThemeToggle from '../components/ThemeToggle';
 import Tooltip from '../components/Tooltip';
 import FooterParticles from '../components/FooterParticles';
 import DragScrollController from '../components/DragScrollController';
-import { PageTourButton } from '../components/GuidedTour';
 
 function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -45,7 +44,6 @@ interface TeamPageProps {
   toggleTheme: () => void;
   envMode?: 'flood' | 'drought';
   toggleEnvMode?: () => void;
-  onOpenTour?: () => void;
 }
 
 export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }: TeamPageProps) {
@@ -196,9 +194,8 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }:
           </Link>
         </div>
 
-        {/* Right: Clean Theme Toggle & Team Guide */}
+        {/* Right: Clean Theme Toggle */}
         <div className="flex items-center gap-2 flex-shrink-0 z-10">
-          <PageTourButton pageKey="team" label="Team Guide" />
           <Tooltip content={isDarkMode ? "Light Mode" : "Dark Mode"} shortcut="Shift+T" position="bottom">
             <ThemeToggle darkMode={isDarkMode} toggleTheme={toggleTheme} />
           </Tooltip>
@@ -305,7 +302,7 @@ export default function TeamPage({ isDarkMode, toggleTheme, envMode = 'flood' }:
                 </div>
 
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="font-extrabold text-base sm:text-lg text-[var(--text-main)] tracking-tight group-hover:bg-gradient-to-r group-hover:from-slate-900 group-hover:via-slate-700 group-hover:to-slate-950 group-hover:bg-clip-text group-hover:text-transparent group-hover:drop-shadow-[0_1px_4px_rgba(15,23,42,0.18)] dark:group-hover:bg-gradient-to-r dark:group-hover:from-slate-100 dark:group-hover:via-slate-300 dark:group-hover:to-slate-400 dark:group-hover:bg-clip-text dark:group-hover:text-transparent dark:group-hover:drop-shadow-[0_2px_10px_rgba(203,213,225,0.25)] transition-all duration-300">
+                  <h3 className="font-extrabold text-base sm:text-lg text-[var(--text-main)] tracking-tight group-hover:text-[var(--color-brand-accent)] transition-colors duration-200">
                     {member.name}
                   </h3>
                 </div>

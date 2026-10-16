@@ -448,7 +448,6 @@ function AppContent({
                   toggleEnvMode={toggleEnvMode} 
                   user={user} 
                   onOpenPreferences={() => { playClick(); setIsPreferencesOpen(true); }}
-                  onOpenTour={() => { playClick(); setIsTourOpen(true); }}
                 />
               </PageTransition>
             } 
@@ -462,7 +461,6 @@ function AppContent({
                   toggleTheme={toggleTheme} 
                   envMode={envMode} 
                   toggleEnvMode={toggleEnvMode} 
-                  onOpenTour={() => { playClick(); setIsTourOpen(true); }}
                 />
               </PageTransition>
             } 

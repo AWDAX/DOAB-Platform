@@ -23,7 +23,9 @@ This document is the **single source of truth** for all design rules, color toke
 >   - **NEVER use static CSS background swaps or abrupt jump cuts for active states in tabs, segmented controls, or button groups.**
 >   - Whenever creating or modifying ANY background pill, segmented tab switcher, toggle group, sub-navigation pill, or active indicator, **YOU MUST ALWAYS implement Framer Motion's shared-layout sliding pill** (`<motion.div layoutId="..." transition={{ type: "spring", stiffness: 420, damping: 34 }} />`).
 >   - Structure: parent button/tab with `relative`, active pill element with `absolute inset-0 rounded-* -z-10 pointer-events-none`, and label/icon wrapped in `relative z-10`.
->   - Scoped `layoutId`: Every sliding toolbar must have a unique, domain-prefixed identifier to prevent cross-component morph collisions.
+> - **STRICT BAN ON GUIDED TOURS ON LANDING PAGE AND TEAM PAGE**:
+>   - **NEVER mount, trigger, or display a Guided Tour or Tour Button on public/overview pages (Landing Page `/` / `/landing` and Team Page `/team`).**
+>   - Guided tours are strictly reserved for operational workflow consoles (Map Dashboard, Routes, Assistant, Alerts, Profile).
 > - **STRICT DESIGN CONSISTENCY ACROSS ALL PAGES**:
 >   - All platform cards must use `.neo-glass-card` with `rounded-2xl` and `border-[var(--border-color)]`.
 >   - All inputs must use `rounded-xl`, `border-[var(--border-color)]`, and zero browser focus rings (`focus:outline-none focus:ring-1 focus:ring-[var(--text-main)]`).
