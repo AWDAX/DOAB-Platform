@@ -53,19 +53,37 @@ jobs:
             "$APP_DIR/venv/bin/python" -m pip install --upgrade pip
             "$APP_DIR/venv/bin/python" -m pip install -r "$APP_DIR/requirements.txt"
             
-            echo "🧠 Checking and training waterlogging ML model..."
+            echo "🧠 Checking waterlogging ML model..."
             cd "$APP_DIR"
-            if [ ! -f "$APP_DIR/models/waterlogging_1h.joblib" ]; then
+            if [ -f "$APP_DIR/data/processed/training_table.csv" ] && [ ! -f "$APP_DIR/models/waterlogging_1h.joblib" ]; then
               mkdir -p "$APP_DIR/models"
-              if [ ! -f "$APP_DIR/data/processed/training_table.csv" ]; then
-                "$APP_DIR/venv/bin/python" -m app.cli build-dataset || echo "Dataset build skipped/cached"
-              fi
+              echo "Pre-processed training table found. Training model..."
               "$APP_DIR/venv/bin/python" -m app.cli train || echo "Model train skipped"
             fi
 
+            echo "🔄 Restarting zplus-backend systemd service..."
             sudo systemctl restart zplus-backend
-            echo "Waiting for backend service to bind port 8000..."
-            sleep 4
+            
+            echo "⏳ Polling backend service health on port 8000..."
+            HEALTHY=false
+            for i in $(seq 1 20); do
+              if curl -s -f http://127.0.0.1:8000/health > /dev/null 2>&1; then
+                HEALTHY=true
+                echo "✅ Backend service is healthy! (Attempt $i)"
+                break
+              fi
+              echo "Waiting for uvicorn to bind port 8000 (attempt $i/20)..."
+              sleep 2
+            done
+
+            if [ "$HEALTHY" != "true" ]; then
+              echo "❌ Backend health check failed after 40 seconds. Dumping journalctl:"
+              sudo journalctl -u zplus-backend -n 80 --no-pager
+              exit 1
+            fi
+
             curl -f http://127.0.0.1:8000/health
+            echo ""
             echo "✅ Deployment finished successfully!"
           EOF
+
