@@ -667,6 +667,39 @@ body.dark .cursor-grab:active {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Team Member Name Theme-Aware Premium Gradient
+   ══════════════════════════════════════════════════════════════════════════ */
+.team-member-name-gradient {
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  display: inline-block;
+}
+
+/* Flood Mode - Light: Deep Ocean Navy into Vivid Sea Cerulean */
+:not(.dark) .team-member-name-gradient {
+  background-image: linear-gradient(180deg, #0f172a 0%, #0369a1 55%, #0284c7 100%) !important;
+}
+
+/* Flood Mode - Dark: Luminous White into Oceanic Aqua Neon */
+.dark .team-member-name-gradient {
+  background-image: linear-gradient(180deg, #ffffff 0%, #e0f2fe 50%, #38bdf8 100%) !important;
+}
+
+/* Drought Mode - Light: Deep Baked Umber into Rich Amber Bronze */
+.theme-drought:not(.dark) .team-member-name-gradient,
+:not(.dark) .theme-drought .team-member-name-gradient {
+  background-image: linear-gradient(180deg, #271206 0%, #78350f 55%, #d97706 100%) !important;
+}
+
+/* Drought Mode - Dark: Pure Warm White into Luminous Amber */
+.theme-drought.dark .team-member-name-gradient,
+.dark .theme-drought .team-member-name-gradient {
+  background-image: linear-gradient(180deg, #ffffff 0%, #fff7ed 50%, #f59e0b 100%) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    Footer Scroll to Top Button (DOAB Standard)
    ══════════════════════════════════════════════════════════════════════════ */
 .footer-scroll-top {

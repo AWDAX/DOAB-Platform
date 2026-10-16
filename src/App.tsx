@@ -570,7 +570,12 @@ function AppContent({
             path="/admin" 
             element={
               <PageTransition>
-                <DevAdminDashboard />
+                <DevAdminDashboard 
+                  isDarkMode={isDarkMode} 
+                  toggleTheme={toggleTheme} 
+                  envMode={envMode} 
+                  toggleEnvMode={toggleEnvMode} 
+                />
               </PageTransition>
             } 
           />
@@ -578,7 +583,12 @@ function AppContent({
             path="/dev-console" 
             element={
               <PageTransition>
-                <DevAdminDashboard />
+                <DevAdminDashboard 
+                  isDarkMode={isDarkMode} 
+                  toggleTheme={toggleTheme} 
+                  envMode={envMode} 
+                  toggleEnvMode={toggleEnvMode} 
+                />
               </PageTransition>
             } 
           />
