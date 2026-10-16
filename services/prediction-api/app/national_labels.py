@@ -11,15 +11,21 @@ from pathlib import Path
 
 import pandas as pd
 
-from .config import REPO_ROOT
+from .config import REPO_ROOT, SERVICE_ROOT
 
-DEFAULT_CURATED = (
-    REPO_ROOT
-    / "Muncipal corp Dataset"
-    / "WaterLogging Dataset"
-    / "Clean"
-    / "curated_waterlogging_clean.csv"
-)
+def _find_curated_csv() -> Path:
+    candidates = [
+        REPO_ROOT / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Clean" / "curated_waterlogging_clean.csv",
+        Path("/home/ubuntu/Muncipal corp Dataset/WaterLogging Dataset/Clean/curated_waterlogging_clean.csv"),
+        SERVICE_ROOT / "data" / "raw" / "curated_waterlogging_clean.csv",
+        Path.cwd() / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Clean" / "curated_waterlogging_clean.csv",
+    ]
+    for c in candidates:
+        if c.is_file():
+            return c
+    return candidates[0]
+
+DEFAULT_CURATED = _find_curated_csv()
 
 BIHAR_VARIABLE_MARKERS = ("MASTER_VARIABLES.csv", "flood-data-ecosystem-Bihar")
 TELANGANA_INVENTORY_MARKERS = (

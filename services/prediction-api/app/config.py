@@ -16,11 +16,27 @@ PROCESSED_DIR = DATA_DIR / "processed"
 MODEL_DIR = SERVICE_ROOT / "models"
 DEFAULT_MODEL_PATH = MODEL_DIR / "waterlogging_1h.joblib"
 
-# Repo root is parents[2] of this file: services/prediction-api/app/config.py
-REPO_ROOT = SERVICE_ROOT.parents[1]
-DEFAULT_INCIDENT_CSV = (
-    REPO_ROOT / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv"
+# Repo root resolution with multi-environment fallback
+REPO_ROOT = (
+    SERVICE_ROOT.parents[1] if len(SERVICE_ROOT.parents) > 1 and (SERVICE_ROOT.parents[1] / "Muncipal corp Dataset").is_dir()
+    else (SERVICE_ROOT.parent if (SERVICE_ROOT.parent / "Muncipal corp Dataset").is_dir()
+    else Path("/home/ubuntu"))
 )
+
+def _find_incident_csv() -> Path:
+    candidates = [
+        SERVICE_ROOT.parents[1] / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv",
+        SERVICE_ROOT.parent / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv",
+        SERVICE_ROOT / "data" / "raw" / "Dataset [Old Dataset 2].csv",
+        SERVICE_ROOT / "data" / "raw" / "incidents.csv",
+        Path.cwd() / "Muncipal corp Dataset" / "WaterLogging Dataset" / "Z+" / "Dataset [Old Dataset 2].csv",
+    ]
+    for c in candidates:
+        if c.is_file():
+            return c
+    return candidates[0]
+
+DEFAULT_INCIDENT_CSV = _find_incident_csv()
 
 # High-resolution ML corridor (Bengaluru pilot with geolocated micro-labels)
 PILOT_BBOX = {"min_lat": 12.60, "max_lat": 13.30, "min_lng": 77.30, "max_lng": 77.90}
