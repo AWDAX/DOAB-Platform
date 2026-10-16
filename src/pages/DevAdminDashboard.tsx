@@ -264,22 +264,7 @@ export default function DevAdminDashboard() {
       if (raw) {
         setRiderFeedbacks(JSON.parse(raw));
       } else {
-        setRiderFeedbacks([
-          {
-            timestamp: Date.now() - 1800000,
-            routeSummary: 'MG Road to IT Corridor via Elevated Bypass',
-            predictedRisk: 'Low Risk / Passable (9.2%)',
-            userRating: 'accurate',
-            notes: 'Elevated roadway was completely clear. Underpass was properly barricaded by municipal police as predicted.'
-          },
-          {
-            timestamp: Date.now() - 7200000,
-            routeSummary: 'Indira Market to City Hospital Safe Corridor',
-            predictedRisk: 'Moderate Risk (38.5%)',
-            userRating: 'moderate',
-            notes: 'Water depth was approximately 15cm near culvert junction. Traversed safely in high-clearance EV.'
-          }
-        ]);
+        setRiderFeedbacks([]);
       }
     } catch {
       setRiderFeedbacks([]);
@@ -741,7 +726,7 @@ export default function DevAdminDashboard() {
         )}
 
         {/* Navigation Tabs (Framer Motion Shared-Layout Sliding Pill) */}
-        <div className="relative flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] overflow-x-auto">
+        <div className="relative flex items-center gap-1.5 p-1 rounded-2xl bg-neutral-100 dark:bg-[#121214] border border-neutral-300 dark:border-white/10 overflow-x-auto">
           {[
             { id: 'scenarios', label: 'Disaster Scenarios & Condition Matrix', icon: Layers },
             { id: 'triggers', label: 'Instant Triggers & Broadcast Suite', icon: Play },
@@ -754,17 +739,17 @@ export default function DevAdminDashboard() {
               <button
                 key={tab.id}
                 onClick={() => { playClick(); setActiveTab(tab.id as any); }}
-                className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
+                className={`relative px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
                   active
-                    ? 'text-[var(--bg-canvas)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                    ? 'text-white dark:text-neutral-950 font-extrabold'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                 }`}
               >
                 {active && (
                   <motion.div
                     layoutId="adminDashboardActiveTabPill"
                     transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                    className="absolute inset-0 rounded-xl bg-[var(--text-main)] -z-10 pointer-events-none shadow-xs"
+                    className="absolute inset-0 rounded-xl bg-neutral-950 dark:bg-white -z-10 pointer-events-none shadow-xs"
                   />
                 )}
                 <span className="relative z-10 flex items-center gap-2">
@@ -1240,20 +1225,13 @@ export default function DevAdminDashboard() {
                     const alertTitle = `DOAB EMERGENCY SOS ALERT: ${sosTitle || 'Critical Hazard Alert'}`;
                     const alertBody = `${sosWard ? `[${sosWard}] ` : ''}${sosDesc || 'Severe flash waterlogging reported. Immediate high-ground bypass advised.'}`;
 
-                    // 1. Broadcast 'sos_danger' (triggers emergency siren, overlay, and haptics on field/remote devices)
+                    // Broadcast single unified 'sos_danger' beacon (triggers emergency siren, modal, and native notification)
                     RemoteAdminChannel.broadcast('sos_danger', {
                       title: alertTitle,
                       ward: sosWard,
                       waterDepthCm: 85,
                       description: alertBody,
                       distanceAhead: '200 meters',
-                      isCritical: true,
-                    });
-
-                    // 2. Also broadcast push_notification for generic listeners
-                    RemoteAdminChannel.broadcast('push_notification' as any, {
-                      title: alertTitle,
-                      body: alertBody,
                       isCritical: true,
                     });
 
@@ -1405,7 +1383,7 @@ export default function DevAdminDashboard() {
                   <div className="text-xl font-bold font-mono text-teal-600 dark:text-teal-400 mt-1">
                     {riderFeedbacks.length > 0 
                       ? `${Math.round((riderFeedbacks.filter(f => f.userRating === 'accurate').length / riderFeedbacks.length) * 100)}%` 
-                      : '100%'}
+                      : '—'}
                   </div>
                 </div>
 

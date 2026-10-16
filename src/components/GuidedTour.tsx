@@ -16,7 +16,6 @@ import {
   Activity,
   History,
   Bell,
-  Users2,
   Camera,
   Sparkles
 } from 'lucide-react';
@@ -509,147 +508,6 @@ export const PROFILE_TOUR_STEPS: TourStep[] = [
   }
 ];
 
-export const TEAM_TOUR_STEPS: TourStep[] = [
-  {
-    id: 'team_header',
-    targetSelector: '#tour-team-header',
-    title: 'The Team Behind DOAB',
-    badge: 'Step 01/04',
-    floodDescription: 'Meet the engineering and design team behind the dual-climate life-safety platform.',
-    droughtDescription: 'Learn about the cross-disciplinary contributors architecting water resilience.',
-    proTip: 'Click any member card to view their GitHub, LinkedIn, and core contributions.',
-    floodHighlight: 'Team Contrarians portfolio',
-    droughtHighlight: 'Full-stack civic engineering',
-    icon: Users2,
-    preferredPosition: 'bottom',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 24
-  },
-  {
-    id: 'team_grid',
-    targetSelector: '#tour-team-grid',
-    title: 'Interactive Member Profiles',
-    badge: 'Step 02/04',
-    floodDescription: 'Profiles spanning Frontend Architecture, Cloud Systems, Hydrology ML, and UI/UX Design.',
-    droughtDescription: 'Deep-dive into each domain owner’s technical stack and contributions.',
-    proTip: 'Cards include subtle soft shadows and responsive layout across mobile and desktop.',
-    floodHighlight: 'Role badges & domain specializations',
-    droughtHighlight: 'Clean neo-glass card design',
-    icon: Layers,
-    preferredPosition: 'top',
-    highlightPadding: { x: 14, y: 14 },
-    spotlightRadius: 24
-  },
-  {
-    id: 'team_stats',
-    targetSelector: '#tour-team-stats',
-    title: 'Engineering Benchmarks',
-    badge: 'Step 03/04',
-    floodDescription: 'Bengaluru complaint coverage, SRTM elevation integration, and sub-150ms client-side latency.',
-    droughtDescription: 'Resource optimization metrics designed for low-bandwidth mobile networks.',
-    proTip: 'DOAB is architected with zero third-party telemetry trackers.',
-    floodHighlight: 'High performance web architecture',
-    droughtHighlight: 'Low-bandwidth resilience',
-    icon: Activity,
-    preferredPosition: 'top',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 22
-  },
-  {
-    id: 'team_pillars',
-    targetSelector: '#tour-team-pillars',
-    title: 'Core Architecture Pillars',
-    badge: 'Step 04/04',
-    floodDescription: 'Deterministic rule evaluation, privacy-first geofencing, and transparent machine learning.',
-    droughtDescription: 'Civilian-first emergency infrastructure and municipal collaboration.',
-    proTip: 'Read the architectural philosophy driving our dual-climate platform.',
-    floodHighlight: 'Zero hallucination ML guidelines',
-    droughtHighlight: 'Civic accountability',
-    icon: Compass,
-    preferredPosition: 'top',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 22
-  }
-];
-
-export const LANDING_TOUR_STEPS: TourStep[] = [
-  {
-    id: 'landing_hero',
-    targetSelector: '#tour-landing-hero',
-    title: 'DOAB Operations Grid',
-    badge: 'Intro',
-    floodDescription: 'An intelligent environmental life-safety platform providing 1-hour waterlogging forecasts and safe elevation bypass routes.',
-    droughtDescription: 'Civic water management network bridging groundwater depletion, tanker logistics, and citizen verification.',
-    proTip: 'Press Shift + E anytime to switch between Monsoon and Scarcity modes.',
-    floodHighlight: 'Dual-climate civic intelligence',
-    droughtHighlight: 'Zero-middleman water logistics',
-    icon: Compass,
-    preferredPosition: 'bottom',
-    highlightPadding: { x: 14, y: 14 },
-    spotlightRadius: 24
-  },
-  {
-    id: 'landing_search',
-    targetSelector: '#tour-landing-search',
-    title: 'Natural Language Search & Triage',
-    badge: 'Step 01/04',
-    floodDescription: 'Type or speak street names and wards to retrieve historical waterlogging complaints and passability warnings.',
-    droughtDescription: 'Query municipal tanker distribution schedules and ward water deficit ratings.',
-    proTip: 'Press Ctrl + K anytime to focus the global command search bar.',
-    floodHighlight: 'Ctrl + K command palette integration',
-    droughtHighlight: 'Instant ward query triage',
-    icon: Search,
-    preferredPosition: 'bottom',
-    highlightPadding: { x: 10, y: 10 },
-    spotlightRadius: 20
-  },
-  {
-    id: 'landing_loop',
-    targetSelector: '#tour-landing-loop',
-    title: 'The Closed DOAB Loop',
-    badge: 'Step 02/04',
-    floodDescription: 'Predict accumulation → Compute safe elevation paths → Broadcast geofenced alarms → Verify with photo back-checks.',
-    droughtDescription: 'Monitor deficit → Dispatch tanker fleets → Deliver water → Citizen QR verification.',
-    proTip: 'Every stage runs locally with verified timestamps.',
-    floodHighlight: '4-stage life-safety lifecycle',
-    droughtHighlight: 'Closed loop accountability',
-    icon: Layers,
-    preferredPosition: 'top',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 24
-  },
-  {
-    id: 'landing_bento',
-    targetSelector: '#tour-landing-bento',
-    title: 'System Architecture & Bento Grid',
-    badge: 'Step 03/04',
-    floodDescription: 'Hydrology models, Leaflet GIS mapping, client-side geofencing, and serverless edge APIs.',
-    droughtDescription: 'High-res groundwater telemetry, tanker routing, and civic bounty management.',
-    proTip: 'Built for extreme conditions with full offline caching support.',
-    floodHighlight: 'Zero cloud latency architecture',
-    droughtHighlight: 'Offline-first PWA design',
-    icon: Activity,
-    preferredPosition: 'top',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 24
-  },
-  {
-    id: 'landing_modes',
-    targetSelector: '#tour-landing-modes',
-    title: 'Dual Climate Operational Modes',
-    badge: 'Step 04/04',
-    floodDescription: 'Monsoon mode: active flood risk corridors, standing water warnings, and safe elevation routes.',
-    droughtDescription: 'Scarcity mode: groundwater depletion tracking, heatwave advisories, and emergency tankers.',
-    proTip: 'Switch instantly using the climate mode toggle in the navigation bar.',
-    floodHighlight: 'Flood cerulean vs Scarcity amber',
-    droughtHighlight: 'Adaptive UI tokens & terminology',
-    icon: Sun,
-    preferredPosition: 'top',
-    highlightPadding: { x: 12, y: 12 },
-    spotlightRadius: 24
-  }
-];
-
 export const PAGE_TOUR_CONFIGS: Record<string, TourStep[]> = {
   global: GLOBAL_TOUR_STEPS,
   dashboard: DASHBOARD_TOUR_STEPS,
@@ -658,8 +516,6 @@ export const PAGE_TOUR_CONFIGS: Record<string, TourStep[]> = {
   notifications: NOTIFICATIONS_TOUR_STEPS,
   assistant: ASSISTANT_TOUR_STEPS,
   profile: PROFILE_TOUR_STEPS,
-  team: TEAM_TOUR_STEPS,
-  landing: LANDING_TOUR_STEPS
 };
 
 export const ROUTE_PATH_MAP: Record<string, string> = {
@@ -669,8 +525,6 @@ export const ROUTE_PATH_MAP: Record<string, string> = {
   '/notifications': 'notifications',
   '/assistant': 'assistant',
   '/profile': 'profile',
-  '/team': 'team',
-  '/landing': 'landing'
 };
 
 // ─────────────────────────────────────────────────────────────

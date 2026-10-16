@@ -490,7 +490,7 @@ export default function AssistantPage() {
         {/* Conversation Stream Scroll View */}
         <div id="tour-assistant-chat" className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 space-y-5 custom-scrollbar min-h-0">
           {!messages.some((m) => m.role === 'user') ? (
-            <div className="h-full flex flex-col items-center justify-center text-center py-8 sm:py-12 px-4">
+            <div className="min-h-full flex flex-col items-center justify-center text-center py-4 px-4 my-auto">
               <div 
                 className="relative mb-5 group cursor-pointer" 
                 onClick={handleToggleListening}

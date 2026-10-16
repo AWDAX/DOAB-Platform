@@ -16,7 +16,9 @@ import {
   Check,
   ChevronDown,
   SlidersHorizontal,
-  BellRing
+  BellRing,
+  ChevronRight,
+  Sliders
 } from 'lucide-react';
 import AIOrbIcon from './AIOrbIcon';
 import { playClick, isSoundEnabled } from '../utils/soundFx';
@@ -656,6 +658,45 @@ export default function PreferencesModal({
                         </button>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* SECTION 7: Life-Safety & System Permissions */}
+                <div className="md:col-span-2 border-t border-[var(--border-color)] pt-3 w-full">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h2 className="text-[10px] font-mono uppercase tracking-wider font-bold text-[var(--text-muted)] text-left">
+                      Life-Safety & System Permissions
+                    </h2>
+                  </div>
+
+                  <div className="p-3 sm:p-3.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-color)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-9 w-9 rounded-xl bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)] dark:border-white/10 flex items-center justify-center shrink-0">
+                        <Settings className="h-4.5 w-4.5 text-[var(--text-main)] dark:text-neutral-200" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs sm:text-sm text-[var(--text-main)] truncate">
+                          Life-Safety & System Permissions
+                        </div>
+                        <div className="text-[10.5px] sm:text-[11px] text-[var(--text-muted)] leading-relaxed mt-0.5">
+                          Manage GPS location, civic flash flood alerts, commuter geofencing, and SOS alarm broadcast preferences.
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        onClose();
+                        window.dispatchEvent(new CustomEvent('doab:open-permissions'));
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 border border-neutral-950/20 dark:border-white/20 text-xs sm:text-[13px] font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 shadow-xs active:scale-98"
+                    >
+                      <Sliders size={13} className="stroke-[2.2]" />
+                      <span>All Permissions</span>
+                      <ChevronRight size={13} className="opacity-70" />
+                    </button>
                   </div>
                 </div>
 
