@@ -61,12 +61,17 @@ export default function VoiceAssistant() {
 
   // Draggable AI Orb Screen Constraints (Strictly bounded inside viewport)
   const [orbConstraints, setOrbConstraints] = useState({ top: 0, left: 0, right: 0, bottom: 0 });
+  const [viewport, setViewport] = useState({
+    w: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    h: typeof window !== 'undefined' ? window.innerHeight : 800,
+  });
 
   useEffect(() => {
     const updateOrbConstraints = () => {
       if (typeof window === 'undefined') return;
       const w = window.innerWidth;
       const h = window.innerHeight;
+      setViewport({ w, h });
       const orbSize = 54;
       const rightPadding = w < 640 ? 14 : w < 768 ? 24 : 32;
       const bottomPadding = w < 768 ? 108 : 28;
@@ -479,27 +484,50 @@ export default function VoiceAssistant() {
         </motion.button>
       )}
 
-      {/* Assistant Draggable / Adaptive Window */}
+      {/* Assistant Draggable / Adaptive Window (Smooth Industry-Standard Fullscreen Geometry) */}
       <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.94, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 15 }}
-            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              width: isFullScreen ? '100vw' : typeof window !== 'undefined' && window.innerWidth < 768 ? 'calc(100vw - 1rem)' : `${size.w}px`,
-              height: isFullScreen ? '100dvh' : typeof window !== 'undefined' && window.innerWidth < 768 ? 'min(78dvh, 580px)' : `${size.h}px`,
-              x: isFullScreen || (typeof window !== 'undefined' && window.innerWidth < 768) ? 0 : position.x,
-              y: isFullScreen || (typeof window !== 'undefined' && window.innerWidth < 768) ? 0 : position.y,
-              right: isFullScreen ? 0 : typeof window !== 'undefined' && window.innerWidth < 768 ? '0.5rem' : '2rem',
-              left: isFullScreen ? 0 : typeof window !== 'undefined' && window.innerWidth < 768 ? '0.5rem' : 'auto',
-              bottom: isFullScreen ? 0 : typeof window !== 'undefined' && window.innerWidth < 768 ? 'calc(env(safe-area-inset-bottom) + 4.5rem)' : '2rem',
-              top: isFullScreen ? 0 : 'auto',
-              position: 'fixed'
-            }}
-            className={`neo-glass-card ${isFullScreen ? 'z-[200] rounded-none' : 'z-[100] rounded-3xl border border-[var(--border-color)]'} flex flex-col shadow-2xl ${isDragging ? 'cursor-grabbing' : ''}`}
-          >
+        {isOpen && (() => {
+          const isMobileAssistant = viewport.w < 768;
+          const floatingW = isMobileAssistant ? viewport.w - 16 : size.w;
+          const floatingH = isMobileAssistant ? Math.min(viewport.h * 0.78, 580) : size.h;
+          const initialRightOffset = isMobileAssistant ? 8 : 32;
+          const initialBottomOffset = isMobileAssistant ? 72 : 32;
+          const defaultLeft = viewport.w - initialRightOffset - floatingW;
+          const defaultTop = viewport.h - initialBottomOffset - floatingH;
+
+          const floatingLeft = isMobileAssistant ? 8 : Math.max(8, Math.min(viewport.w - floatingW - 8, defaultLeft + position.x));
+          const floatingTop = isMobileAssistant ? viewport.h - initialBottomOffset - floatingH : Math.max(8, Math.min(viewport.h - floatingH - 8, defaultTop + position.y));
+
+          const targetW = isFullScreen ? viewport.w : floatingW;
+          const targetH = isFullScreen ? viewport.h : floatingH;
+          const targetLeft = isFullScreen ? 0 : floatingLeft;
+          const targetTop = isFullScreen ? 0 : floatingTop;
+          const targetRadius = isFullScreen ? 0 : 24;
+
+          return (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1,
+                left: targetLeft,
+                top: targetTop,
+                width: targetW,
+                height: targetH,
+                borderRadius: targetRadius
+              }}
+              exit={{ opacity: 0, scale: 0.94 }}
+              transition={
+                isDragging || resizeDir 
+                  ? { duration: 0 } 
+                  : { duration: 0.36, ease: [0.16, 1, 0.3, 1] }
+              }
+              style={{
+                position: 'fixed',
+                zIndex: isFullScreen ? 200 : 100,
+              }}
+              className={`neo-glass-card overflow-hidden ${isFullScreen ? 'shadow-none' : 'border border-[var(--border-color)] shadow-2xl'} flex flex-col ${isDragging ? 'cursor-grabbing' : ''}`}
+            >
             {/* Top Drag Handle Bar */}
             <div 
               onMouseDown={handleDragStart}
@@ -907,7 +935,7 @@ export default function VoiceAssistant() {
               </>
             )}
           </motion.div>
-        )}
+        ); })()}
       </AnimatePresence>
 
       {/* Confirmation Modal: Delete Single Session */}

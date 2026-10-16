@@ -844,26 +844,40 @@ body.dark .cursor-grab:active {
 
 /* Grabbing state ONLY when actively holding mouse down & dragging across map */
 .leaflet-container:active,
+.leaflet-container:active *,
 .leaflet-grab:active,
+.leaflet-grab:active *,
 .leaflet-dragging,
-.leaflet-dragging .leaflet-container,
-.leaflet-dragging .leaflet-grab,
+.leaflet-dragging *,
+.leaflet-drag-target,
+.leaflet-drag-target *,
+.leaflet-pane:active,
+.leaflet-pane:active *,
 .maplibregl-canvas:active,
 .maplibregl-canvas-container.maplibregl-interactive:active,
+.maplibregl-canvas-container:active *,
 .maplibregl-map.maplibregl-touch-zoom-rotate:active,
 .maplibregl-map.maplibregl-track-resize:active {
   cursor: url('/cursors/cover_hand_grab.svg') 12 8, grabbing !important;
 }
 
 .dark .leaflet-container:active,
+.dark .leaflet-container:active *,
 .dark .leaflet-grab:active,
+.dark .leaflet-grab:active *,
 .dark .leaflet-dragging,
-.dark .leaflet-dragging .leaflet-container,
-.dark .leaflet-dragging .leaflet-grab,
+.dark .leaflet-dragging *,
+.dark .leaflet-drag-target,
+.dark .leaflet-drag-target *,
+.dark .leaflet-pane:active,
+.dark .leaflet-pane:active *,
 .dark .maplibregl-canvas:active,
 .dark .maplibregl-canvas-container.maplibregl-interactive:active,
+.dark .maplibregl-canvas-container:active *,
 html.dark .leaflet-dragging,
-html.dark .leaflet-container:active {
+html.dark .leaflet-dragging *,
+html.dark .leaflet-container:active,
+html.dark .leaflet-container:active * {
   cursor: url('/cursors/cover_hand_grab_dark.svg') 12 8, grabbing !important;
 }
 

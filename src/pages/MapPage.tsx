@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { geocodePlace } from '../lib/amazonLocation';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip as LeafletTooltip, useMap, useMapEvents, Circle, GeoJSON, Polyline } from 'react-leaflet';
@@ -460,6 +461,31 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   const [show7DayForecast, setShow7DayForecast] = useState(false);
   const [forecastSubTab, setForecastSubTab] = useState<'inundation' | 'imd'>('inundation');
   const stateComboboxRef = useRef<HTMLDivElement>(null);
+  const statePortalRef = useRef<HTMLDivElement>(null);
+  const alsPortalRef = useRef<HTMLDivElement>(null);
+  const [stateDropdownPos, setStateDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [alsDropdownPos, setAlsDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    if (isStateDropdownOpen && stateComboboxRef.current) {
+      const updatePos = () => {
+        if (stateComboboxRef.current) {
+          const r = stateComboboxRef.current.getBoundingClientRect();
+          setStateDropdownPos({ top: r.bottom + 4, left: r.left, width: r.width });
+        }
+      };
+      updatePos();
+      window.addEventListener('resize', updatePos);
+      window.addEventListener('scroll', updatePos, true);
+      return () => {
+        window.removeEventListener('resize', updatePos);
+        window.removeEventListener('scroll', updatePos, true);
+      };
+    } else {
+      setStateDropdownPos(null);
+    }
+  }, [isStateDropdownOpen]);
+
 
   // Delivery Partner / Commercial Fleet mode context
   const [userRole, setUserRole] = useState<string>(() => localStorage.getItem('doab_user_role') || 'citizen');
@@ -534,7 +560,12 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (stateComboboxRef.current && !stateComboboxRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        stateComboboxRef.current && 
+        !stateComboboxRef.current.contains(target) &&
+        (!statePortalRef.current || !statePortalRef.current.contains(target))
+      ) {
         setIsStateDropdownOpen(false);
       }
     };
@@ -860,7 +891,11 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node;
-      if (alsDropdownRef.current && !alsDropdownRef.current.contains(target)) {
+      if (
+        alsDropdownRef.current && 
+        !alsDropdownRef.current.contains(target) &&
+        (!alsPortalRef.current || !alsPortalRef.current.contains(target))
+      ) {
         setAlsSuggestions([]);
         setIsSearchFocused(false);
       }
@@ -1254,6 +1289,27 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
       setAlsLoading(false);
     }, 180);
   }, [getInstantLocalMatches, fetchHybridPlaceSuggestions, hasRealLocation, userCoords, mapCenter]);
+
+  useEffect(() => {
+    const showAls = alsSuggestions.length > 0 || (isSearchFocused && !destination.trim() && recentSearches.length > 0);
+    if (showAls && alsDropdownRef.current) {
+      const updatePos = () => {
+        if (alsDropdownRef.current) {
+          const r = alsDropdownRef.current.getBoundingClientRect();
+          setAlsDropdownPos({ top: r.bottom + 4, left: r.left, width: r.width });
+        }
+      };
+      updatePos();
+      window.addEventListener('resize', updatePos);
+      window.addEventListener('scroll', updatePos, true);
+      return () => {
+        window.removeEventListener('resize', updatePos);
+        window.removeEventListener('scroll', updatePos, true);
+      };
+    } else {
+      setAlsDropdownPos(null);
+    }
+  }, [alsSuggestions.length, isSearchFocused, destination, recentSearches.length]);
 
   // When user picks an ALS suggestion — pan map + drop geocoded pin + automatically set as Point B paired with Current GPS Location (Point A)
   const handleAlsSelect = useCallback((place: import('../lib/amazonLocation').GeocodedPlace) => {
@@ -2540,18 +2596,10 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
 
   const handleToggleFullscreen = () => {
     playClick();
-    const mapElement = document.getElementById('tour-map-view');
-    if (!mapElement) return;
-
-    if (!document.fullscreenElement) {
-      mapElement.requestFullscreen().then(() => setIsFullScreen(true)).catch(() => {
-        setIsFullScreen(!isFullScreen);
-      });
-    } else {
-      document.exitFullscreen().then(() => setIsFullScreen(false)).catch(() => {
-        setIsFullScreen(false);
-      });
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
     }
+    setIsFullScreen((prev) => !prev);
   };
 
   useEffect(() => {
@@ -2562,8 +2610,56 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
 
+  // Keyboard shortcut: Escape exits fullscreen smoothly
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullScreen) {
+        setIsFullScreen(false);
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullScreen]);
+
+  // Smooth 60fps continuous map resize / tile invalidation during fullscreen transitions
+  useEffect(() => {
+    let startTime = performance.now();
+    let animId: number;
+
+    const animateMapResize = (currentTime: number) => {
+      window.dispatchEvent(new Event('resize'));
+      if (currentTime - startTime < 420) {
+        animId = requestAnimationFrame(animateMapResize);
+      } else {
+        window.dispatchEvent(new Event('resize'));
+      }
+    };
+
+    animId = requestAnimationFrame(animateMapResize);
+
+    return () => {
+      cancelAnimationFrame(animId);
+    };
+  }, [isFullScreen]);
+
   return (
-    <div id="tour-map-view" ref={mapParentRef} className={`flex-grow flex flex-col relative w-full h-full min-h-[420px] bg-[var(--bg-main)] overflow-hidden ${isFullScreen ? 'fixed inset-0 z-[9999] rounded-none' : ''}`}>
+    <>
+      {/* Layout Placeholder to prevent dashboard layout shift when map is fullscreen */}
+      {isFullScreen && (
+        <div aria-hidden="true" className="flex-grow w-full h-full min-h-[420px] pointer-events-none opacity-0" />
+      )}
+      <div 
+        id="tour-map-view" 
+        ref={mapParentRef} 
+        className={`flex flex-col w-full h-full min-h-[420px] bg-[var(--bg-main)] overflow-hidden transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isFullScreen 
+            ? 'fixed inset-0 z-[9999] rounded-none shadow-2xl animate-in fade-in zoom-in-[0.99] duration-300' 
+            : 'relative flex-grow rounded-none'
+        }`}
+      >
       
       {/* ── Interactive Safe Elevation Path Floating Action Banner (When mode=create_path, Draggable) ── */}
       <AnimatePresence>
@@ -3447,11 +3543,21 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                       )}
                     </div>
 
-                    {/* Autocomplete Suggestions Dropdown */}
-                    {alsSuggestions.length > 0 && (
-                      <div className={`absolute z-[100] left-0 right-0 top-full mt-1.5 bg-[var(--bg-card)] ${
-                        envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
-                      } border border-[var(--border-color)] dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl max-h-64 overflow-y-auto`}>
+                    {/* Autocomplete Suggestions Dropdown (Portaled for 100% visibility & zero layout jitter) */}
+                    {typeof document !== 'undefined' && alsDropdownPos && alsSuggestions.length > 0 && createPortal(
+                      <div 
+                        ref={alsPortalRef}
+                        style={{
+                          position: 'fixed',
+                          top: `${alsDropdownPos.top}px`,
+                          left: `${alsDropdownPos.left}px`,
+                          width: `${alsDropdownPos.width}px`,
+                          zIndex: 9999
+                        }}
+                        className={`bg-[var(--bg-card)] ${
+                          envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
+                        } border border-[var(--border-color)] dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl max-h-64 overflow-y-auto animate-in fade-in zoom-in-95 duration-150`}
+                      >
                         {alsSuggestions.map((place, idx) => (
                           <button
                             key={idx}
@@ -3468,14 +3574,25 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                           <span className="font-semibold">Amazon Location Service</span>
                           <span>{alsSuggestions.length} matches</span>
                         </div>
-                      </div>
+                      </div>,
+                      document.body
                     )}
 
-                    {/* Cached Recent Searches Dropdown (When input is focused and empty) */}
-                    {isSearchFocused && !destination.trim() && recentSearches.length > 0 && alsSuggestions.length === 0 && (
-                      <div className={`absolute z-[100] left-0 right-0 top-full mt-1.5 bg-[var(--bg-card)] ${
-                        envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
-                      } border border-[var(--border-color)] dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl max-h-64 overflow-y-auto`}>
+                    {/* Cached Recent Searches Dropdown (When input is focused and empty, Portaled) */}
+                    {typeof document !== 'undefined' && alsDropdownPos && isSearchFocused && !destination.trim() && recentSearches.length > 0 && alsSuggestions.length === 0 && createPortal(
+                      <div 
+                        ref={alsPortalRef}
+                        style={{
+                          position: 'fixed',
+                          top: `${alsDropdownPos.top}px`,
+                          left: `${alsDropdownPos.left}px`,
+                          width: `${alsDropdownPos.width}px`,
+                          zIndex: 9999
+                        }}
+                        className={`bg-[var(--bg-card)] ${
+                          envMode === 'drought' ? 'dark:bg-[#151210]' : 'dark:bg-[#0c141d]'
+                        } border border-[var(--border-color)] dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl max-h-64 overflow-y-auto animate-in fade-in zoom-in-95 duration-150`}
+                      >
                         <div className="px-3.5 py-2 text-[9px] font-mono text-[var(--text-muted)] border-b border-[var(--border-color)] dark:border-white/10 flex items-center justify-between bg-[var(--bg-main)]/70">
                           <span className="flex items-center gap-1.5 font-bold text-[var(--text-main)]">
                             <History className="h-3.5 w-3.5 text-[var(--text-main)]" />
@@ -3509,7 +3626,8 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                             <ArrowRight className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-[var(--text-main)] shrink-0 ml-2 transition-transform group-hover:translate-x-0.5" />
                           </button>
                         ))}
-                      </div>
+                      </div>,
+                      document.body
                     )}
                   </div>
 
@@ -3682,112 +3800,119 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
                         </div>
                       </div>
 
-                      {/* Dropdown Menu (Full Width of Block, Escapes Card via overflow-visible & z-[100]) */}
-                      <AnimatePresence>
-                        {isStateDropdownOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -4, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute left-0 right-0 top-full mt-1.5 max-h-64 overflow-y-auto z-[100] rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl p-1.5 flex flex-col gap-0.5 custom-scrollbar backdrop-blur-xl"
-                          >
-                            <div className="px-2 py-1 text-[9px] font-mono font-semibold text-[var(--text-muted)] border-b border-[var(--border-color)]/60 mb-0.5 flex justify-between items-center">
-                              <span>
-                                {isMultiStateMode
-                                  ? `${selectedStates.length} Selected (Multi-State Mode)`
-                                  : stateSearchQuery.trim() ? `Matching (${filteredRegions.length})` : 'All States (24)'}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                {isMultiStateMode && selectedStates.length > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      playClick();
-                                      setSelectedStates([]);
-                                      setSelectedState('all');
-                                    }}
-                                    className="text-[8px] text-[var(--text-muted)] hover:text-[var(--text-main)] font-mono transition-colors cursor-pointer"
-                                  >
-                                    Clear
-                                  </button>
-                                )}
-                                {isMultiStateMode && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      playClick();
-                                      setIsStateDropdownOpen(false);
-                                      setStateSearchQuery('');
-                                    }}
-                                    className="text-[8px] text-[var(--text-main)] font-bold font-mono hover:underline cursor-pointer"
-                                  >
-                                    Done ✓
-                                  </button>
-                                )}
-                                {!isMultiStateMode && (
-                                  <span className="text-[var(--text-muted)] text-[8px]">Click to Zoom</span>
-                                )}
-                              </div>
+                      {/* Dropdown Menu (Portaled into document.body for 100% visibility & zero layout jitter) */}
+                      {typeof document !== 'undefined' && stateDropdownPos && isStateDropdownOpen && createPortal(
+                        <motion.div
+                          ref={statePortalRef}
+                          initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                          transition={{ duration: 0.15 }}
+                          style={{
+                            position: 'fixed',
+                            top: `${stateDropdownPos.top}px`,
+                            left: `${stateDropdownPos.left}px`,
+                            width: `${stateDropdownPos.width}px`,
+                            zIndex: 9999
+                          }}
+                          className="max-h-64 overflow-y-auto rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl p-1.5 flex flex-col gap-0.5 custom-scrollbar backdrop-blur-xl"
+                        >
+                          <div className="px-2 py-1 text-[9px] font-mono font-semibold text-[var(--text-muted)] border-b border-[var(--border-color)]/60 mb-0.5 flex justify-between items-center">
+                            <span>
+                              {isMultiStateMode
+                                ? `${selectedStates.length} Selected (Multi-State Mode)`
+                                : stateSearchQuery.trim() ? `Matching (${filteredRegions.length})` : 'All States (24)'}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              {isMultiStateMode && selectedStates.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    playClick();
+                                    setSelectedStates([]);
+                                    setSelectedState('all');
+                                  }}
+                                  className="text-[8px] text-[var(--text-muted)] hover:text-[var(--text-main)] font-mono transition-colors cursor-pointer"
+                                >
+                                  Clear
+                                </button>
+                              )}
+                              {isMultiStateMode && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    playClick();
+                                    setIsStateDropdownOpen(false);
+                                    setStateSearchQuery('');
+                                  }}
+                                  className="text-[8px] text-[var(--text-main)] font-bold font-mono hover:underline cursor-pointer"
+                                >
+                                  Done ✓
+                                </button>
+                              )}
+                              {!isMultiStateMode && (
+                                <span className="text-[var(--text-muted)] text-[8px]">Click to Zoom</span>
+                              )}
                             </div>
+                          </div>
 
-                            {filteredRegions.length === 0 ? (
-                              <div className="px-3 py-3 text-center text-[10px] font-mono text-[var(--text-muted)]">
-                                No state found for "{stateSearchQuery}"
-                              </div>
-                            ) : (
-                              filteredRegions.map((reg) => {
-                                const isSelected = isMultiStateMode 
-                                  ? selectedStates.includes(reg.val) 
-                                  : selectedState === reg.val;
-                                return (
-                                  <button
-                                    key={reg.val}
-                                    type="button"
-                                    onClick={() => handleSelectRegion(reg)}
-                                    className={`w-full px-2.5 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between text-left transition-colors cursor-pointer ${
-                                      isSelected
-                                        ? 'bg-[var(--text-main)] text-[var(--bg-card)] font-bold'
-                                        : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                      {isMultiStateMode ? (
-                                        <div className={`w-3.5 h-3.5 rounded-xs border flex items-center justify-center shrink-0 transition-colors ${
-                                          isSelected
-                                            ? 'border-[var(--bg-card)] bg-[var(--bg-card)] text-[var(--text-main)]'
-                                            : 'border-[var(--border-color)] bg-transparent'
-                                        }`}>
-                                          {isSelected && <Check className="h-2.5 w-2.5 stroke-[3]" />}
-                                        </div>
-                                      ) : (
-                                        <MapPin className={`h-2.5 w-2.5 shrink-0 ${isSelected ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)]'}`} />
-                                      )}
-                                      <span className="truncate">{reg.label}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 shrink-0 ml-1">
-                                      {reg.badge && (
-                                        <span className={`text-[8px] px-1 py-0.2 rounded font-sans uppercase tracking-wider ${
-                                          isSelected
-                                            ? 'bg-[var(--bg-card)]/20 text-[var(--bg-card)]'
-                                            : 'bg-[var(--border-color)]/50 text-[var(--text-muted)]'
-                                        }`}>
-                                          {reg.badge}
-                                        </span>
-                                      )}
-                                      {!isMultiStateMode && isSelected && (
-                                        <CheckCircle2 className="h-3 w-3 text-[var(--bg-card)] shrink-0" />
-                                      )}
-                                    </div>
-                                  </button>
-                                );
-                              })
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                          {filteredRegions.length === 0 ? (
+                            <div className="px-3 py-3 text-center text-[10px] font-mono text-[var(--text-muted)]">
+                              No state found for "{stateSearchQuery}"
+                            </div>
+                          ) : (
+                            filteredRegions.map((reg) => {
+                              const isSelected = isMultiStateMode 
+                                ? selectedStates.includes(reg.val) 
+                                : selectedState === reg.val;
+                              return (
+                                <button
+                                  key={reg.val}
+                                  type="button"
+                                  onClick={() => handleSelectRegion(reg)}
+                                  className={`w-full px-2.5 py-1.5 rounded-lg text-[10px] font-mono flex items-center justify-between text-left transition-colors cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-[var(--text-main)] text-[var(--bg-card)] font-bold'
+                                      : 'text-[var(--text-main)] hover:bg-[var(--bg-main)]'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    {isMultiStateMode ? (
+                                      <div className={`w-3.5 h-3.5 rounded-xs border flex items-center justify-center shrink-0 transition-colors ${
+                                        isSelected
+                                          ? 'border-[var(--bg-card)] bg-[var(--bg-card)] text-[var(--text-main)]'
+                                          : 'border-[var(--border-color)] bg-transparent'
+                                      }`}>
+                                        {isSelected && <Check className="h-2.5 w-2.5 stroke-[3]" />}
+                                      </div>
+                                    ) : (
+                                      <MapPin className={`h-2.5 w-2.5 shrink-0 ${isSelected ? 'text-[var(--bg-card)]' : 'text-[var(--text-muted)]'}`} />
+                                    )}
+                                    <span className="truncate">{reg.label}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0 ml-1">
+                                    {reg.badge && (
+                                      <span className={`text-[8px] px-1 py-0.2 rounded font-sans uppercase tracking-wider ${
+                                        isSelected
+                                          ? 'bg-[var(--bg-card)]/20 text-[var(--bg-card)]'
+                                          : 'bg-[var(--border-color)]/50 text-[var(--text-muted)]'
+                                      }`}>
+                                        {reg.badge}
+                                      </span>
+                                    )}
+                                    {!isMultiStateMode && isSelected && (
+                                      <CheckCircle2 className="h-3 w-3 text-[var(--bg-card)] shrink-0" />
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })
+                          )}
+                        </motion.div>,
+                        document.body
+                      )}
                     </div>
                   </div>
                 </div>
@@ -5118,5 +5243,6 @@ export default function MapPage({ envMode = 'flood', isDarkMode = false }: { env
         </MapErrorBoundary>
       </div>
     </div>
-  );
+  </>
+);
 }

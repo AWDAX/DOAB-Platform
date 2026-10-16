@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -115,6 +115,30 @@ export default function PreferencesModal({
   const [highElevationPriority, setHighElevationPriority] = useState<boolean>(() => {
     return localStorage.getItem('doab_high_elevation') !== 'false';
   });
+
+  // Mobile Snap Paging state and scroll cue indicator
+  const [mobilePage, setMobilePage] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleMobileScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const pageHeight = target.clientHeight;
+    if (pageHeight > 0) {
+      const page = Math.round(target.scrollTop / (pageHeight * 0.72));
+      setMobilePage(Math.min(2, Math.max(0, page)));
+    }
+  };
+
+  const scrollToPage = (idx: number) => {
+    playClick();
+    setMobilePage(idx);
+    if (scrollContainerRef.current) {
+      const pageEl = scrollContainerRef.current.querySelector(`[data-pref-page="${idx}"]`);
+      if (pageEl) {
+        pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
 
   // Keep master sound state synchronized
   const handleMasterSoundToggle = (next: boolean) => {
@@ -253,12 +277,16 @@ export default function PreferencesModal({
               </div>
             </div>
 
-            {/* Scrollable Content Body - Responsive 2-Column Grid */}
-            <div className="flex-1 overflow-y-auto py-4 custom-scrollbar pr-1">
+            {/* Scrollable Content Body - Responsive 2-Column Grid with Snappy Mobile Pagination */}
+            <div 
+              ref={scrollContainerRef}
+              onScroll={handleMobileScroll}
+              className="flex-1 overflow-y-auto py-3 sm:py-4 custom-scrollbar pr-1 sm:snap-none snap-y snap-mandatory scroll-smooth"
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 
-                {/* LEFT COLUMN: Environment, Theme Canvas, Sensory Audio & Vehicle Clearance */}
-                <div className="space-y-4">
+                {/* PAGE 1 (Mobile) / LEFT COLUMN (Desktop): Environment, Theme & Acoustic Audio */}
+                <div data-pref-page="0" className="space-y-4 sm:snap-align-none snap-start min-h-[58vh] sm:min-h-0 pt-0.5">
                   {/* SECTION 1: Dual-Climate Dynamics (SWATVA Visual Cards) */}
                   <div className="space-y-2">
                     <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
@@ -465,7 +493,10 @@ export default function PreferencesModal({
                       )}
                     </AnimatePresence>
                   </div>
+                </div>
 
+                {/* PAGE 2 (Mobile) / RIGHT COLUMN (Desktop): Vehicle Clearance, Danger Geofence & Siren */}
+                <div data-pref-page="1" className="space-y-4 sm:snap-align-none snap-start min-h-[58vh] sm:min-h-0 pt-0.5">
                   {/* SECTION 4: Life-Safety & Vehicle Routing Parameters */}
                   <div className="p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
@@ -515,10 +546,7 @@ export default function PreferencesModal({
                       />
                     </div>
                   </div>
-                </div>
 
-                {/* RIGHT COLUMN: Auto-Alerts & Danger Geofence + User Profile */}
-                <div className="space-y-4">
                   {/* SECTION 5: Auto-Alerts & Geofence Triggers */}
                   <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-3">
                     <div className="flex items-center justify-between gap-2">
@@ -605,7 +633,10 @@ export default function PreferencesModal({
                       />
                     </div>
                   </div>
+                </div>
 
+                {/* PAGE 3 (Mobile) / SPAN-2 BOTTOM (Desktop): Account Profile & Life-Safety Permissions */}
+                <div data-pref-page="2" className="md:col-span-2 space-y-4 sm:snap-align-none snap-start min-h-[58vh] sm:min-h-0 pt-0.5 border-t border-[var(--border-color)]">
                   {/* SECTION 6: Logged In Account & Profile */}
                   <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] space-y-2.5">
                     <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
@@ -659,47 +690,69 @@ export default function PreferencesModal({
                       </div>
                     )}
                   </div>
-                </div>
 
-                {/* SECTION 7: Life-Safety & System Permissions */}
-                <div className="md:col-span-2 border-t border-[var(--border-color)] pt-3 w-full">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <h2 className="text-[10px] font-mono uppercase tracking-wider font-bold text-[var(--text-muted)] text-left">
-                      Life-Safety & System Permissions
-                    </h2>
-                  </div>
-
-                  <div className="p-3 sm:p-3.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-color)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-9 w-9 rounded-xl bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)] dark:border-white/10 flex items-center justify-center shrink-0">
-                        <Settings className="h-4.5 w-4.5 text-[var(--text-main)] dark:text-neutral-200" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-bold text-xs sm:text-sm text-[var(--text-main)] truncate">
-                          Life-Safety & System Permissions
-                        </div>
-                        <div className="text-[10.5px] sm:text-[11px] text-[var(--text-muted)] leading-relaxed mt-0.5">
-                          Manage GPS location, civic flash flood alerts, commuter geofencing, and SOS alarm broadcast preferences.
-                        </div>
-                      </div>
+                  {/* SECTION 7: Life-Safety & System Permissions */}
+                  <div className="border-t border-[var(--border-color)] pt-3 w-full">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <h2 className="text-[10px] font-mono uppercase tracking-wider font-bold text-[var(--text-muted)] text-left">
+                        Life-Safety & System Permissions
+                      </h2>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playClick();
-                        onClose();
-                        window.dispatchEvent(new CustomEvent('doab:open-permissions'));
-                      }}
-                      className="px-3.5 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 border border-neutral-950/20 dark:border-white/20 text-xs sm:text-[13px] font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 shadow-xs active:scale-98"
-                    >
-                      <Sliders size={13} className="stroke-[2.2]" />
-                      <span>All Permissions</span>
-                      <ChevronRight size={13} className="opacity-70" />
-                    </button>
+                    <div className="p-3 sm:p-3.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-color)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-9 w-9 rounded-xl bg-[var(--text-main)]/10 text-[var(--text-main)] border border-[var(--border-color)] dark:border-white/10 flex items-center justify-center shrink-0">
+                          <Settings className="h-4.5 w-4.5 text-[var(--text-main)] dark:text-neutral-200" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs sm:text-sm text-[var(--text-main)] truncate">
+                            Life-Safety & System Permissions
+                          </div>
+                          <div className="text-[10.5px] sm:text-[11px] text-[var(--text-muted)] leading-relaxed mt-0.5">
+                            Manage GPS location, civic flash flood alerts, commuter geofencing, and SOS alarm broadcast preferences.
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          onClose();
+                          window.dispatchEvent(new CustomEvent('doab:open-permissions'));
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 border border-neutral-950/20 dark:border-white/20 text-xs sm:text-[13px] font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 shadow-xs active:scale-98"
+                      >
+                        <Sliders size={13} className="stroke-[2.2]" />
+                        <span>All Permissions</span>
+                        <ChevronRight size={13} className="opacity-70" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
+              </div>
+            </div>
+
+            {/* Mobile Snap Paging Dot Indicator Cue */}
+            <div className="sm:hidden flex items-center justify-between px-3.5 py-2 border-t border-[var(--border-color)] bg-[var(--bg-card)]/90 backdrop-blur-md shrink-0 select-none">
+              <span className="text-[10px] font-mono text-[var(--text-muted)] truncate max-w-[190px]">
+                {mobilePage === 0 ? '1/3: Climate & Theme' : mobilePage === 1 ? '2/3: Safety & Clearance' : '3/3: Profile & Permissions'}
+              </span>
+              <div className="flex items-center gap-1.5 shrink-0" role="tablist" aria-label="Page Indicators">
+                {[0, 1, 2].map((idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => scrollToPage(idx)}
+                    className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                      mobilePage === idx 
+                        ? 'w-6 bg-[var(--text-main)] shadow-xs' 
+                        : 'w-2 bg-[var(--border-color)] hover:bg-[var(--text-muted)]'
+                    }`}
+                    aria-label={`Go to page ${idx + 1}`}
+                  />
+                ))}
               </div>
             </div>
           </motion.div>

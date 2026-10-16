@@ -101,7 +101,7 @@ function BottomNav() {
   return (
     <nav 
       aria-label="Mobile Navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)]/95 backdrop-blur-2xl border-t border-[var(--border-color)] pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-1 z-40 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
+      className="md:hidden fixed bottom-0 left-0 right-0 rounded-t-3xl border-t border-x border-[var(--border-color)] bg-[var(--bg-card)]/95 backdrop-blur-2xl pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-1 z-40 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] overflow-hidden"
     >
       <div className="max-w-md mx-auto flex items-center h-16 relative px-2">
         {/* Left cluster: All Alerts & Routes */}
